@@ -38,6 +38,4 @@ namespace geng
 	private:
 		std::variant<States...>  m_varStates;
 	};
-
-
 }

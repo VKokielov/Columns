@@ -33,7 +33,7 @@ namespace geng
 			KeyState** ppKeyStates,
 			size_t nKeyStates) = 0;
 
-		virtual unsigned long GetRandomNumber(unsigned long max) = 0;
+		virtual unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound) = 0;
 	};
 
 
