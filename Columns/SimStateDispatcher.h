@@ -14,6 +14,11 @@ namespace geng
 		{
 			m_varStates.emplace<InitState>();
 		}
+		
+		size_t GetStateIndex() const
+		{
+			return m_varStates.index();
+		}
 
 		template<typename Obj, typename ... Args>
 		void Dispatch(Obj& obj, Args&&...args)
@@ -22,7 +27,6 @@ namespace geng
 			auto visitor = [&](const auto& state)
 			{
 				obj.OnState(state, 
-					        static_cast<Derived&>(*this), 
 					        std::forward<Args>(args)...);
 			};
 
@@ -33,6 +37,25 @@ namespace geng
 		void Transition()
 		{
 			m_varStates.emplace<TargetState>();
+		}
+
+		template<typename TargetState, typename Obj, typename ... Args>
+		void Transition(Obj& obj, Args&...args)
+		{
+			auto exitVisitor = [&](const auto& state)
+			{
+				obj.OnExitState(state,std::forward<Args>(args)...);
+			};
+			std::visit(exitVisitor, m_varStates);
+
+			m_varStates.emplace<TargetState>();
+			auto enterVisitor = [&](const auto& state)
+			{
+				obj.OnEnterState(state, std::forward<Args>(args)...);
+			};
+
+			std::visit(enterVisitor, m_varStates);
+
 		}
 
 	private:

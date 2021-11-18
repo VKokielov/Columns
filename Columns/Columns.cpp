@@ -57,9 +57,9 @@ int main()
 
 	StateProcessor sProcessor;
 
-	sHolder.Dispatch(sProcessor, 1);
-	sHolder.Dispatch(sProcessor, 2);
-	sHolder.Dispatch(sProcessor, 3);
-	sHolder.Dispatch(sProcessor, 4);
+	sHolder.Dispatch(sProcessor, sHolder, 1);
+	sHolder.Dispatch(sProcessor, sHolder, 2);
+	sHolder.Dispatch(sProcessor, sHolder, 3);
+	sHolder.Dispatch(sProcessor, sHolder, 4);
 
 }

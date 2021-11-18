@@ -3,6 +3,7 @@
 #include "IInput.h"
 #include "ActionMapper.h"
 #include "SimStateDispatcher.h"
+#include "IFrameManager.h"
 
 #include <memory>
 #include <array>
@@ -112,26 +113,122 @@ namespace geng::columns
 	struct ColumnsSimArgs
 	{
 		Point boardSize;
-		unsigned long colSize;  // must be odd
+		unsigned int columnSize;
+		unsigned int dropMilliseconds;
+		unsigned int flashMilliseconds;
+		unsigned int flashCount;
+		unsigned int actionThrottlePeriod;
+
 		std::shared_ptr<ActionMapper>  pActionMapper;
+		std::shared_ptr<IInput> pInput;
 	};
 
-	class ColumnsSim
+	class ColumnsSim : public IFrameListener
 	{
 	private:
-
-		struct DropColumnState { };
+		struct InitialState { };
+		struct DropColumnState 
+		{ 
+			unsigned long nextDropTime{ 0 };
+		};
 		struct CompactState { };
 		struct ClearState 
-		{ };
-		
-		class GameState : public SimStateDispatcher<DropColumnState, CompactState, ClearState>
-		{
+		{ 
+			bool blinkPhase{ false };
+			unsigned long nextBlinkTime{ 0 };
+			unsigned int blinkPhaseCount{ 0 };
+		};
 
+		struct GameOverState { };
+
+		struct StateArgs
+		{
+			IFrameManager* pFrameManager;
+			unsigned long simTime;
+		};
+
+		// Drop->(lock)->Compact->Clear->?Compact,Drop
+		
+		class GameState : public SimStateDispatcher<GameState,
+													InitialState,
+													InitialState,
+													DropColumnState, 
+												    CompactState, 
+													ClearState,
+													GameOverState>
+		{
+		public:
+			GameState(ColumnsSim& owner) 
+				:m_owner(owner)
+			{ }
+
+			void StartFrame()
+			{
+				m_frameComplete = false;
+			}
+
+			void EndFrame() { }
+
+			// return 
+			bool DispatchState(const StateArgs& stateArgs)
+			{
+				Dispatch(*this, stateArgs);
+
+				return !m_frameComplete;
+			}
+
+			bool IsFrameComplete() const { return m_frameComplete; }
+
+			// Generic state callbacks for any unimplemented states
+			template<typename T>
+			void OnEnterState(T& state, 
+				const StateArgs&) { }
+
+			template<typename T>
+			void OnState(T& state, const StateArgs&)
+			{ }
+
+			template<typename T>
+			void OnExitState(T& state, const StateArgs&) { }
+
+			void OnEnterState(DropColumnState& state, 
+				const StateArgs& args);
+
+			void OnEnterState(ClearState& state, const StateArgs& args);
+
+			void OnState(DropColumnState& dropState, const StateArgs& stateArgs);
+			void OnState(CompactState& compactState, const StateArgs& stateArgs);
+			void OnState(ClearState& clearState, const StateArgs& stateArgs);
+
+		private:
+			void SetFrameComplete(bool val)
+			{
+				m_frameComplete = val;
+			}
+
+			template<typename I>
+			void SetBlinkState(I bSet, I eSet, bool state)
+			{
+				auto setBlink = [state](ColumnsSim& sim, unsigned int point,
+					GridSquare& gc)
+				{
+					gc.isVisible = state;
+					return true;
+				};
+
+				m_owner.IterateSet(bSet, eSet, setBlink);
+			}
+
+			ColumnsSim&   m_owner;
+			// As long as this is false, the frame callback loops on the state
+			// This is analogous to revisiting the same character in different states
+			// during a parse
+			bool m_frameComplete{ false };
 		};
 
 	public:
 		ColumnsSim(const ColumnsSimArgs& args);
+		void OnFrame(IFrameManager* pManager) override;
 
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
@@ -147,6 +244,21 @@ namespace geng::columns
 		bool InBounds(const Point& at) const
 		{
 			return at.x < m_size.x && at.y < m_size.y;
+		}
+
+		template<typename I, typename F>
+		void IterateSet(I bSet, I eSet, F&& callback)
+		{
+			while (bSet != eSet)
+			{
+				unsigned int point = *bSet;
+				GridSquare& gsquare = m_gameGrid[point];
+				if (!callback(*this, point, gsquare))
+				{
+					return;
+				}
+				++bSet;
+			}
 		}
 
 		template<typename F>
@@ -206,7 +318,6 @@ namespace geng::columns
 		bool MoveBlock(const Point& from, const Point& to);
 		bool RemoveBlock(const Point& at);
 
-
 		// Add or remove the stones in a column to the board
 		// Assumes all inputs are valid (enforced by the "Can" functions above)
 		void RemovePlayerColumn(const PlayerSet& playerColumn);
@@ -227,6 +338,7 @@ namespace geng::columns
 
 		// Can the player column move down or should it be locked?
 		bool ShouldLockPlayerColumn(const PlayerSet& playerColumn);
+		bool DropPlayerColumn();
 
 		// Pro-forma -- permutation always works
 		bool PermutePlayerColumn();
@@ -234,8 +346,8 @@ namespace geng::columns
 		// Fill the compact set with the locations of the player column (if compaction is needed)
 		// NOTE:  Used when the player column is locked in horizontal state
 		void AddPlayerColumnToCompactSet(const PlayerSet& playerColumn);
-
-		void GenerateNewPlayerColumn(IInput* pRandomizer);
+		bool GenerateNewPlayerColumn();
+		bool LockPlayerColumn();
 
 		// __Grid sets__ (for computing removables)
 		void AddSetFromPoint(bool isEnabled, Axis axis, 
@@ -244,24 +356,30 @@ namespace geng::columns
 		void GenerateGridSets();
 
 		// __Removables__
-		void MarkRemovables(const std::vector<Point>& scanSet, size_t start, size_t end, unsigned int count);
-		void ComputeRemovablesInSet(const std::vector<Point>& scanSet, unsigned int count);
-		void ComputeRemovables(unsigned int count);
-
+		bool MarkRemovables(const std::vector<Point>& scanSet, size_t start, size_t end, unsigned int count);
+		bool ComputeRemovablesInSet(const std::vector<Point>& scanSet, unsigned int count);
+		bool ComputeRemovables(unsigned int count);
+		void ExecuteRemove();
+		
 		// Compact columns by shifting all stones down
-		void CompactColumn(unsigned int x);
-		void CompactColumns();
+		bool CompactColumn(unsigned int x);
+		bool CompactColumns();
 
 		// Actions
-		ActionMapper  m_actionMapper;
-		ActionID m_shiftAction;
-		ActionID m_turnAction;
-		ActionID m_permuteAction;
-		ActionID m_speedUpAction;
+		std::shared_ptr<ActionMapper>  m_actionMapper;
+		ThrottledActionWrapper m_dropAction;
+		ThrottledActionWrapper m_shiftLeftAction;
+		ThrottledActionWrapper m_shiftRightAction;
+		ThrottledActionWrapper m_rotateAction;
+		ThrottledActionWrapper m_permuteAction;
 
 		// __Parameters__
 		Point m_size;
 		unsigned int m_columnSize;
+		unsigned int m_dropMiliseconds;
+		unsigned int m_flashMiliseconds;
+		unsigned int m_flashCount;
+		std::shared_ptr<IInput>  m_pInput;
 
 		// __Removable sets__
 		// These are sets of points to scan for sequences of identical entries
@@ -279,7 +397,13 @@ namespace geng::columns
 		PlayerSet  m_playerColumn;
 		std::vector<GridContents>  m_nextColors;
 
+		std::string m_errorText;
+
 		std::unique_ptr<GridSquare[]>  m_gameGrid;
 		size_t m_gameGridSize;
+
+		GameState m_gameState;
+
+		bool m_firstFrame{ true };
 	};
 }

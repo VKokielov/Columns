@@ -75,9 +75,9 @@ bool geng::columns::ColumnsSim::IsValidShiftedPlayerColumn(const PlayerSet& targ
 	const PointDelta& delta) const
 {
 	// Is the new center location in range?
-	if (target.CenterX() < -delta.dx 
+	if (target.CenterX() < (unsigned int)-delta.dx 
 	|| target.CenterX() + delta.dx >= m_size.x
-	|| target.CenterY() < -delta.dy
+	|| target.CenterY() < (unsigned int)-delta.dy
 	|| target.CenterY() + delta.dy >= m_size.y)
 	{
 		return false;
@@ -211,6 +211,8 @@ bool geng::columns::ColumnsSim::TransformPlayerColumn(const PlayerSet& target, c
 	m_playerColumn.locCenter.x += delta.dx;
 	m_playerColumn.locCenter.y += delta.dy;
 	SetPlayerColumn(m_playerColumn);
+
+	return true;
 }
 
 bool geng::columns::ColumnsSim::ShiftPlayerColumn( bool isLeft)
@@ -265,6 +267,11 @@ bool geng::columns::ColumnsSim::ShouldLockPlayerColumn(const PlayerSet& playerCo
 	return IsValidShiftedPlayerColumn(playerColumn, PointDelta{ 0, 1 });
 }
 
+bool geng::columns::ColumnsSim::DropPlayerColumn()
+{
+	return TransformPlayerColumn(m_playerColumn, PointDelta{ 0, 1 }, true);
+}
+
 bool geng::columns::ColumnsSim::PermutePlayerColumn()
 {
 	PlayerSet newColumn{ m_playerColumn };
@@ -298,16 +305,23 @@ void geng::columns::ColumnsSim::AddPlayerColumnToCompactSet(const PlayerSet& pla
 	}
 }
 
-void geng::columns::ColumnsSim::GenerateNewPlayerColumn(IInput* pRandomizer)
+
+bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 {
 	// First materialize the new player column
 	PlayerSet newColumn;
 	newColumn.locCenter.x = m_size.x / 2;
 	newColumn.locCenter.y = (m_columnSize - 1) / 2;
+	newColumn.colors = m_nextColors;
+
+	// Can this column exist?
+	if (!IsValidShiftedPlayerColumn(newColumn, PointDelta{ 0,0 }))
+	{
+		return false;
+	}
+
 	// isHorizontal, isInverted both false by default (see text of PlayerSet)
 	// startPt is 0 by default
-	newColumn.colors = std::move(m_nextColors);
-
 	m_playerColumn = std::move(newColumn);
 
 	// Generate next colors
@@ -315,9 +329,22 @@ void geng::columns::ColumnsSim::GenerateNewPlayerColumn(IInput* pRandomizer)
 
 	for (size_t i = 0; i < m_columnSize; ++i)
 	{
-		GridContents nextColor = pRandomizer->GetRandomNumber(1, GRID_LIMIT);
+		GridContents nextColor = m_pInput->GetRandomNumber(1, GRID_LIMIT);
 		m_nextColors.emplace_back(nextColor);
 	}
+
+	return true;
+}
+
+bool geng::columns::ColumnsSim::LockPlayerColumn()
+{
+	m_columnsToCompact.clear();
+	if (m_playerColumn.isHorizontal)
+	{
+		AddPlayerColumnToCompactSet(m_playerColumn);
+	}
+
+	return GenerateNewPlayerColumn();
 }
 
 void geng::columns::ColumnsSim::AddSetFromPoint(bool axisEnabled,
@@ -397,11 +424,12 @@ void geng::columns::ColumnsSim::GenerateGridSets()
 	// to find which squares need to be removed
 }
 
-void geng::columns::ColumnsSim::MarkRemovables(const std::vector<Point>& scanSet,
+bool geng::columns::ColumnsSim::MarkRemovables(const std::vector<Point>& scanSet,
 	size_t start,
 	size_t end,
 	unsigned int count)
 {
+	bool hasRemovables{ false };
 	if (end - 1 - start >= count && IsRemovable(GetContents(scanSet[start])))
 	{
 		// Mark all points from "start" to "end" as removable
@@ -409,47 +437,82 @@ void geng::columns::ColumnsSim::MarkRemovables(const std::vector<Point>& scanSet
 		{
 			const Point& toRemove = scanSet[i];
 			m_toRemove.emplace(PointToIndex(toRemove));
+			hasRemovables = true;
 			m_columnsToCompact.emplace(toRemove.x);
 		}
 	}
+	return hasRemovables;
 }
 
-void geng::columns::ColumnsSim::ComputeRemovablesInSet(const std::vector<Point>& scanSet, unsigned int count)
+bool geng::columns::ColumnsSim::ComputeRemovablesInSet(const std::vector<Point>& scanSet, unsigned int count)
 {
 	// Find count matching removable points in a row
 	size_t seqStart = 0;
 	size_t seqCur = 0;
 
+	bool hasRemovables{ false };
 	while (seqCur < scanSet.size())
 	{
 		if (GetContents(scanSet[seqStart]) != GetContents(scanSet[seqCur]))
 		{
-			MarkRemovables(scanSet, seqStart, seqCur, count);
+			if (MarkRemovables(scanSet, seqStart, seqCur, count))
+			{
+				hasRemovables = true;
+			}
 			seqStart = seqCur;
 		}
 		++seqCur;
 	}
 
 	// Last stretch
-	MarkRemovables(scanSet, seqStart, seqCur, count);
+	if (MarkRemovables(scanSet, seqStart, seqCur, count))
+	{
+		hasRemovables = true;
+	}
+
+	return hasRemovables;
 }
 
-void geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
+bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 {
 	// Go through each stored set and scan it to find removables
 	m_columnsToCompact.clear();
 	m_toRemove.clear();
 
+	bool hasRemovables{ false };
 	for (size_t iSet = 0; iSet < m_setsToScan.size(); ++iSet)
 	{
-		ComputeRemovablesInSet(m_setsToScan[iSet], count);
+		if (ComputeRemovablesInSet(m_setsToScan[iSet], count))
+		{
+			hasRemovables = true;
+		}
 	}
+
+	return hasRemovables;
 }
 
-void geng::columns::ColumnsSim::CompactColumn(unsigned int x)
+void geng::columns::ColumnsSim::ExecuteRemove()
+{
+	
+	auto removeGem = [](ColumnsSim& sim, unsigned int point,
+		GridSquare& gc) -> bool
+	{
+		// Of course, "remove" just means "set to blank" so no structural changes
+		sim.RemoveBlock(sim.IndexToPoint(point));
+		return true;
+	};
+
+	IterateSet(m_toRemove.begin(), m_toRemove.end(),removeGem);
+	m_toRemove.clear();
+}
+
+bool geng::columns::ColumnsSim::CompactColumn(unsigned int x)
 {
 	// This is just the partition algorithm applied to blank grid squares vs stones
 	// in effect, the nonblanks all end up on the bottom
+
+	// Returns true if at least one column was compacted
+	bool compactedCol{ false };
 
 	unsigned int readY = m_size.y - 1;
 	unsigned int writeY = readY;
@@ -469,17 +532,214 @@ void geng::columns::ColumnsSim::CompactColumn(unsigned int x)
 			{
 				// Move the stone from nonblank to blank and update both 
 				MoveBlock(readPt, writePt);
+				compactedCol = true;
 			}
 			--readY;
 			--writeY;
 		}
 	}
+
+	return compactedCol;
 }
 
-void geng::columns::ColumnsSim::CompactColumns()
+bool geng::columns::ColumnsSim::CompactColumns()
 {
+	bool compactedCol{ false };
 	for (unsigned int xCol : m_columnsToCompact)
 	{
-		CompactColumn(xCol);
+		if (CompactColumn(xCol))
+		{
+			compactedCol = true;
+		}
+	}
+	m_columnsToCompact.clear();
+	return compactedCol;
+}
+
+geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
+	:m_gameState(*this),
+	m_actionMapper(args.pActionMapper),
+	m_dropAction("DropColumnAction", args.actionThrottlePeriod, *m_actionMapper),
+	m_shiftLeftAction("ShiftColumnLeftAction", args.actionThrottlePeriod, *m_actionMapper),
+	m_shiftRightAction("ShiftColumnRightAction", args.actionThrottlePeriod, *m_actionMapper),
+	m_rotateAction("RotateColumnAction", args.actionThrottlePeriod, *m_actionMapper),
+	m_permuteAction("PermuteColumnAction", args.actionThrottlePeriod, *m_actionMapper),
+	m_size(args.boardSize),
+	m_columnSize(args.columnSize),
+	m_dropMiliseconds(args.dropMilliseconds),
+	m_flashMiliseconds(args.flashMilliseconds),
+	m_flashCount(args.flashCount),
+	m_pInput(args.pInput),
+	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
+	m_gameGridSize(args.boardSize.x * args.boardSize.y)
+{
+	GenerateNewPlayerColumn();	
+}
+
+void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
+{
+	StateArgs stateArgs;
+	
+	SimState state;
+	pManager->GetSimState(state, FID_SIMTIME);
+
+	stateArgs.pFrameManager = pManager;
+	stateArgs.simTime = state.simulatedTime;
+
+	// Process inputs
+	m_actionMapper->OnFrame(m_pInput.get());
+
+	if (m_firstFrame)
+	{
+		m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
+		m_firstFrame = false;
+	}
+
+	m_gameState.StartFrame();
+
+	bool shouldContinue = true;
+	while (shouldContinue)
+	{
+		shouldContinue = m_gameState.DispatchState(stateArgs);
+	}
+
+	m_gameState.EndFrame();
+}
+
+
+void geng::columns::ColumnsSim::GameState
+::OnEnterState(DropColumnState& dropState, const StateArgs& args)
+{
+	dropState.nextDropTime = args.simTime + m_owner.m_dropMiliseconds;
+}
+
+void geng::columns::ColumnsSim::GameState
+::OnState(DropColumnState& dropState, const StateArgs& stateArgs)
+{
+	// Drop state.  Exit conditions: 
+	//    1. Drop->compact (no frame advance): The player column is "pushed" down but has nowhere to go;
+	//       a new column is formed above the playing 
+	//    2. Drop->game over (frame advance):  The player column is "pushed" down, but a new column
+	//       could not be formed because the space to form it is taken.
+
+	SetFrameComplete(true);
+
+	// Drop?
+	if (m_owner.m_dropAction.Triggered()
+		|| dropState.nextDropTime <= stateArgs.simTime)
+	{
+		// Execute drop.  If a drop can't be executed, lock the player's gems and switch to Compact mode
+		if (!m_owner.DropPlayerColumn())
+		{
+			// Lock the gems and generate a new column, then switch to compact mode
+			if (!m_owner.LockPlayerColumn())
+			{
+				// Set to game over and terminate the frame
+				Transition<GameOverState>(*this, stateArgs);
+				return;
+			}
+
+			// Switch to compact mode and stay in frame
+			Transition<CompactState>(*this, stateArgs);
+			SetFrameComplete(false);
+			return;
+		}
+
+		// Update the drop time
+		dropState.nextDropTime = stateArgs.simTime + m_owner.m_dropMiliseconds;
+	}
+
+	// The other actions.
+	if (m_owner.m_shiftLeftAction.Triggered())
+	{
+		if (!m_owner.ShiftPlayerColumn(true))
+		{
+			m_owner.m_errorText = "CAN'T MOVE";
+			return;
+		}
+	}
+
+	if (m_owner.m_shiftRightAction.Triggered())
+	{
+		if (!m_owner.ShiftPlayerColumn(false))
+		{
+			m_owner.m_errorText = "CAN'T MOVE";
+			return;
+		}
+	}
+
+	if (m_owner.m_rotateAction.Triggered())
+	{
+		if (!m_owner.RotatePlayerColumn(true))
+		{
+			m_owner.m_errorText  = "CAN'T ROTATE";
+			return;
+		}
+	}
+
+	if (m_owner.m_permuteAction.Triggered())
+	{
+		m_owner.PermutePlayerColumn();
+		return;
+	}
+}
+
+void geng::columns::ColumnsSim::GameState::
+	OnState(CompactState& compactState, const StateArgs& stateArgs)
+{
+	// In compact state, we execute the compaction and immediately switch for next frame to
+	// clear (same frame if nothing was compacted)
+	bool hadCompacted = m_owner.CompactColumns();
+	Transition<ClearState>(*this, stateArgs);
+
+	SetFrameComplete(hadCompacted);
+}
+
+
+void geng::columns::ColumnsSim::GameState::
+OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
+{
+	// Compute the removables.   If the set is empty, immediately switch to 
+	// drop column state.  Otherwise, we go to blinking
+
+	// (hardcoding three)
+	bool hasRemovables = m_owner.ComputeRemovables(3);
+
+	if (hasRemovables)
+	{
+		// Initialize the blink phase
+		clearState.blinkPhase = false;
+		clearState.blinkPhaseCount = false;
+		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
+
+		// Implement
+		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);
+	}
+	else
+	{
+		Transition<DropColumnState>(*this, stateArgs);
+	}
+}
+
+void geng::columns::ColumnsSim::GameState::
+OnState(ClearState& clearState, const StateArgs& stateArgs)
+{
+	SetFrameComplete(true);
+
+	if (clearState.nextBlinkTime <= stateArgs.simTime)
+	{
+		++clearState.blinkPhaseCount;
+		if (clearState.blinkPhaseCount == 2 * m_owner.m_flashCount)
+		{
+			// Done flashing.  Remove and go to compact again
+			// When we return to this state after Compact, we will immediately go to Drop
+			// if there's nothing to clear
+			m_owner.ExecuteRemove();
+			Transition<CompactState>(*this, stateArgs);
+			return;
+		}
+		clearState.blinkPhase = !clearState.blinkPhase;
+		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
+		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);
 	}
 }

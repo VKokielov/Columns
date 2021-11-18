@@ -116,7 +116,7 @@ namespace geng
 
 		ActionState GetActionState(ActionID actionId) const
 		{
-			if (actionId < 0 || actionId >= m_actions.size())
+			if (actionId < 0 || actionId >= (ActionID)m_actions.size())
 			{
 				return ActionState::Initial;
 			}
@@ -143,6 +143,70 @@ namespace geng
 		// The second array is used to store KeyState pointers for querying the input
 		std::unordered_map<unsigned int, KeyInfo_>  m_keyInfoMap;
 		std::vector<KeyState*> m_keyStates;
+	};
+
+	class ActionWrapper
+	{
+	public:
+		ActionWrapper() = delete;
+
+		bool Triggered() const { return m_triggered; }
+
+	protected:
+		// Default implementation: action in "starting" and "on" state
+		void UpdateState(const ActionMapper& rMapper)
+		{
+			ActionState state = GetMyActionState(rMapper);
+			SetTriggered(state == ActionState::On || state == ActionState::Starting);
+		}
+
+		ActionWrapper(const char* pName, ActionMapper& rMapper)
+		{
+			m_id = rMapper.CreateAction(pName);
+		}
+
+		void SetTriggered(bool isTriggered)
+		{
+			m_triggered = isTriggered;
+		}
+		ActionState GetMyActionState(const ActionMapper& rMapper)
+		{
+			rMapper.GetActionState(m_id);
+		}
+
+	private:
+		ActionID m_id{ INVALID_ACTION };
+		bool m_triggered{ false };
+	};
+
+	class ThrottledActionWrapper : public ActionWrapper
+	{
+	public:
+		ThrottledActionWrapper(const char* pactionName, unsigned int throttlePeriod,
+			ActionMapper& rMapper)
+			:ActionWrapper(pactionName, rMapper),
+			m_throttlePeriod(throttlePeriod)
+		{
+			
+		}
+
+		void UpdateState(const ActionMapper& rMapper, unsigned long simTime)
+		{
+			ActionState state = GetMyActionState(rMapper);
+			if (state == ActionState::Starting
+			  || ((state == ActionState::On) && (m_throttleStart + m_throttlePeriod <= simTime)))
+			{
+				m_throttleStart = simTime;
+				SetTriggered(true);
+			}
+			else
+			{
+				SetTriggered(false);
+			}
+		}
+	private:
+		unsigned int  m_throttlePeriod;
+		unsigned long  m_throttleStart{ 0 };
 	};
 
 
