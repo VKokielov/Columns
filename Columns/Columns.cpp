@@ -83,8 +83,8 @@ int main(int, char**)
 	
 	// RENDERER
 	geng::columns::ColumnsRenderArgs renderArgs;
-	renderArgs.windowX = 640;
-	renderArgs.windowY = 480;
+	renderArgs.windowX = 640 + 320;
+	renderArgs.windowY = 480 + 240;
 	renderArgs.renderShadow = 4;
 	auto pRenderer = std::make_shared<geng::columns::ColumnsSDLRenderer>(renderArgs);
 	pGame->AddComponent(pRenderer);

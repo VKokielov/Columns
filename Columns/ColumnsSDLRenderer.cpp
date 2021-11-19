@@ -76,19 +76,15 @@ void geng::columns::ColumnsSDLRenderer::RenderSquareAt(int x, int y,
 	int renderShadow = 4;   // 3 pixels
 
 	// First draw the shadow, then draw the boss, then draw the main square
-	sdl::RGBA colorShadow(color.red - color.red / 20,
-		color.blue - color.blue / 20,
-		color.green - color.green / 20,
-		SDL_ALPHA_OPAQUE);
+
+	sdl::RGBA colorShadow = ChangeBrightness<-1,5>(color);
 
 	SDL_Rect rectShadow{x,y, m_squareSize, m_squareSize};
 	sdl::SetDrawColor(m_pRenderer.get(), colorShadow);
 	SDL_RenderFillRect(m_pRenderer.get(), &rectShadow);
 
-	sdl::RGBA colorBoss(color.red + color.red / 10,
-		color.blue + color.blue / 10,
-		color.green + color.green / 10,
-		SDL_ALPHA_OPAQUE);
+	sdl::RGBA colorBoss = ChangeBrightness<1, 10>(color);
+
 	SDL_Rect rectBoss{ x,y, m_squareSize - renderShadow, m_squareSize - renderShadow };
 	sdl::SetDrawColor(m_pRenderer.get(), colorBoss);
 	SDL_RenderFillRect(m_pRenderer.get(), &rectBoss);
@@ -168,14 +164,14 @@ void geng::columns::ColumnsSDLRenderer::Measure()
 {
 	// Compute the residue
 	unsigned int visibleY = m_boardY - m_boardYOffset;
-	m_boardBottom = m_windowX % visibleY;
+	m_boardBottom = m_windowY - (m_windowY % visibleY);
 
 	// Compute square size
-	m_squareSize = m_windowY / visibleY;
+	m_squareSize = m_boardBottom / visibleY;
 
 	// Compute game rectangle dimensions
-	unsigned int gameRectW = m_boardX / m_squareSize;
-	unsigned int gameRectH = visibleY / m_squareSize;  // approximately window size (to within one square)
+	unsigned int gameRectW = m_squareSize * m_boardX;
+	unsigned int gameRectH = m_squareSize * visibleY;  // approximately window size (to within one square)
 
 	m_boardArea.x = (m_windowX - gameRectW) / 2;
 	m_boardArea.y = 0;

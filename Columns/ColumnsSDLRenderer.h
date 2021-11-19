@@ -4,6 +4,7 @@
 #include "BaseGameComponent.h"
 #include "SDLHelpers.h"
 #include "ColumnsSim.h"
+#include <utility>
 
 namespace geng::columns
 {
@@ -25,6 +26,47 @@ namespace geng::columns
 
 		IFrameListener* GetFrameListener() override;
 	private:
+		template<typename T, T lower, T upper, typename U>
+		static void ClampTo(T& value, U delta)
+		{
+			if (delta < 0)
+			{
+				if (value < lower-delta)
+				{
+					value = lower;
+				}
+				else
+				{
+					value += delta;
+				}
+			}
+			else
+			{
+				if (value > upper - delta)
+				{
+					value = upper;
+				}
+				else
+				{
+					value += delta;
+				}
+			}
+		}
+
+		template<int num, int denom>
+		static sdl::RGBA ChangeBrightness(const sdl::RGBA& source)
+		{
+			constexpr int dslice = (num * 255) / denom;
+
+			sdl::RGBA result{ source };
+			ClampTo<Uint8, 0,255>(result.red, dslice);
+			ClampTo<Uint8, 0,255>(result.green, dslice);
+			ClampTo<Uint8, 0,255>(result.blue, dslice);
+			// Alpha is not touched
+
+			return result;
+		}
+
 		void RenderSquareAt(int x, int y,
 			geng::sdl::RGBA color);
 

@@ -75,9 +75,9 @@ bool geng::columns::ColumnsSim::IsValidShiftedPlayerColumn(const PlayerSet& targ
 	const PointDelta& delta) const
 {
 	// Is the new center location in range?
-	if (target.CenterX() < (unsigned int)-delta.dx 
+	if ((int)target.CenterX() < -delta.dx 
 	|| target.CenterX() + delta.dx >= m_size.x
-	|| target.CenterY() < (unsigned int)-delta.dy
+	|| (int)target.CenterY() < -delta.dy
 	|| target.CenterY() + delta.dy >= m_size.y)
 	{
 		return false;
@@ -114,7 +114,9 @@ bool geng::columns::ColumnsSim::IsValidShiftedPlayerColumn(const PlayerSet& targ
 
 	while (count < colLen)
 	{
-		if (!m_playerColumn.InColumn(newStart)
+		bool inPlayerColumn = m_validPlayerColumn && m_playerColumn.InColumn(newStart);
+
+		if (!inPlayerColumn
 			&& !IsBlank(GetContents(newStart)))
 		{
 			return false;
@@ -305,10 +307,25 @@ void geng::columns::ColumnsSim::AddPlayerColumnToCompactSet(const PlayerSet& pla
 	}
 }
 
+void geng::columns::ColumnsSim::GenerateNextColors()
+{
+	m_nextColors.clear();
+
+	for (size_t i = 0; i < m_columnSize; ++i)
+	{
+		GridContents nextColor = m_pInput->GetRandomNumber(1, GRID_LIMIT);
+		m_nextColors.emplace_back(nextColor);
+	}
+}
 
 bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 {
 	// First materialize the new player column
+	if (m_nextColors.empty())
+	{
+		GenerateNextColors();
+	}
+
 	PlayerSet newColumn;
 	newColumn.locCenter.x = m_size.x / 2;
 	newColumn.locCenter.y = (m_columnSize - 1) / 2;
@@ -323,15 +340,10 @@ bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 	// isHorizontal, isInverted both false by default (see text of PlayerSet)
 	// startPt is 0 by default
 	m_playerColumn = std::move(newColumn);
+	m_validPlayerColumn = true;
 
 	// Generate next colors
-	m_nextColors.clear();
-
-	for (size_t i = 0; i < m_columnSize; ++i)
-	{
-		GridContents nextColor = m_pInput->GetRandomNumber(1, GRID_LIMIT);
-		m_nextColors.emplace_back(nextColor);
-	}
+	GenerateNextColors();
 
 	return true;
 }
@@ -343,6 +355,8 @@ bool geng::columns::ColumnsSim::LockPlayerColumn()
 	{
 		AddPlayerColumnToCompactSet(m_playerColumn);
 	}
+
+	m_validPlayerColumn = false;
 
 	return GenerateNewPlayerColumn();
 }
@@ -600,7 +614,9 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	m_inputName(args.pInputName),
 	m_thorttlePeriod(args.actionThrottlePeriod)
 {
-	GenerateNewPlayerColumn();	
+	// Clear the grid
+	GridSquare defaultSquare{ EMPTY, true};
+	std::fill(m_gameGrid.get(), m_gameGrid.get() + m_gameGridSize, defaultSquare);
 }
 
 geng::IFrameListener* geng::columns::ColumnsSim::GetFrameListener()
@@ -629,6 +645,8 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 
 	m_actionWrappers = std::make_shared<SimActionWrappers>(m_thorttlePeriod,
 														*m_actionMapper.get());
+
+	GenerateNewPlayerColumn();
 
 	return true;
 }

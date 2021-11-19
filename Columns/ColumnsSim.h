@@ -392,6 +392,7 @@ namespace geng::columns
 		// Fill the compact set with the locations of the player column (if compaction is needed)
 		// NOTE:  Used when the player column is locked in horizontal state
 		void AddPlayerColumnToCompactSet(const PlayerSet& playerColumn);
+		void GenerateNextColors();
 		bool GenerateNewPlayerColumn();
 		bool LockPlayerColumn();
 
@@ -439,6 +440,7 @@ namespace geng::columns
 		// (This is an optimization to prevent needless work)
 		std::unordered_set<unsigned int> m_columnsToCompact;  
 		
+		bool m_validPlayerColumn{ false };
 		PlayerSet  m_playerColumn;
 		std::vector<GridContents>  m_nextColors;
 
