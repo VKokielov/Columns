@@ -260,7 +260,7 @@ namespace geng::columns
 		unsigned int GetColumnSize() const { return m_columnSize; }
 
 		template<typename F>
-		void IterateGrid(F&& callback, unsigned int firstIndex = 0)
+		void IterateGrid(F&& callback, unsigned int firstIndex = 0) const
 		{
 			for (unsigned long idx = firstIndex; idx < m_gameGridSize; ++idx)
 			{

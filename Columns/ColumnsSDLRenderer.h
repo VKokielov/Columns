@@ -40,8 +40,8 @@ namespace geng::columns
 			m_colorMap;
 
 		int m_windowX{ 0 }, m_windowY{ 0 };
-		int m_boardX{ 0 }, m_boardY{ 0 };
-		int m_boardYOffset{ 0 };  // The "invisible" part of the board
+		unsigned int m_boardX{ 0 }, m_boardY{ 0 };
+		unsigned int m_boardYOffset{ 0 };  // The "invisible" part of the board
 		int m_predictorX{ 0 }, m_predictorY{ 0 };
 
 		int m_boardLeft{ 0 };

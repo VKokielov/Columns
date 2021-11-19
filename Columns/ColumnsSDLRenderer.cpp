@@ -141,7 +141,21 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(IFrameManager* pManager)
 	}
 
 	// Draw the board
+	Point xOrigin{ 0, m_boardYOffset };
 
+	auto gridRender = [this](const Point& pt, const GridSquare& gsquare)
+	{
+		// Get the coordinates
+		int xSquare = m_boardArea.x + m_squareSize * pt.x;
+		int ySquare = m_boardArea.y + m_squareSize * (pt.y - m_boardYOffset);
+
+		GridContents toDraw = gsquare.isVisible ? gsquare.contents : EMPTY;
+		RenderContentsAt(xSquare, ySquare, toDraw);
+	};
+
+	m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
+
+	SDL_RenderPresent(m_pRenderer.get());
 }
 
 void geng::columns::ColumnsSDLRenderer::Measure()
