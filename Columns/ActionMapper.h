@@ -36,7 +36,7 @@ namespace geng
 		Ending
 	};
 
-	class ActionMapper
+	class ActionMapper : public BaseGameComponent
 	{
 	private:
 		struct KeyInfo_

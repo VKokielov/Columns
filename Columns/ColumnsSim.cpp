@@ -557,8 +557,8 @@ bool geng::columns::ColumnsSim::CompactColumns()
 }
 
 geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
-	:m_gameState(*this),
-	m_actionMapper(args.pActionMapper),
+	:BaseGameComponent("ColumnsSim", GameComponentType::Simulation),
+	m_gameState(*this),
 	m_dropAction("DropColumnAction", args.actionThrottlePeriod, *m_actionMapper),
 	m_shiftLeftAction("ShiftColumnLeftAction", args.actionThrottlePeriod, *m_actionMapper),
 	m_shiftRightAction("ShiftColumnRightAction", args.actionThrottlePeriod, *m_actionMapper),
@@ -569,11 +569,34 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	m_dropMiliseconds(args.dropMilliseconds),
 	m_flashMiliseconds(args.flashMilliseconds),
 	m_flashCount(args.flashCount),
-	m_pInput(args.pInput),
 	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
-	m_gameGridSize(args.boardSize.x * args.boardSize.y)
+	m_gameGridSize(args.boardSize.x * args.boardSize.y),
+	m_inputName(args.pInputName),
+	m_mapperName(args.pMapperName)
 {
 	GenerateNewPlayerColumn();	
+}
+
+bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
+{
+	GetComponentResult getResult;
+	m_pInput = GetComponentAs<IInput>(pGame.get(), m_inputName.c_str(), getResult);
+
+	if (!m_pInput)
+	{
+		pGame->LogError("ColumnsSim: could not get input component");
+		return false;
+	}
+
+	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), "ActionMapper", getResult);
+	
+	if (!m_pInput)
+	{
+		pGame->LogError("ColumnsSim: could not get action mapper");
+		return false;
+	}
+
+	return true;
 }
 
 void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)

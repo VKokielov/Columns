@@ -4,6 +4,7 @@
 #include "ActionMapper.h"
 #include "SimStateDispatcher.h"
 #include "IFrameManager.h"
+#include "BaseGameComponent.h"
 
 #include <memory>
 #include <array>
@@ -119,11 +120,11 @@ namespace geng::columns
 		unsigned int flashCount;
 		unsigned int actionThrottlePeriod;
 
-		std::shared_ptr<ActionMapper>  pActionMapper;
-		std::shared_ptr<IInput> pInput;
+		// Component names
+		const char* pInputName;
 	};
 
-	class ColumnsSim : public IFrameListener
+	class ColumnsSim : public IFrameListener, BaseGameComponent
 	{
 	private:
 		struct InitialState { };
@@ -229,6 +230,7 @@ namespace geng::columns
 	public:
 		ColumnsSim(const ColumnsSimArgs& args);
 		void OnFrame(IFrameManager* pManager) override;
+		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
@@ -379,6 +381,8 @@ namespace geng::columns
 		unsigned int m_dropMiliseconds;
 		unsigned int m_flashMiliseconds;
 		unsigned int m_flashCount;
+		std::string m_inputName;
+
 		std::shared_ptr<IInput>  m_pInput;
 
 		// __Removable sets__

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <memory>
 
 namespace geng
 {
@@ -10,7 +11,8 @@ namespace geng
 	{
 		Running,
 		Paused,
-		Stopped
+		Stopped,
+		CatchingUp
 	};
 
 	class IFrameListener
@@ -54,8 +56,8 @@ namespace geng
 		InvalidFields
 	};
 
-	constexpr uint64_t FID_QUALITY = 1;
-	constexpr uint64_t FID_TPF = 1 << 1;
+	constexpr uint64_t FID_QUALITY = 1; // settable
+	constexpr uint64_t FID_TPF = 1 << 1; // settable
 	constexpr uint64_t FID_FCOUNT = 1 << 2;
 	constexpr uint64_t FID_SIMTIME = 1 << 3;
 	constexpr uint64_t FID_ACTTIME = 1 << 4;
@@ -64,8 +66,10 @@ namespace geng
 	class IFrameManager
 	{
 	public:
+		virtual void Subscribe(const std::shared_ptr<IFrameListener>& pListener, bool isSim) = 0;
+		virtual void Unsubscribe(const std::shared_ptr<IFrameListener>& pListener) = 0;
 		virtual SimResult UpdateSimState(const SimState& state, uint64_t fields) = 0;
-		virtual SimResult GetSimState(SimState& state, uint64_t fields) = 0;
+		virtual SimResult GetSimState(SimState& state, uint64_t fields) const = 0;
 		virtual void Simulate() = 0;
 	};
 

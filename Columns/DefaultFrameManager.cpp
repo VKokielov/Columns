@@ -39,6 +39,13 @@ void geng::DefaultFrameManager::Simulate()
 	{
 		RunSimulation();
 		RunIO();
+		ApplySimChanges();
+
+		if (m_quality == SimQuality::Stopped)
+		{
+			return;
+		}
+
 		++m_frameCount;
 		m_msSimulatedTime += m_msPerFrame;
 
@@ -58,7 +65,16 @@ void geng::DefaultFrameManager::Simulate()
 		m_lastFrameTime = curFrameTime;
 		while (m_msSimulatedTime < m_msActualTime)
 		{
+			m_quality = SimQuality::CatchingUp;
+
 			RunSimulation();
+			ApplySimChanges();
+
+			if (m_quality == SimQuality::Stopped)
+			{
+				return;
+			}
+
 			++m_frameCount;
 			m_msSimulatedTime += m_msPerFrame;
 
@@ -69,6 +85,7 @@ void geng::DefaultFrameManager::Simulate()
 			m_msActualTime += msForFrame.count();
 			m_lastFrameTime = curFrameTime;
 		}
+		m_quality = SimQuality::Running;
 		
 		// What happens next depends on the relation between actual and simulated time
 		if (m_msActualTime < m_msSimulatedTime)
@@ -84,6 +101,66 @@ void geng::DefaultFrameManager::Simulate()
 			m_msActualTime = m_msSimulatedTime;
 		}
 	}
+}
 
+void geng::DefaultFrameManager::Subscribe(const std::shared_ptr<IFrameListener>& pListener, bool isSim)
+{
+	std::vector<std::shared_ptr<IFrameListener> > listenerVector = isSim ? m_simulator : m_io;
+
+	if (std::find(listenerVector.begin(), listenerVector.end(), pListener) == listenerVector.end())
+	{
+		listenerVector.emplace_back(pListener);
+	}
+}
+void geng::DefaultFrameManager::Unsubscribe(const std::shared_ptr<IFrameListener>& pListener)
+{
+	auto itIO = std::find(m_io.begin(), m_io.end(), pListener);
+	if (itIO != m_io.end())
+	{
+		m_io.erase(itIO);
+	}
+
+	auto itSim = std::find(m_simulator.begin(), m_simulator.end(), pListener);
+	if (itSim != m_simulator.end())
+	{
+		m_simulator.erase(itSim);
+	}
+}
+geng::SimResult geng::DefaultFrameManager::UpdateSimState(const geng::SimState& state, uint64_t fields)
+{
+	bool setField{ false };
+	if (fields & FID_QUALITY)
+	{
+		setField = true;
+		m_nextFields |= FID_QUALITY;
+		m_nextState.quality = state.quality;
+	}
+	if (fields & FID_TPF)
+	{
+		setField = true;
+		m_nextFields |= FID_TPF;
+		m_nextState.timePerFrame = state.timePerFrame;
+	}
+
+	return setField ? SimResult::OK : SimResult::InvalidFields;
+}
+
+void geng::DefaultFrameManager::ApplySimChanges()
+{
+	if (m_nextFields & FID_QUALITY)
+	{
+		m_quality = m_nextState.quality;
+	}
+
+	if (m_nextFields & FID_TPF)
+	{
+		m_msPerFrame = m_nextState.timePerFrame;
+	}
+
+	m_nextFields = 0;
+}
+
+geng::SimResult geng::DefaultFrameManager::GetSimState(SimState& state, uint64_t fields) const
+{
 
 }
