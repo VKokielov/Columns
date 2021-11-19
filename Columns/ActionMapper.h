@@ -7,6 +7,7 @@
 #include <string>
 #include <type_traits>
 #include <iterator>
+#include <unordered_set>
 
 #include "IInput.h"
 #include "IFrameManager.h"
@@ -112,6 +113,7 @@ namespace geng
 				
 				KeyInfo_* pInfo = GetInfoForKey(keyCode, true);
 				actMapping.keyLocs.emplace_back(pInfo);
+				m_usedKeys.emplace(keyCode);
 				++bCodes;
 			}
 
@@ -159,6 +161,7 @@ namespace geng
 		std::unordered_map<unsigned int, KeyInfo_>  m_keyInfoMap;
 		std::vector<KeyState*> m_keyStates;
 
+		std::unordered_set<KeyCode>  m_usedKeys;
 		std::shared_ptr<IInput> m_pInput;
 		MouseState m_mouseState;
 	};

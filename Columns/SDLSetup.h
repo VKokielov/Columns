@@ -1,36 +1,28 @@
 #pragma once
 
-#include <SDL.h>
 #include "BaseGameComponent.h"
+#include <cinttypes>
 
 namespace geng::sdl
 {
-
-	struct SDLWindowDeleter
+	struct SetupArgs
 	{
-	public:
-		void operator()(SDL_Window* pWindow)
-		{
-			SDL_DestroyWindow(pWindow);
-		}
+		uint32_t initFlags{0};
 	};
-
 
 	class SetUp : public BaseGameComponent
 	{
 	public:
-		SetUp(unsigned int xdim, unsigned int ydim)
-			:BaseGameComponent("SDLSetUp", GameComponentType::SetUp)
-			,m_xDim(xdim), m_yDim(ydim)
+		SetUp(const SetupArgs& args)
+			:BaseGameComponent("SDLSetUp", GameComponentType::SetUp),
+			m_args(args)
 		{ }
 
-
+		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+		void WindDown(const std::shared_ptr<IGame>& pGame) override;
 
 	private:
-		unsigned int m_xDim;
-		unsigned int m_yDim;
-
-		std::shared_ptr<SDL_Window>   m_pMainWindow;
+		SetupArgs m_args;
 	};
 
 

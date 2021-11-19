@@ -21,20 +21,31 @@
 #include "SDLSetup.h"
 #include "DefaultGame.h"
 
+#include "ColumnsSDLRenderer.h"
+
 using namespace std;
 
 int main(int, char**)
 {
 	using CSim = geng::columns::ColumnsSim;
 
+	geng::GameArgs gameArgs;
+	gameArgs.timePerFrame = 20;
+
+	geng::DefaultGame game{ gameArgs };
+
 	// SETUP
-	auto pSetup = std::make_shared<geng::sdl::SetUp>(640, 480);
+	geng::sdl::SetupArgs setUpArgs{ SDL_INIT_VIDEO };
+	auto pSetup = std::make_shared<geng::sdl::SetUp>(setUpArgs);
+	game.AddComponent(pSetup);
 
 	// EVENT POLLER
 	auto pEventPoller = std::make_shared<geng::sdl::EventPoller>();
+	game.AddComponent(pEventPoller);
 
 	// INPUT
 	auto pInput = std::make_shared<geng::sdl::Input>();
+	game.AddComponent(pInput);
 
 	// ACTION MAPPER
 	auto pActionMapper = std::make_shared<geng::ActionMapper>("SDLInput");
@@ -54,6 +65,8 @@ int main(int, char**)
 	auto permuteAction = pActionMapper->CreateAction(CSim::GetPermuteActionName());
 	pActionMapper->MapAction(permuteAction, SDLK_r);
 
+	game.AddComponent(pActionMapper);
+
 	// SIMULATION
 	geng::columns::ColumnsSimArgs simArgs;
 	simArgs.actionThrottlePeriod = 100;
@@ -65,14 +78,14 @@ int main(int, char**)
 	simArgs.pInputName = "SDLInput";
 
 	auto pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);
+	game.AddComponent(pSim);
 	
 	// RENDERER
-
-	// Game!
-	geng::GameArgs gameArgs;
-	gameArgs.timePerFrame = 20;
-
-	geng::DefaultGame game{ gameArgs };
+	geng::columns::ColumnsRenderArgs renderArgs;
+	renderArgs.windowX = 640;
+	renderArgs.windowX = 480;
+	auto pRenderer = std::make_shared<geng::columns::ColumnsSDLRenderer>(renderArgs);
+	game.AddComponent(pRenderer);
 
 	// Run!
 	if (!game.Run())

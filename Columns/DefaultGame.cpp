@@ -13,8 +13,10 @@ geng::DefaultGame::DefaultGame(const GameArgs& args)
 	m_frameManager.UpdateSimState(simState, FID_QUALITY | FID_TPF);
 }
 
-bool geng::DefaultGame::AddComponent(const char* pName, const std::shared_ptr<IGameComponent>& pComponent)
+bool geng::DefaultGame::AddComponent(const std::shared_ptr<IGameComponent>& pComponent)
 {
+	const char* pName = pComponent->GetName();
+
 	// Try to add
 	std::string sname{ pName };
 	if (m_componentMap.count(sname) != 0)

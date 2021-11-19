@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClCompile Include="BaseGameComponent.cpp" />
     <ClCompile Include="Columns.cpp" />
+    <ClCompile Include="ColumnsSDLRenderer.cpp" />
     <ClCompile Include="ColumnsSim.cpp" />
     <ClCompile Include="DefaultFrameManager.cpp" />
     <ClCompile Include="ActionMapper.cpp" />
@@ -176,9 +177,11 @@
     <ClCompile Include="PuzzleSol.cpp" />
     <ClCompile Include="SDLEventPoller.cpp" />
     <ClCompile Include="SDLInput.cpp" />
+    <ClCompile Include="SDLSetup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseGameComponent.h" />
+    <ClInclude Include="ColumnsSDLRenderer.h" />
     <ClInclude Include="ColumnsSim.h" />
     <ClInclude Include="DefaultFrameManager.h" />
     <ClInclude Include="DefaultGame.h" />
@@ -187,6 +190,7 @@
     <ClInclude Include="IInput.h" />
     <ClInclude Include="ActionMapper.h" />
     <ClInclude Include="SDLEventPoller.h" />
+    <ClInclude Include="SDLHelpers.h" />
     <ClInclude Include="SDLInput.h" />
     <ClInclude Include="SDLSetup.h" />
     <ClInclude Include="SimStateDispatcher.h" />

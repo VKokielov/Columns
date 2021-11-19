@@ -20,6 +20,13 @@ bool geng::ActionMapper::Initialize(const std::shared_ptr<IGame>& pGame)
 		return false;
 	}
 
+	// Add all my keys to the input
+	// TODO:  This also has to happen dynamically if new mappings are added
+	for (KeyCode kcUsed : m_usedKeys)
+	{
+		m_pInput->AddCode(kcUsed);
+	}
+
 	return true;
 }
 

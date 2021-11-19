@@ -124,7 +124,8 @@ namespace geng::columns
 		const char* pInputName;
 	};
 
-	class ColumnsSim : public IFrameListener, BaseGameComponent
+	class ColumnsSim : public IFrameListener, 
+						public BaseGameComponent
 	{
 	private:
 		struct InitialState { };
@@ -242,8 +243,9 @@ namespace geng::columns
 
 	public:
 		ColumnsSim(const ColumnsSimArgs& args);
-		void OnFrame(IFrameManager* pManager) override;
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+
+		void OnFrame(IFrameManager* pManager) override;
 
 		static const char* GetDropActionName();
 		static const char* GetShiftLeftActionName();
@@ -251,6 +253,26 @@ namespace geng::columns
 		static const char* GetRotateActionName();
 		static const char* GetPermuteActionName();
 
+		unsigned int PointToIndex(const Point& at) const;
+		Point IndexToPoint(unsigned int idx) const;
+
+		Point GetBoardSize() const { return m_size; }
+		unsigned int GetColumnSize() const { return m_columnSize; }
+
+		template<typename F>
+		void IterateGrid(F&& callback, unsigned int firstIndex = 0)
+		{
+			for (unsigned long idx = firstIndex; idx < m_gameGridSize; ++idx)
+			{
+				Point curPt = IndexToPoint(idx);
+				callback(curPt, m_gameGrid[idx]);
+			}
+		}
+
+		const std::vector<GridContents>& GetNextColors() const 
+		{
+			return m_nextColors; 
+		}
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
 		// an axis (horizontal, vertical, downslope, upslop)
@@ -330,8 +352,6 @@ namespace geng::columns
 		}
 
 		// _Grid operations_ 
-		unsigned int PointToIndex(const Point& at) const;
-		Point IndexToPoint(unsigned int idx) const;
 
 		GridContents GetContents(const Point& at, bool* isValid = nullptr) const;
 		bool SetContents(const Point& at, GridContents contents);
@@ -389,7 +409,6 @@ namespace geng::columns
 		// Actions
 		std::shared_ptr<ActionMapper>  m_actionMapper;
 		std::shared_ptr<SimActionWrappers>  m_actionWrappers;
-
 
 		// __Parameters__
 		Point m_size;

@@ -21,7 +21,7 @@ namespace geng
 	public:
 		DefaultGame(const GameArgs& args);
 
-		bool AddComponent(const char* pName, const std::shared_ptr<IGameComponent>& pComponent);
+		bool AddComponent(const std::shared_ptr<IGameComponent>& pComponent);
 
 		const std::shared_ptr<IGameComponent>& GetComponent(const char* pName) override;
 
