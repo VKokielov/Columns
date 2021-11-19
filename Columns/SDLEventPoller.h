@@ -26,25 +26,9 @@ namespace geng::sdl
 				return;
 			}
 
-			size_t idx = m_events.size() - 1;
-			bool hasElements{ true };
-			while (hasElements)
+			for (const SDL_Event& evt : m_events)
 			{
-				if (callback(const_cast<const SDL_Event&>(m_events[idx])))
-				{
-					m_events.erase(m_events.begin() + idx);
-				}
-				else
-				{
-					if (idx == 0)
-					{
-						hasElements = false;
-					}
-					else
-					{
-						--idx;
-					}
-				}
+				callback(evt);
 			}
 		}
 

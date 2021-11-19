@@ -26,6 +26,13 @@ void geng::sdl::EventPoller::OnFrame(IFrameManager* pManager)
 			break;
 		}
 
+		/*
+		if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP)
+		{
+			fprintf(stderr, "Event %d for key %d\n", evt.type, (int)evt.key.keysym.sym);
+		}
+		*/
+
 		m_events.emplace_back(evt);
 	}
 }

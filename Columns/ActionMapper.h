@@ -32,11 +32,11 @@ namespace geng
 
 	enum class ActionState
 	{
-		Initial,
-		Off,
-		Starting,
-		On,
-		Ending
+		Initial,  // 0
+		Off,  // 1
+		Starting, // 2
+		On, // 3
+		Ending  // 4
 	};
 
 	class ActionMapper : public BaseGameComponent,
@@ -194,8 +194,10 @@ namespace geng
 		}
 		ActionState GetMyActionState(const ActionMapper& rMapper)
 		{
-			rMapper.GetActionState(m_id);
+			return rMapper.GetActionState(m_id);
 		}
+
+		ActionID GetID() const { return m_id; }
 
 	private:
 		ActionID m_id{ INVALID_ACTION };
@@ -219,11 +221,16 @@ namespace geng
 			if (state == ActionState::Starting
 			  || ((state == ActionState::On) && (m_throttleStart + m_throttlePeriod <= simTime)))
 			{
+				fprintf(stderr, "setting action %d to true with state %d\n", GetID(), state);
 				m_throttleStart = simTime;
 				SetTriggered(true);
 			}
 			else
 			{
+				if (Triggered())
+				{
+					fprintf(stderr, "setting action %d to false\n", GetID());
+				}
 				SetTriggered(false);
 			}
 		}

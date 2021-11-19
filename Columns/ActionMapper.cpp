@@ -126,8 +126,6 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 {
 	// Get the states of all the keys in the state vector, then go through the entire action vector
 	// and update the state of each action
-
-	
 	if (!m_pInput->QueryInput(&m_mouseState, m_keyStates.data(), m_keyStates.size()))
 	{
 		return;
@@ -158,10 +156,12 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 		{
 			if (action.state == ActionState::On || action.state == ActionState::Starting)
 			{
+				fprintf(stderr, "action %s on\n", action.actionName.c_str());
 				action.state = ActionState::On;
 			}
 			else
 			{
+				fprintf(stderr, "action %s starting\n", action.actionName.c_str());
 				action.state = ActionState::Starting;
 			}
 		}
@@ -169,6 +169,7 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 		{
 			if (action.state == ActionState::On || action.state == ActionState::Starting)
 			{
+				fprintf(stderr, "action %s ending\n", action.actionName.c_str());
 				action.state = ActionState::Ending;
 			}
 			else

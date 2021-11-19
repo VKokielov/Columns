@@ -35,7 +35,7 @@ bool geng::sdl::Input::Initialize(const std::shared_ptr<IGame>& pGame)
 
 void geng::sdl::Input::AddCode(KeyCode code)
 {
-	if (m_state.count(code) > 0)
+	if (m_state.count(code) == 0)
 	{
 		m_state.emplace(code, KeySignal::KeyUp);
 	}
@@ -74,10 +74,12 @@ void geng::sdl::Input::OnFrame(IFrameManager* pManager)
 		if (itKey->second == KeySignal::KeyPressed)
 		{
 			itKey->second = KeySignal::KeyDown;
+			fprintf(stderr, "re-updating %d to %d\n", itKey->first, itKey->second);
 		}
 		else if (itKey->second == KeySignal::KeyReleased)
 		{
 			itKey->second = KeySignal::KeyUp;
+			fprintf(stderr, "re-updating %d to %d\n", itKey->first, itKey->second);
 		}
 	}
 	m_updatedKeys.clear();
@@ -89,6 +91,7 @@ void geng::sdl::Input::OnFrame(IFrameManager* pManager)
 			return false;
 		}
 
+		fprintf(stderr, "Key event received\n");
 		KeyCode kcod = rEvent.key.keysym.sym;
 
 		auto itKey = m_state.find(kcod);
@@ -98,9 +101,13 @@ void geng::sdl::Input::OnFrame(IFrameManager* pManager)
 			return false;
 		}
 
+		fprintf(stderr, "Key event found\n");
+
 		// Set the key state
 		itKey->second = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyPressed
 			: KeySignal::KeyReleased;
+
+		fprintf(stderr, "Updating %d to %d\n", itKey->first, itKey->second);
 
 		m_updatedKeys.emplace(kcod);
 		return true;

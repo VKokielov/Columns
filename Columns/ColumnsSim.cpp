@@ -313,7 +313,7 @@ void geng::columns::ColumnsSim::GenerateNextColors()
 
 	for (size_t i = 0; i < m_columnSize; ++i)
 	{
-		GridContents nextColor = m_pInput->GetRandomNumber(1, GRID_LIMIT);
+		GridContents nextColor = m_pInput->GetRandomNumber(1, GRID_LIMIT-1);
 		m_nextColors.emplace_back(nextColor);
 	}
 }
@@ -601,6 +601,15 @@ geng::columns::ColumnsSim::SimActionWrappers::SimActionWrappers(unsigned int thr
 {
 }
 
+void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionMapper& mapper, unsigned long simTime)
+{
+	dropAction.UpdateState(mapper, simTime);
+	shiftLeftAction.UpdateState(mapper, simTime);
+	shiftRightAction.UpdateState(mapper, simTime);
+	rotateAction.UpdateState(mapper, simTime);
+	permuteAction.UpdateState(mapper, simTime);
+}
+
 geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	:BaseGameComponent("ColumnsSim", GameComponentType::Simulation),
 	m_gameState(*this),
@@ -666,6 +675,9 @@ void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
 		m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
 		m_firstFrame = false;
 	}
+
+	// This will update the actions with the state of the keyboard
+	m_actionWrappers->UpdateState(*m_actionMapper, state.simulatedTime);
 
 	m_gameState.StartFrame();
 

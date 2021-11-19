@@ -75,7 +75,8 @@ int main(int, char**)
 	simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
 	simArgs.columnSize = 3;
 	// NOTE:  This speed may change!
-	simArgs.dropMilliseconds = 400;
+	simArgs.dropMilliseconds = 600;
+	//simArgs.dropMilliseconds = 400;
 	simArgs.pInputName = "SDLInput";
 
 	auto pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);

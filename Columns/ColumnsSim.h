@@ -159,6 +159,7 @@ namespace geng::columns
 
 			SimActionWrappers(unsigned int throttlePeriod, ActionMapper& mapper);
 
+			void UpdateState(ActionMapper& mapper, unsigned long simTime);
 		};
 
 		// Drop->(lock)->Compact->Clear->?Compact,Drop

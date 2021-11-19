@@ -10,10 +10,10 @@ namespace geng
 
 	enum class KeySignal
 	{
-		KeyUp,
-		KeyPressed,
-		KeyDown,
-		KeyReleased
+		KeyUp,   // 0
+		KeyPressed, // 1
+		KeyDown, // 2
+		KeyReleased // 3
 	};
 	// Keyboard and mouse button input
 	struct KeyState
