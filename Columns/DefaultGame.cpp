@@ -13,6 +13,11 @@ geng::DefaultGame::DefaultGame(const GameArgs& args)
 	m_frameManager.UpdateSimState(simState, FID_QUALITY | FID_TPF);
 }
 
+std::shared_ptr<geng::DefaultGame> geng::DefaultGame::CreateGame(const GameArgs& args)
+{
+	return std::shared_ptr<geng::DefaultGame>(new DefaultGame(args));
+}
+
 bool geng::DefaultGame::AddComponent(const std::shared_ptr<IGameComponent>& pComponent)
 {
 	const char* pName = pComponent->GetName();

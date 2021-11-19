@@ -19,7 +19,7 @@ namespace geng
 		public std::enable_shared_from_this<DefaultGame>
 	{
 	public:
-		DefaultGame(const GameArgs& args);
+		static std::shared_ptr<DefaultGame> CreateGame(const GameArgs& args);
 
 		bool AddComponent(const std::shared_ptr<IGameComponent>& pComponent);
 
@@ -29,6 +29,8 @@ namespace geng
 
 		void LogError(const char* pError) override;
 	private:
+		DefaultGame(const GameArgs& args);
+
 		std::unordered_map<std::string, size_t>
 			m_componentMap;
 

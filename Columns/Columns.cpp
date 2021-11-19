@@ -32,20 +32,20 @@ int main(int, char**)
 	geng::GameArgs gameArgs;
 	gameArgs.timePerFrame = 20;
 
-	geng::DefaultGame game{ gameArgs };
+	auto pGame = geng::DefaultGame::CreateGame(gameArgs);
 
 	// SETUP
 	geng::sdl::SetupArgs setUpArgs{ SDL_INIT_VIDEO };
 	auto pSetup = std::make_shared<geng::sdl::SetUp>(setUpArgs);
-	game.AddComponent(pSetup);
+	pGame->AddComponent(pSetup);
 
 	// EVENT POLLER
 	auto pEventPoller = std::make_shared<geng::sdl::EventPoller>();
-	game.AddComponent(pEventPoller);
+	pGame->AddComponent(pEventPoller);
 
 	// INPUT
 	auto pInput = std::make_shared<geng::sdl::Input>();
-	game.AddComponent(pInput);
+	pGame->AddComponent(pInput);
 
 	// ACTION MAPPER
 	auto pActionMapper = std::make_shared<geng::ActionMapper>("SDLInput");
@@ -65,7 +65,7 @@ int main(int, char**)
 	auto permuteAction = pActionMapper->CreateAction(CSim::GetPermuteActionName());
 	pActionMapper->MapAction(permuteAction, SDLK_r);
 
-	game.AddComponent(pActionMapper);
+	pGame->AddComponent(pActionMapper);
 
 	// SIMULATION
 	geng::columns::ColumnsSimArgs simArgs;
@@ -78,17 +78,17 @@ int main(int, char**)
 	simArgs.pInputName = "SDLInput";
 
 	auto pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);
-	game.AddComponent(pSim);
+	pGame->AddComponent(pSim);
 	
 	// RENDERER
 	geng::columns::ColumnsRenderArgs renderArgs;
 	renderArgs.windowX = 640;
 	renderArgs.windowX = 480;
 	auto pRenderer = std::make_shared<geng::columns::ColumnsSDLRenderer>(renderArgs);
-	game.AddComponent(pRenderer);
+	pGame->AddComponent(pRenderer);
 
 	// Run!
-	if (!game.Run())
+	if (!pGame->Run())
 	{
 		std::cerr << "Exited abnormally\n";
 		return -1;
