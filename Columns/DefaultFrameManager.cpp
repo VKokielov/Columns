@@ -2,6 +2,13 @@
 
 #include <thread>
 
+geng::DefaultFrameManager::DefaultFrameManager(const FrameMgrArgs& args)
+	:m_msBreather(args.msBreather),
+	m_msPerFrame(args.msTimePerFrame)
+{
+
+}
+
 void geng::DefaultFrameManager::RunIO()
 {
 	for (size_t i = 0; i < m_io.size(); ++i)
@@ -37,6 +44,12 @@ void geng::DefaultFrameManager::Simulate()
 	std::chrono::time_point<std::chrono::steady_clock> curFrameTime;
 	while (isActive)
 	{
+		// Debug
+		if ((m_frameCount % 100) == 0)
+		{
+			fprintf(stderr, "Frames: %lu\n", m_frameCount);
+		}
+
 		RunSimulation();
 		RunIO();
 		ApplySimChanges();
@@ -113,7 +126,7 @@ void geng::DefaultFrameManager::Simulate()
 
 void geng::DefaultFrameManager::Subscribe(const std::shared_ptr<IFrameListener>& pListener, bool isSim)
 {
-	std::vector<std::shared_ptr<IFrameListener> > listenerVector = isSim ? m_simulator : m_io;
+	std::vector<std::shared_ptr<IFrameListener> >& listenerVector = isSim ? m_simulator : m_io;
 
 	if (std::find(listenerVector.begin(), listenerVector.end(), pListener) == listenerVector.end())
 	{

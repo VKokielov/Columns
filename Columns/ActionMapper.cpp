@@ -9,6 +9,12 @@ geng::ActionMapper::ActionMapper(const char* pInputName)
 
 }
 
+// This is used to avoid RTTI casts
+geng::IFrameListener* geng::ActionMapper::GetFrameListener()
+{
+	return this;
+}
+
 bool geng::ActionMapper::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	GetComponentResult getResult;

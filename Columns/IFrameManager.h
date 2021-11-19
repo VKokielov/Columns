@@ -18,12 +18,14 @@ namespace geng
 	class IFrameListener
 	{
 	public:
+		virtual ~IFrameListener() = default;
 		virtual void OnFrame(IFrameManager* pManager) = 0;
 	};
 
 	class IFrameAction
 	{
 	public:
+		virtual ~IFrameAction() = default;
 		virtual void Act(IFrameManager* pManager) = 0;
 		virtual void Release() = 0;
 	};
@@ -66,6 +68,8 @@ namespace geng
 	class IFrameManager
 	{
 	public:
+		virtual ~IFrameManager() = default;
+
 		virtual void Subscribe(const std::shared_ptr<IFrameListener>& pListener, bool isSim) = 0;
 		virtual void Unsubscribe(const std::shared_ptr<IFrameListener>& pListener) = 0;
 		virtual SimResult UpdateSimState(const SimState& state, uint64_t fields) = 0;

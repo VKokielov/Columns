@@ -603,6 +603,11 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	GenerateNewPlayerColumn();	
 }
 
+geng::IFrameListener* geng::columns::ColumnsSim::GetFrameListener()
+{
+	return this;
+}
+
 bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	GetComponentResult getResult;

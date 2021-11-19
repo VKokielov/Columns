@@ -30,7 +30,8 @@ int main(int, char**)
 	using CSim = geng::columns::ColumnsSim;
 
 	geng::GameArgs gameArgs;
-	gameArgs.timePerFrame = 20;
+	gameArgs.frameArgs.msBreather = 1;
+	gameArgs.frameArgs.msTimePerFrame = 20;
 
 	auto pGame = geng::DefaultGame::CreateGame(gameArgs);
 
@@ -83,7 +84,8 @@ int main(int, char**)
 	// RENDERER
 	geng::columns::ColumnsRenderArgs renderArgs;
 	renderArgs.windowX = 640;
-	renderArgs.windowX = 480;
+	renderArgs.windowY = 480;
+	renderArgs.renderShadow = 4;
 	auto pRenderer = std::make_shared<geng::columns::ColumnsSDLRenderer>(renderArgs);
 	pGame->AddComponent(pRenderer);
 

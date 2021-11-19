@@ -7,10 +7,18 @@
 
 namespace geng
 {
+	struct FrameMgrArgs
+	{
+		unsigned long msBreather;
+		unsigned long msTimePerFrame;
+		unsigned long maxMsPerFrame; // For monitoring
+	};
 
 	class DefaultFrameManager : public IFrameManager
 	{
 	public:
+		DefaultFrameManager(const FrameMgrArgs& args);
+
 		void Simulate() override;
 
 		void Subscribe(const std::shared_ptr<IFrameListener>& pListener, bool isSim) override;

@@ -15,6 +15,12 @@ geng::columns::ColumnsSDLRenderer::ColumnsSDLRenderer(const ColumnsRenderArgs& a
 	m_colorMap.emplace(BLUE, sdl::RGBA(0, 44, 189, SDL_ALPHA_OPAQUE));
 }
 
+// This is used to avoid RTTI casts
+geng::IFrameListener* geng::columns::ColumnsSDLRenderer::GetFrameListener()
+{
+	return this;
+}
+
 bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	GetComponentResult getResult;

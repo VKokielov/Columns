@@ -201,7 +201,10 @@ namespace geng::columns
 
 			template<typename T>
 			void OnState(T& state, const StateArgs&)
-			{ }
+			{ 
+				// By default just skip the frame
+				SetFrameComplete(true);
+			}
 
 			template<typename T>
 			void OnExitState(T& state, const StateArgs&) { }
@@ -246,6 +249,8 @@ namespace geng::columns
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
 		void OnFrame(IFrameManager* pManager) override;
+
+		IFrameListener* GetFrameListener() override;
 
 		static const char* GetDropActionName();
 		static const char* GetShiftLeftActionName();

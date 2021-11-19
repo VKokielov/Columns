@@ -3,10 +3,15 @@
 #include <ctime>
 
 geng::sdl::Input::Input()
-	:BaseGameComponent("SDLInput", GameComponentType::Simulation)
+	:TemplatedGameComponent<IInput>("SDLInput", GameComponentType::Simulation)
 {
 	std::random_device device;
 	m_generator.seed(device());
+}
+
+geng::IFrameListener* geng::sdl::Input::GetFrameListener()
+{
+	return this;
 }
 
 bool geng::sdl::Input::Initialize(const std::shared_ptr<IGame>& pGame)

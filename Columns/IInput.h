@@ -1,5 +1,7 @@
 #pragma once
 
+
+#include "IGame.h"
 #include <cinttypes>
 
 namespace geng
@@ -26,9 +28,10 @@ namespace geng
 		unsigned int y;
 	};
 
-	class IInput
+	class IInput : public IGameComponent
 	{
 	public:
+		virtual ~IInput() = default;
 
 		virtual void AddCode(KeyCode code) = 0;
 

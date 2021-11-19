@@ -12,7 +12,7 @@ namespace geng
 {
 	struct GameArgs
 	{
-		unsigned int timePerFrame;
+		FrameMgrArgs frameArgs;
 	};
 
 	class DefaultGame : public IGame, 

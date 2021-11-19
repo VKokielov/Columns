@@ -12,11 +12,12 @@
 namespace geng::sdl
 {
 
-	class Input : public BaseGameComponent,
-		public IInput,
+	class Input : public TemplatedGameComponent<IInput>,
 		public IFrameListener
 	{
 	public:
+		IFrameListener* GetFrameListener() override;
+
 		Input();
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 

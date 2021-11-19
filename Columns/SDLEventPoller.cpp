@@ -6,6 +6,11 @@ geng::sdl::EventPoller::EventPoller()
 
 }
 
+geng::IFrameListener* geng::sdl::EventPoller::GetFrameListener()
+{
+	return this;
+}
+
 void geng::sdl::EventPoller::OnFrame(IFrameManager* pManager)
 {
 	m_events.clear();

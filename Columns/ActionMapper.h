@@ -71,6 +71,8 @@ namespace geng
 	public:
 		ActionMapper(const char* pInputName);
 
+		IFrameListener* GetFrameListener() override;
+
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 		void OnFrame(IFrameManager* pManager) override;
 

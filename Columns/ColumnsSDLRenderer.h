@@ -23,6 +23,7 @@ namespace geng::columns
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 		void OnFrame(IFrameManager* pManager) override;
 
+		IFrameListener* GetFrameListener() override;
 	private:
 		void RenderSquareAt(int x, int y,
 			geng::sdl::RGBA color);

@@ -4,13 +4,13 @@
 
 
 geng::DefaultGame::DefaultGame(const GameArgs& args)
-	:m_gameArgs(args)
+	:m_gameArgs(args),
+	m_frameManager(args.frameArgs)
 {
 	SimState simState;
-	simState.timePerFrame = args.timePerFrame;
 	simState.quality = SimQuality::Running;
 
-	m_frameManager.UpdateSimState(simState, FID_QUALITY | FID_TPF);
+	m_frameManager.UpdateSimState(simState, FID_QUALITY);
 }
 
 std::shared_ptr<geng::DefaultGame> geng::DefaultGame::CreateGame(const GameArgs& args)
@@ -37,7 +37,7 @@ bool geng::DefaultGame::AddComponent(const std::shared_ptr<IGameComponent>& pCom
 		|| componentType == GameComponentType::Simulation)
 	{
 		// This should succeed if the class implements IFrameListener!
-		std::shared_ptr<IFrameListener> pFL = std::dynamic_pointer_cast<IFrameListener>(pComponent);
+		std::shared_ptr<IFrameListener> pFL = std::shared_ptr<IFrameListener>(pComponent, pComponent->GetFrameListener());
 		if (!pFL)
 		{
 			return false;

@@ -36,9 +36,6 @@
     <ClCompile Include="DefaultGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BaseGameComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SDLInput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

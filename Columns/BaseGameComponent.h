@@ -3,20 +3,43 @@
 #include "IGame.h"
 
 #include <string>
+#include <type_traits>
 
 namespace geng
 {
-
-	class BaseGameComponent : public IGameComponent
+	
+	template<typename Interface>
+	class TemplatedGameComponent : public Interface
 	{
 	public:
-		const char* GetName() const override;
-		GameComponentType GetType() const override;
+		static_assert(std::is_base_of_v<IGameComponent, Interface>, "TemplatedGameComponent Interface: must derive from IGameComponent");
 
-		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
-		void WindDown(const std::shared_ptr<IGame>& pGame) override;
+		const char* GetName() const override
+		{
+			return m_name.c_str();
+		}
+
+		GameComponentType GetType() const override
+		{
+			return m_type;
+		}
+
+		bool Initialize(const std::shared_ptr<IGame>& pGame) override
+		{
+			return true;
+		}
+		
+		void WindDown(const std::shared_ptr<IGame>& pGame) override
+		{ }
+
+		// By default return nullptr
+		IFrameListener* GetFrameListener() override
+		{
+			return nullptr;
+		}
+
 	protected:
-		BaseGameComponent(const char* pName, GameComponentType type)
+		TemplatedGameComponent(const char* pName, GameComponentType type)
 			:m_name(pName),
 			m_type(type)
 		{ }
@@ -24,6 +47,8 @@ namespace geng
 		std::string m_name;
 		GameComponentType m_type;
 	};
+
+	using BaseGameComponent = TemplatedGameComponent<IGameComponent>;
 
 	enum class GetComponentResult
 	{
@@ -46,7 +71,7 @@ namespace geng
 			return pTypedComponent;
 		}
 
-		pTypedComponent = std::dynamic_pointer_cast<T>(pComponent);
+		pTypedComponent = std::static_pointer_cast<T>(pComponent);
 		if (!pTypedComponent)
 		{
 			result = GetComponentResult::ComponentWrongType;

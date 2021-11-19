@@ -15,6 +15,7 @@ namespace geng::sdl
 	public:
 		EventPoller();
 
+		IFrameListener* GetFrameListener() override;
 		void OnFrame(IFrameManager* pManager) override;
 
 		template<typename F>

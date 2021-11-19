@@ -24,7 +24,7 @@ namespace geng
 		void Dispatch(Obj& obj, Args&&...args)
 		{
 			// Generic lambda for a series of states
-			auto visitor = [&](const auto& state)
+			auto visitor = [&](auto& state)
 			{
 				obj.OnState(state, 
 					        std::forward<Args>(args)...);
@@ -42,14 +42,14 @@ namespace geng
 		template<typename TargetState, typename Obj, typename ... Args>
 		void Transition(Obj& obj, Args&...args)
 		{
-			auto exitVisitor = [&](const auto& state)
+			auto exitVisitor = [&](auto& state)
 			{
 				obj.OnExitState(state,std::forward<Args>(args)...);
 			};
 			std::visit(exitVisitor, m_varStates);
 
 			m_varStates.emplace<TargetState>();
-			auto enterVisitor = [&](const auto& state)
+			auto enterVisitor = [&](auto& state)
 			{
 				obj.OnEnterState(state, std::forward<Args>(args)...);
 			};
