@@ -54,7 +54,15 @@ void geng::DefaultFrameManager::Simulate()
 		msForFrame = 
 			std::chrono::duration_cast<std::chrono::milliseconds>(curFrameTime - m_lastFrameTime);
 
-		m_msActualTime += msForFrame.count();
+		// This should be positive
+		m_msActualTime += (unsigned long)msForFrame.count();
+		
+		if (m_msActualTime - m_msLastSecondTime >= 1000)
+		{
+			m_actualFPS = m_frameCount - m_frameCountAtSecondSwitch;
+			m_msLastSecondTime = m_msActualTime;
+			m_frameCountAtSecondSwitch = m_frameCount;
+		}
 
 		// First simulate without IO until m_msSimulatedTime is at least m_msActualTime
 		// NOTE:  m_msActualTime *must* be updated - otherwise we are lying!
@@ -82,7 +90,7 @@ void geng::DefaultFrameManager::Simulate()
 			msForFrame =
 				std::chrono::duration_cast<std::chrono::milliseconds>(curFrameTime - m_lastFrameTime);
 
-			m_msActualTime += msForFrame.count();
+			m_msActualTime += (unsigned long)msForFrame.count();
 			m_lastFrameTime = curFrameTime;
 		}
 		m_quality = SimQuality::Running;
@@ -162,5 +170,41 @@ void geng::DefaultFrameManager::ApplySimChanges()
 
 geng::SimResult geng::DefaultFrameManager::GetSimState(SimState& state, uint64_t fields) const
 {
+	if (fields & FID_ACTTIME)
+	{
+		state.actualTime = m_msActualTime;
+		fields &= ~FID_ACTTIME;
+	}
 
+	if (fields & FID_ACT_FR)
+	{
+		state.actualFramerate = m_actualFPS;
+		fields &= ~FID_ACT_FR;
+	}
+
+	if (fields & FID_FCOUNT)
+	{
+		state.frameCount = m_frameCount;
+		fields &= ~FID_FCOUNT;
+	}
+
+	if (fields & FID_QUALITY)
+	{
+		state.quality = m_quality;
+		fields &= ~FID_QUALITY;
+	}
+
+	if (fields & FID_SIMTIME)
+	{
+		state.simulatedTime = m_msSimulatedTime;
+		fields &= ~FID_SIMTIME;
+	}
+
+	if (fields & FID_TPF)
+	{
+		state.timePerFrame = m_msPerFrame;
+		fields &= ~FID_TPF;
+	}
+
+	return fields == 0 ? SimResult::OK : SimResult::InvalidFields;
 }

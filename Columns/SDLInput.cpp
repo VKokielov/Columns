@@ -30,7 +30,7 @@ bool geng::sdl::Input::Initialize(const std::shared_ptr<IGame>& pGame)
 
 void geng::sdl::Input::AddCode(KeyCode code)
 {
-	if (!m_state.count(code) > 0)
+	if (m_state.count(code) > 0)
 	{
 		m_state.emplace(code, KeySignal::KeyUp);
 	}

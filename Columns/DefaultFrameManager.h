@@ -36,6 +36,10 @@ namespace geng
 
 		// Number of frames
 		unsigned long m_frameCount{ 0 };
+		unsigned long m_frameCountAtSecondSwitch{ 0 };
+		unsigned long m_actualFPS{ 0 };
+		unsigned long m_msLastSecondTime{ 0 };
+
 		unsigned long m_msSimulatedTime{ 0 };
 		// Time per frame
 		unsigned long m_msPerFrame{ 0 };

@@ -9,6 +9,8 @@
 #include <iterator>
 
 #include "IInput.h"
+#include "IFrameManager.h"
+#include "BaseGameComponent.h"
 
 namespace geng
 {
@@ -36,7 +38,8 @@ namespace geng
 		Ending
 	};
 
-	class ActionMapper : public BaseGameComponent
+	class ActionMapper : public BaseGameComponent,
+		                 public IFrameListener
 	{
 	private:
 		struct KeyInfo_
@@ -65,6 +68,11 @@ namespace geng
 		};
 
 	public:
+		ActionMapper(const char* pInputName);
+
+		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+		void OnFrame(IFrameManager* pManager) override;
+
 		// Action management 
 
 		// This function will return an existing action ID if the action already exists
@@ -75,9 +83,9 @@ namespace geng
 		template<typename Iter>
 		bool MapAction(ActionID actionId, Iter bCodes, Iter eCodes)
 		{
-			static_assert(std::is_same_v<decltype(*bCodes), KeyCode>,
+			static_assert(std::is_same_v< std::remove_reference_t<decltype(*bCodes)>, KeyCode>,
 				"bCodes: expecting KeyCode container's iterator");
-			static_assert(std::is_same_v<decltype(*eCodes), KeyCode>,
+			static_assert(std::is_same_v<std::remove_reference_t<decltype(*eCodes)>, KeyCode>,
 				"eCodes: expecting KeyCode container's iterator");
 
 			// Clear the previous mapping of the given action and add the keycodes
@@ -110,9 +118,14 @@ namespace geng
 			return true;
 		}
 
+		bool MapAction(ActionID actionId, KeyCode code)
+		{
+			// Old C trick -- one-element array
+			return MapAction(actionId, &code, (&code) + 1);
+		}
+
 		// Action states
 		// The mouse state paramter is simply passed through
-		bool OnFrame(IInput* pInput, MouseState* pMouseState = nullptr);
 
 		ActionState GetActionState(ActionID actionId) const
 		{
@@ -135,6 +148,8 @@ namespace geng
 		// states vector below
 		void ReleaseKey(KeyCode code);
 
+		std::string m_inputName;
+
 		// DATA
 		std::unordered_map<std::string, size_t> m_actionNameMap;
 		std::vector<ActionMapping_>  m_actions;
@@ -143,6 +158,9 @@ namespace geng
 		// The second array is used to store KeyState pointers for querying the input
 		std::unordered_map<unsigned int, KeyInfo_>  m_keyInfoMap;
 		std::vector<KeyState*> m_keyStates;
+
+		std::shared_ptr<IInput> m_pInput;
+		MouseState m_mouseState;
 	};
 
 	class ActionWrapper

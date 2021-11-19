@@ -10,11 +10,20 @@
 
 namespace geng
 {
+	struct GameArgs
+	{
+		unsigned int timePerFrame;
+	};
 
-	class DefaultGame : public IGame, public std::enable_shared_from_this<DefaultGame>
+	class DefaultGame : public IGame, 
+		public std::enable_shared_from_this<DefaultGame>
 	{
 	public:
+		DefaultGame(const GameArgs& args);
+
 		bool AddComponent(const char* pName, const std::shared_ptr<IGameComponent>& pComponent);
+
+		const std::shared_ptr<IGameComponent>& GetComponent(const char* pName) override;
 
 		bool Run() override;
 
@@ -26,6 +35,8 @@ namespace geng
 		std::vector<std::shared_ptr<IGameComponent> > m_components;
 
 		DefaultFrameManager  m_frameManager;
+
+		GameArgs m_gameArgs;
 	};
 
 }

@@ -37,14 +37,16 @@ namespace geng
 	{
 		result = GetComponentResult::OK;
 
+		std::shared_ptr<T> pTypedComponent{};
+
 		auto pComponent = pGame->GetComponent(pName);
 		if (!pComponent)
 		{
 			result = GetComponentResult::NoComponent;
-			return pComponent;
+			return pTypedComponent;
 		}
 
-		auto pTypedComponent = std::dynamic_pointer_cast<T>(pComponent);
+		pTypedComponent = std::dynamic_pointer_cast<T>(pComponent);
 		if (!pTypedComponent)
 		{
 			result = GetComponentResult::ComponentWrongType;

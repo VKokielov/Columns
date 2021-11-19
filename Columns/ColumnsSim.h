@@ -62,7 +62,7 @@ namespace geng::columns
 
 		unsigned int Width() const
 		{
-			return colors.size();
+			return (unsigned int)colors.size();
 		}
 		// Wing size
 		unsigned int WingSize() const
@@ -148,8 +148,19 @@ namespace geng::columns
 			unsigned long simTime;
 		};
 
+		struct SimActionWrappers
+		{
+			ThrottledActionWrapper dropAction;
+			ThrottledActionWrapper shiftLeftAction;
+			ThrottledActionWrapper shiftRightAction;
+			ThrottledActionWrapper rotateAction;
+			ThrottledActionWrapper permuteAction;
+
+			SimActionWrappers(unsigned int throttlePeriod, ActionMapper& mapper);
+
+		};
+
 		// Drop->(lock)->Compact->Clear->?Compact,Drop
-		
 		class GameState : public SimStateDispatcher<GameState,
 													InitialState,
 													InitialState,
@@ -159,6 +170,8 @@ namespace geng::columns
 													GameOverState>
 		{
 		public:
+
+
 			GameState(ColumnsSim& owner) 
 				:m_owner(owner)
 			{ }
@@ -231,6 +244,12 @@ namespace geng::columns
 		ColumnsSim(const ColumnsSimArgs& args);
 		void OnFrame(IFrameManager* pManager) override;
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+
+		static const char* GetDropActionName();
+		static const char* GetShiftLeftActionName();
+		static const char* GetShiftRightActionName();
+		static const char* GetRotateActionName();
+		static const char* GetPermuteActionName();
 
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
@@ -369,11 +388,8 @@ namespace geng::columns
 
 		// Actions
 		std::shared_ptr<ActionMapper>  m_actionMapper;
-		ThrottledActionWrapper m_dropAction;
-		ThrottledActionWrapper m_shiftLeftAction;
-		ThrottledActionWrapper m_shiftRightAction;
-		ThrottledActionWrapper m_rotateAction;
-		ThrottledActionWrapper m_permuteAction;
+		std::shared_ptr<SimActionWrappers>  m_actionWrappers;
+
 
 		// __Parameters__
 		Point m_size;
@@ -381,6 +397,7 @@ namespace geng::columns
 		unsigned int m_dropMiliseconds;
 		unsigned int m_flashMiliseconds;
 		unsigned int m_flashCount;
+		unsigned int m_thorttlePeriod;
 		std::string m_inputName;
 
 		std::shared_ptr<IInput>  m_pInput;

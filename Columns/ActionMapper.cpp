@@ -2,6 +2,27 @@
 
 #include <algorithm>
 
+geng::ActionMapper::ActionMapper(const char* pInputName)
+	:BaseGameComponent("ActionMapper", GameComponentType::IO),
+	m_inputName(pInputName)
+{
+
+}
+
+bool geng::ActionMapper::Initialize(const std::shared_ptr<IGame>& pGame)
+{
+	GetComponentResult getResult;
+	m_pInput = GetComponentAs<IInput>(pGame.get(), m_inputName.c_str(), getResult);
+
+	if (!m_pInput)
+	{
+		pGame->LogError("ActionMapper: could not get input component");
+		return false;
+	}
+
+	return true;
+}
+
 geng::ActionMapper::KeyInfo_* 
 	geng::ActionMapper::GetInfoForKey(geng::KeyCode keyCode, bool incRef)
 {
@@ -61,13 +82,13 @@ geng::ActionID geng::ActionMapper::CreateAction(const char* pName)
 	ActionID id{ 0 };
 	if (itAction == m_actionNameMap.end())
 	{
-		id = m_actions.size();
+		id = (ActionID)m_actions.size();
 		m_actions.emplace_back(id,actionName);
 		m_actionNameMap.emplace(actionName, id);
 	}
 	else
 	{
-		id = itAction->second;
+		id = (ActionID)itAction->second;
 	}
 
 	return id;
@@ -82,20 +103,21 @@ geng::ActionID geng::ActionMapper::GetAction(const char* pName) const
 	ActionID id{ 0 };
 	if (itAction != m_actionNameMap.end())
 	{
-		return itAction->second;
+		return (ActionID)itAction->second;
 	}
 
 	return INVALID_ACTION;
 }
 
-bool geng::ActionMapper::OnFrame(geng::IInput* pInput, MouseState* pMouseState)
+void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 {
 	// Get the states of all the keys in the state vector, then go through the entire action vector
 	// and update the state of each action
 
-	if (!pInput->QueryInput(pMouseState, m_keyStates.data(), m_keyStates.size()))
+	
+	if (!m_pInput->QueryInput(&m_mouseState, m_keyStates.data(), m_keyStates.size()))
 	{
-		return false;
+		return;
 	}
 	
 	/*
@@ -142,6 +164,4 @@ bool geng::ActionMapper::OnFrame(geng::IInput* pInput, MouseState* pMouseState)
 			}
 		}
 	}
-
-	return true;
 }

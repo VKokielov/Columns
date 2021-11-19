@@ -556,14 +556,40 @@ bool geng::columns::ColumnsSim::CompactColumns()
 	return compactedCol;
 }
 
+const char* geng::columns::ColumnsSim::GetDropActionName()
+{
+	return "DropColumnAction";
+}
+const char* geng::columns::ColumnsSim::GetShiftLeftActionName()
+{
+	return "ShiftColumnLeftAction";
+}
+const char* geng::columns::ColumnsSim::GetShiftRightActionName()
+{
+	return "ShiftColumnRightAction";
+}
+const char* geng::columns::ColumnsSim::GetRotateActionName()
+{
+	return "RotateColumnAction";
+}
+const char* geng::columns::ColumnsSim::GetPermuteActionName()
+{
+	return "PermuteColumnAction";
+}
+
+geng::columns::ColumnsSim::SimActionWrappers::SimActionWrappers(unsigned int throttlePeriod, 
+							ActionMapper& mapper)
+	:dropAction(GetDropActionName(), throttlePeriod, mapper)
+	,shiftLeftAction(GetShiftLeftActionName(), throttlePeriod, mapper)
+	,shiftRightAction(GetShiftRightActionName(), throttlePeriod, mapper)
+	,rotateAction(GetRotateActionName(), throttlePeriod, mapper)
+	,permuteAction(GetPermuteActionName(), throttlePeriod, mapper)
+{
+}
+
 geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	:BaseGameComponent("ColumnsSim", GameComponentType::Simulation),
 	m_gameState(*this),
-	m_dropAction("DropColumnAction", args.actionThrottlePeriod, *m_actionMapper),
-	m_shiftLeftAction("ShiftColumnLeftAction", args.actionThrottlePeriod, *m_actionMapper),
-	m_shiftRightAction("ShiftColumnRightAction", args.actionThrottlePeriod, *m_actionMapper),
-	m_rotateAction("RotateColumnAction", args.actionThrottlePeriod, *m_actionMapper),
-	m_permuteAction("PermuteColumnAction", args.actionThrottlePeriod, *m_actionMapper),
 	m_size(args.boardSize),
 	m_columnSize(args.columnSize),
 	m_dropMiliseconds(args.dropMilliseconds),
@@ -572,7 +598,7 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
 	m_gameGridSize(args.boardSize.x * args.boardSize.y),
 	m_inputName(args.pInputName),
-	m_mapperName(args.pMapperName)
+	m_thorttlePeriod(args.actionThrottlePeriod)
 {
 	GenerateNewPlayerColumn();	
 }
@@ -590,11 +616,14 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 
 	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), "ActionMapper", getResult);
 	
-	if (!m_pInput)
+	if (!m_actionMapper)
 	{
 		pGame->LogError("ColumnsSim: could not get action mapper");
 		return false;
 	}
+
+	m_actionWrappers = std::make_shared<SimActionWrappers>(m_thorttlePeriod,
+														*m_actionMapper.get());
 
 	return true;
 }
@@ -608,9 +637,6 @@ void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
 
 	stateArgs.pFrameManager = pManager;
 	stateArgs.simTime = state.simulatedTime;
-
-	// Process inputs
-	m_actionMapper->OnFrame(m_pInput.get());
 
 	if (m_firstFrame)
 	{
@@ -648,7 +674,7 @@ void geng::columns::ColumnsSim::GameState
 	SetFrameComplete(true);
 
 	// Drop?
-	if (m_owner.m_dropAction.Triggered()
+	if (m_owner.m_actionWrappers->dropAction.Triggered()
 		|| dropState.nextDropTime <= stateArgs.simTime)
 	{
 		// Execute drop.  If a drop can't be executed, lock the player's gems and switch to Compact mode
@@ -673,7 +699,7 @@ void geng::columns::ColumnsSim::GameState
 	}
 
 	// The other actions.
-	if (m_owner.m_shiftLeftAction.Triggered())
+	if (m_owner.m_actionWrappers->shiftLeftAction.Triggered())
 	{
 		if (!m_owner.ShiftPlayerColumn(true))
 		{
@@ -682,7 +708,7 @@ void geng::columns::ColumnsSim::GameState
 		}
 	}
 
-	if (m_owner.m_shiftRightAction.Triggered())
+	if (m_owner.m_actionWrappers->shiftRightAction.Triggered())
 	{
 		if (!m_owner.ShiftPlayerColumn(false))
 		{
@@ -691,7 +717,7 @@ void geng::columns::ColumnsSim::GameState
 		}
 	}
 
-	if (m_owner.m_rotateAction.Triggered())
+	if (m_owner.m_actionWrappers->rotateAction.Triggered())
 	{
 		if (!m_owner.RotatePlayerColumn(true))
 		{
@@ -700,7 +726,7 @@ void geng::columns::ColumnsSim::GameState
 		}
 	}
 
-	if (m_owner.m_permuteAction.Triggered())
+	if (m_owner.m_actionWrappers->permuteAction.Triggered())
 	{
 		m_owner.PermutePlayerColumn();
 		return;

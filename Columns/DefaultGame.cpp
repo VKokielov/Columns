@@ -2,6 +2,17 @@
 
 #include <iostream>
 
+
+geng::DefaultGame::DefaultGame(const GameArgs& args)
+	:m_gameArgs(args)
+{
+	SimState simState;
+	simState.timePerFrame = args.timePerFrame;
+	simState.quality = SimQuality::Running;
+
+	m_frameManager.UpdateSimState(simState, FID_QUALITY | FID_TPF);
+}
+
 bool geng::DefaultGame::AddComponent(const char* pName, const std::shared_ptr<IGameComponent>& pComponent)
 {
 	// Try to add
@@ -58,4 +69,19 @@ bool geng::DefaultGame::Run()
 void geng::DefaultGame::LogError(const char* pError)
 {
 	std::cerr << pError << '\n';
+}
+
+
+const std::shared_ptr<geng::IGameComponent>& 
+	geng::DefaultGame::GetComponent(const char* pName)
+{
+	if (m_componentMap.count(pName) == 0)
+	{
+		static std::shared_ptr<geng::IGameComponent> emptyPtr;
+		return emptyPtr;
+	}
+
+	auto itComponent = m_componentMap.find(pName);
+
+	return m_components[itComponent->second];
 }
