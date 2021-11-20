@@ -10,96 +10,12 @@ geng::columns::Point geng::columns::ColumnsSim::IndexToPoint(unsigned int idx) c
 	return Point{ idx % m_size.x, idx / m_size.x };
 }
 
-/*
-void geng::columns::ColumnsSim::GenerateGridSets()
-{
-	// Precompute the sets that 
-	// Origin - 0,m_overflow - generate horizontal, vertical, downsloping set
-	// Top row - x,m_overflow : x >= 1 -- generate vertical, upsloping, downsloping set
-	// Left column 0,y : y >= 3 -- generate horizontal, downsloping set
-	// Right column X-1,y : y >= 3 -- generate upsloping set
-
-	bool genH{ false };
-	bool genV{ false };
-	bool genD{ false };
-	bool genU{ false };
-
-	auto genSetAtPoint = [this, &genH, &genV, &genD, &genU](const Point& origin)
-	{
-		AddSetFromPoint(genH, Axis::Horizontal, origin, 2);
-		AddSetFromPoint(genV, Axis::Vertical, origin, 2);
-		AddSetFromPoint(genD, Axis::Downslope, origin, 2);
-		AddSetFromPoint(genU, Axis::Upslope, origin, 2);
-		return true;
-	};
-
-	// Origin
-	// We assume the columns start with their bottom touching the first visible tiles
-
-	// Top row
-	Point topCorner{ 0, m_columnSize };
-	genV = true;
-	genU = true;
-	genD = true;
-	IterateAxis(topCorner, Axis::Horizontal, genSetAtPoint);
-
-	// Left column
-	++topCorner.y;
-
-	genH = true;
-	genU = false;
-	genV = false;
-
-	IterateAxis(topCorner, Axis::Vertical, genSetAtPoint);
-
-	// Right column
-	topCorner.x = m_size.x - 1;
-	genH = false;
-	genD = false;
-	genU = true;
-	IterateAxis(topCorner, Axis::Vertical, genSetAtPoint);
-
-	// The vector of vectors should now be full with all the sets to check
-	// to find which squares need to be removed
-}
-*/
-
-/*
-
-void geng::columns::ColumnsSim::AddSetFromPoint(bool axisEnabled,
-	Axis axis,
-	const Point& origin,
-	unsigned long minSize)
-{
-	if (axisEnabled)
-	{
-		std::vector<Point>  ptSet;
-
-		fprintf(stderr, "Start set\n");
-		auto fillPoints = [&ptSet](const Point& member)
-		{
-			fprintf(stderr, "\tAdding %d %d\n", member.x, member.y);
-			ptSet.emplace_back(member);
-			return true;
-		};
-
-		IterateAxis(origin, axis, fillPoints);
-		if (ptSet.size() >= minSize)
-		{
-			fprintf(stderr, "End set\n");
-			m_setsToScan.emplace_back(std::move(ptSet));
-		}
-	}
-}
-
-*/
-
 geng::columns::GridContents geng::columns::ColumnsSim::GetContents(const Point& at, bool* pisvalid) const
 {
 	unsigned int idx = PointToIndex(at);
 	if (pisvalid)
 	{
-		*pisvalid = false;
+		*pisvalid = true;
 	}
 
 	if (idx < m_gameGridSize)
@@ -506,7 +422,6 @@ bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 	m_columnsToCompact.clear();
 	m_toRemove.clear();
 
-
 	for (unsigned int idx = 0; idx < m_gameGridSize; ++idx)
 	{
 		Point curPt = IndexToPoint(idx);
@@ -528,23 +443,26 @@ bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 
 			if (pPredecessor && pPredecessor->contents == curSquare.contents)
 			{
-				fprintf(stderr, "ex %d %d\n", curPt.x, curPt.y);
-				fprintf(stderr, "Found predecessor\n");
+//				fprintf(stderr, "ex %d %d\n", curPt.x, curPt.y);
+//				fprintf(stderr, "Found predecessor\n");
 				curSquare.seqNumbers[seqIdx] = pPredecessor->seqNumbers[seqIdx] + 1;
 
 				// Mark me and up to n-1 of my predecessors
 				if (curSquare.seqNumbers[seqIdx] >= count)
 				{
 					curSquare.wasRemoved = true;
+					m_columnsToCompact.emplace(curPt.x);
 					m_toRemove.emplace_back(idx);
 
 					GridSquare* pSetRem = pPredecessor;
 					int nToSet = count - 1;
-					while (nToSet >= 0)
+					while (nToSet > 0)
 					{
 						if (!pSetRem->wasRemoved)
 						{
 							pSetRem->wasRemoved = true;
+							
+							m_columnsToCompact.emplace(predPt.x);
 							m_toRemove.emplace_back(PointToIndex(predPt));
 						}
 
@@ -597,7 +515,17 @@ bool geng::columns::ColumnsSim::CompactColumn(unsigned int x)
 
 	unsigned int readY = m_size.y - 1;
 	unsigned int writeY = readY;
-	while (readY > 0)
+
+	unsigned int topLimit = 0;
+
+	// To avoid "compacting" player gems that have been generated,
+	// specialize this 
+	if (x == m_size.x / 2)
+	{
+		topLimit = m_columnSize-1;
+	}
+
+	while (readY > topLimit)
 	{
 		Point readPt{ x,readY };
 		Point writePt{ x, writeY};
@@ -884,7 +812,6 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 
 	if (clearState.nextBlinkTime <= stateArgs.simTime)
 	{
-		fprintf(stderr, "Next blink time\n");
 		++clearState.blinkPhaseCount;
 		clearState.blinkPhase = !clearState.blinkPhase;
 		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);

@@ -45,10 +45,12 @@ void geng::DefaultFrameManager::Simulate()
 	while (isActive)
 	{
 		// Debug
+		/*
 		if ((m_frameCount % 200) == 0)
 		{
 			fprintf(stderr, "Frames: %lu\n", m_frameCount);
 		}
+		*/
 
 		RunSimulation();
 		RunIO();
