@@ -34,6 +34,8 @@ namespace geng::sdl
 
 	private:
 		std::vector<SDL_Event>   m_events;
+
+		unsigned int m_frameCount{ 0 };
 	};
 
 

@@ -10,6 +10,62 @@ geng::columns::Point geng::columns::ColumnsSim::IndexToPoint(unsigned int idx) c
 	return Point{ idx % m_size.x, idx / m_size.x };
 }
 
+
+void geng::columns::ColumnsSim::GenerateGridSets()
+{
+	// Precompute the sets that 
+	// Origin - 0,m_overflow - generate horizontal, vertical, downsloping set
+	// Top row - x,m_overflow : x >= 1 -- generate vertical, upsloping, downsloping set
+	// Left column 0,y : y >= 3 -- generate horizontal, downsloping set
+	// Right column X-1,y : y >= 3 -- generate upsloping set
+
+	bool genH{ false };
+	bool genV{ false };
+	bool genD{ false };
+	bool genU{ false };
+
+	auto genSetAtPoint = [this, &genH, &genV, &genD, &genU](const Point& origin)
+	{
+		AddSetFromPoint(genH, Axis::Horizontal, origin, 2);
+		AddSetFromPoint(genV, Axis::Vertical, origin, 2);
+		AddSetFromPoint(genD, Axis::Downslope, origin, 2);
+		AddSetFromPoint(genU, Axis::Upslope, origin, 2);
+		return true;
+	};
+
+	// Origin
+	// We assume the columns start with their bottom touching the first visible tiles
+	Point topCorner{ 0, m_columnSize };
+	AddSetFromPoint(true, Axis::Horizontal, topCorner, 2);
+	AddSetFromPoint(true, Axis::Vertical, topCorner, 2);
+	AddSetFromPoint(true, Axis::Downslope, topCorner, 2);
+
+	// Top row
+	genV = true;
+	genU = true;
+	genD = true;
+	IterateAxis(topCorner, Axis::Horizontal, genSetAtPoint);
+
+	// Left column
+	++topCorner.y;
+
+	genH = true;
+	genU = false;
+	genV = false;
+
+	IterateAxis(topCorner, Axis::Vertical, genSetAtPoint);
+
+	// Right column
+	topCorner.x = m_size.x - 1;
+	genH = false;
+	genD = false;
+	genU = true;
+	IterateAxis(topCorner, Axis::Vertical, genSetAtPoint);
+
+	// The vector of vectors should now be full with all the sets to check
+	// to find which squares need to be removed
+}
+
 geng::columns::GridContents geng::columns::ColumnsSim::GetContents(const Point& at, bool* pisvalid) const
 {
 	unsigned int idx = PointToIndex(at);
@@ -175,6 +231,11 @@ void geng::columns::ColumnsSim::SetPlayerColumn(const PlayerSet& playerColumn)
 
 	size_t colorPos = colLen + playerColumn.startPt;
 
+	if (playerColumn.isInverted)
+	{
+		--colorPos;
+	}
+
 	Point ptCol{ playerColumn.locCenter };
 	if (playerColumn.isHorizontal)
 	{
@@ -186,15 +247,21 @@ void geng::columns::ColumnsSim::SetPlayerColumn(const PlayerSet& playerColumn)
 	}
 
 	unsigned int count = 0;
+//	fprintf(stderr, "Set column\n");
 	while (count < colLen)
 	{
+	//	fprintf(stderr, "%lu/%lu ", (unsigned long)colorPos, (unsigned long)(colorPos % colLen));
+
 		GridContents targetColor = playerColumn.colors[colorPos % colLen];
 		SetContents(ptCol, targetColor);
 		++count;
 
 		playerColumn.isHorizontal ? ++ptCol.x : ++ptCol.y;
 		!playerColumn.isInverted ? ++colorPos : --colorPos;
+
 	}
+	//fprintf(stderr, "/Set column\n");
+
 }
 
 bool geng::columns::ColumnsSim::TransformPlayerColumn(const PlayerSet& target, const PointDelta& delta,
@@ -331,6 +398,9 @@ bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 	newColumn.locCenter.y = (m_columnSize - 1) / 2;
 	newColumn.colors = m_nextColors;
 
+	// Invalidate the player column -- so game over happens right
+	m_validPlayerColumn = false;
+
 	// Can this column exist?
 	if (!IsValidShiftedPlayerColumn(newColumn, PointDelta{ 0,0 }))
 	{
@@ -340,6 +410,8 @@ bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 	// isHorizontal, isInverted both false by default (see text of PlayerSet)
 	// startPt is 0 by default
 	m_playerColumn = std::move(newColumn);
+	TransformPlayerColumn(m_playerColumn, PointDelta{ 0,0 }, false);
+	
 	m_validPlayerColumn = true;
 
 	// Generate next colors
@@ -356,7 +428,14 @@ bool geng::columns::ColumnsSim::LockPlayerColumn()
 		AddPlayerColumnToCompactSet(m_playerColumn);
 	}
 
+	/*
+	fprintf(stderr, "Locking player column at center %d %d\n", m_playerColumn.locCenter.x, m_playerColumn.locCenter.y);
+	if (m_playerColumn.locCenter.y == 1)
+	{
+		fprintf(stderr, "\t%d %d %d\n", GetContents(Point{ 4, 0 }), GetContents(Point{ 4,1 }), GetContents(Point{ 4,2 }));
+	}
 	m_validPlayerColumn = false;
+	*/
 
 	return GenerateNewPlayerColumn();
 }
@@ -369,74 +448,24 @@ void geng::columns::ColumnsSim::AddSetFromPoint(bool axisEnabled,
 	if (axisEnabled)
 	{
 		std::vector<Point>  ptSet;
+
+		fprintf(stderr, "Start set\n");
 		auto fillPoints = [&ptSet](const Point& member)
 		{
+			fprintf(stderr, "\tAdding %d %d\n", member.x, member.y);
 			ptSet.emplace_back(member);
 			return true;
 		};
 
-		IterateAxis(origin, Axis::Horizontal, fillPoints);
+		IterateAxis(origin, axis, fillPoints);
 		if (ptSet.size() >= minSize)
 		{
+			fprintf(stderr, "Start set\n");
 			m_setsToScan.emplace_back(std::move(ptSet));
 		}
 	}
 }
 
-void geng::columns::ColumnsSim::GenerateGridSets()
-{
-	// Precompute the sets that 
-	// Origin - 0,m_overflow - generate horizontal, vertical, downsloping set
-	// Top row - x,m_overflow : x >= 1 -- generate vertical, upsloping, downsloping set
-	// Left column 0,y : y >= 3 -- generate horizontal, downsloping set
-	// Right column X-1,y : y >= 3 -- generate upsloping set
-
-	bool genH{ false };
-	bool genV{ false };
-	bool genD{ false };
-	bool genU{ false };
-
-	auto genSetAtPoint = [this,&genH, &genV, &genD, &genU](const Point& origin)
-	{
-		AddSetFromPoint(genH, Axis::Horizontal, origin, 2);
-		AddSetFromPoint(genV, Axis::Vertical, origin, 2);
-		AddSetFromPoint(genD, Axis::Downslope, origin, 2);
-		AddSetFromPoint(genU, Axis::Upslope, origin, 2);
-		return true;
-	};
-
-	// Origin
-	// We assume the columns start with their bottom touching the first visible tiles
-	Point topCorner{ 0, m_columnSize};
-	AddSetFromPoint(true, Axis::Horizontal,topCorner, 2);
-	AddSetFromPoint(true, Axis::Vertical, topCorner, 2);
-	AddSetFromPoint(true, Axis::Downslope, topCorner, 2);
-
-	// Top row
-	genV = true;
-	genU = true;
-	genD = true;
-	IterateAxis(topCorner, Axis::Horizontal, genSetAtPoint);
-
-	// Left column
-	++topCorner.y;
-
-	genH = true;
-	genU = false;
-	genV = false;
-
-	IterateAxis(topCorner, Axis::Vertical, genSetAtPoint);
-
-	// Right column
-	topCorner.x = m_size.x - 1;
-	genH = false;
-	genD = false;
-	genU = true;
-	IterateAxis(topCorner, Axis::Vertical, genSetAtPoint);
-
-	// The vector of vectors should now be full with all the sets to check
-	// to find which squares need to be removed
-}
 
 bool geng::columns::ColumnsSim::MarkRemovables(const std::vector<Point>& scanSet,
 	size_t start,
@@ -464,9 +493,11 @@ bool geng::columns::ColumnsSim::ComputeRemovablesInSet(const std::vector<Point>&
 	size_t seqStart = 0;
 	size_t seqCur = 0;
 
+	fprintf(stderr, "Compute removables\n");
 	bool hasRemovables{ false };
 	while (seqCur < scanSet.size())
 	{
+		fprintf(stderr, "scanSet cur %d %d\n", scanSet[seqCur].x, scanSet[seqCur].y);
 		if (GetContents(scanSet[seqStart]) != GetContents(scanSet[seqCur]))
 		{
 			if (MarkRemovables(scanSet, seqStart, seqCur, count))
@@ -626,6 +657,8 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	// Clear the grid
 	GridSquare defaultSquare{ EMPTY, true};
 	std::fill(m_gameGrid.get(), m_gameGrid.get() + m_gameGridSize, defaultSquare);
+
+	GenerateGridSets();
 }
 
 geng::IFrameListener* geng::columns::ColumnsSim::GetFrameListener()
@@ -677,6 +710,7 @@ void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
 	}
 
 	// This will update the actions with the state of the keyboard
+	//fprintf(stderr, "updst\n");
 	m_actionWrappers->UpdateState(*m_actionMapper, state.simulatedTime);
 
 	m_gameState.StartFrame();
@@ -719,6 +753,7 @@ void geng::columns::ColumnsSim::GameState
 			if (!m_owner.LockPlayerColumn())
 			{
 				// Set to game over and terminate the frame
+				fprintf(stderr, "game over\n");
 				Transition<GameOverState>(*this, stateArgs);
 				return;
 			}
@@ -741,6 +776,7 @@ void geng::columns::ColumnsSim::GameState
 			m_owner.m_errorText = "CAN'T MOVE";
 			return;
 		}
+	//	fprintf(stderr, "Shifting column left\n");
 	}
 
 	if (m_owner.m_actionWrappers->shiftRightAction.Triggered())
@@ -750,6 +786,7 @@ void geng::columns::ColumnsSim::GameState
 			m_owner.m_errorText = "CAN'T MOVE";
 			return;
 		}
+	//	fprintf(stderr, "Shifting column right\n");
 	}
 
 	if (m_owner.m_actionWrappers->rotateAction.Triggered())

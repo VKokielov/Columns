@@ -3,7 +3,7 @@
 #include <algorithm>
 
 geng::ActionMapper::ActionMapper(const char* pInputName)
-	:BaseGameComponent("ActionMapper", GameComponentType::IO),
+	:BaseGameComponent("ActionMapper", GameComponentType::Simulation),
 	m_inputName(pInputName)
 {
 
@@ -137,6 +137,9 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 			- The action is "on" if it was "on" or "starting" in the previous frame, otherwise "starting"
 			- The action is "ending" if it was "on" or "starting" in the previous frame, otherwise "off"
 	*/
+
+//	fprintf(stderr, "am frame\n");
+
 	for (ActionMapping_& action : m_actions)
 	{
 		bool isOn{ true };
@@ -156,12 +159,12 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 		{
 			if (action.state == ActionState::On || action.state == ActionState::Starting)
 			{
-				fprintf(stderr, "action %s on\n", action.actionName.c_str());
+			//	fprintf(stderr, "action %s on\n", action.actionName.c_str());
 				action.state = ActionState::On;
 			}
 			else
 			{
-				fprintf(stderr, "action %s starting\n", action.actionName.c_str());
+			//	fprintf(stderr, "action %s starting\n", action.actionName.c_str());
 				action.state = ActionState::Starting;
 			}
 		}
@@ -169,7 +172,7 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 		{
 			if (action.state == ActionState::On || action.state == ActionState::Starting)
 			{
-				fprintf(stderr, "action %s ending\n", action.actionName.c_str());
+			//	fprintf(stderr, "action %s ending\n", action.actionName.c_str());
 				action.state = ActionState::Ending;
 			}
 			else

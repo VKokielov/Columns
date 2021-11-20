@@ -13,6 +13,8 @@ geng::IFrameListener* geng::sdl::EventPoller::GetFrameListener()
 
 void geng::sdl::EventPoller::OnFrame(IFrameManager* pManager)
 {
+	++m_frameCount;
+
 	m_events.clear();
 
 	SDL_Event evt;
@@ -26,12 +28,14 @@ void geng::sdl::EventPoller::OnFrame(IFrameManager* pManager)
 			break;
 		}
 
+		
 		/*
 		if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP)
 		{
-			fprintf(stderr, "Event %d for key %d\n", evt.type, (int)evt.key.keysym.sym);
+			fprintf(stderr, "Event %d for key %d frame %u\n", evt.type, (int)evt.key.keysym.sym, m_frameCount);
 		}
 		*/
+		
 
 		m_events.emplace_back(evt);
 	}

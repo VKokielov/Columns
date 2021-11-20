@@ -218,23 +218,34 @@ namespace geng
 		void UpdateState(const ActionMapper& rMapper, unsigned long simTime)
 		{
 			ActionState state = GetMyActionState(rMapper);
+			bool isStarting = state == ActionState::Starting;
+			if (m_wasStarting && isStarting)
+			{
+				fprintf(stderr, "Starting twice!\n");
+			}
+			m_wasStarting = isStarting;
+
 			if (state == ActionState::Starting
 			  || ((state == ActionState::On) && (m_throttleStart + m_throttlePeriod <= simTime)))
 			{
-				fprintf(stderr, "setting action %d to true with state %d\n", GetID(), state);
+//				fprintf(stderr, "setting action %d to true with state %d\n", GetID(), state);
 				m_throttleStart = simTime;
 				SetTriggered(true);
 			}
 			else
 			{
+				/*
 				if (Triggered())
 				{
 					fprintf(stderr, "setting action %d to false\n", GetID());
 				}
+				*/
+				
 				SetTriggered(false);
 			}
 		}
 	private:
+		bool m_wasStarting{ false };
 		unsigned int  m_throttlePeriod;
 		unsigned long  m_throttleStart{ 0 };
 	};

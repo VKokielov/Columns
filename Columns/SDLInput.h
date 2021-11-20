@@ -15,6 +15,13 @@ namespace geng::sdl
 	class Input : public TemplatedGameComponent<IInput>,
 		public IFrameListener
 	{
+	private:
+		struct KeyData_
+		{
+			KeySignal signal{ KeySignal::KeyUp };
+			bool shortPress{ false };
+			unsigned int updateFrame{ 0 };
+		};
 	public:
 		IFrameListener* GetFrameListener() override;
 
@@ -31,11 +38,13 @@ namespace geng::sdl
 	private:
 		// The event poller polls events for the frame
 		std::shared_ptr<EventPoller>   m_pEventPoller;
-		std::unordered_map<KeyCode, KeySignal>   m_state;
+		std::unordered_map<KeyCode, KeyData_>   m_state;
 		std::unordered_set<KeyCode>  m_updatedKeys;
 
 		// Random numbers
 		std::mt19937_64  m_generator;
+
+		unsigned int m_frame{ 0 };
 	};
 
 
