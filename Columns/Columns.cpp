@@ -76,6 +76,8 @@ int main(int, char**)
 	simArgs.columnSize = 3;
 	// NOTE:  This speed may change!
 	simArgs.dropMilliseconds = 600;
+	simArgs.flashMilliseconds = 300;
+	simArgs.flashCount = 3;
 	//simArgs.dropMilliseconds = 400;
 	simArgs.pInputName = "SDLInput";
 

@@ -23,10 +23,18 @@ namespace geng::columns
 	constexpr GridContents BLUE = 5;
 	constexpr GridContents GRID_LIMIT = 6;
 
+	constexpr unsigned int SEQ_NE = 0;
+	constexpr unsigned int SEQ_N = 1;
+	constexpr unsigned int SEQ_NW = 2;
+	constexpr unsigned int SEQ_E = 3;
+
 	struct GridSquare
 	{
 		GridContents  contents;
 		bool isVisible;
+		
+		bool wasRemoved;
+		std::array<unsigned int, 4>   seqNumbers;
 	};
 
 	struct Point
@@ -261,6 +269,9 @@ namespace geng::columns
 
 		unsigned int PointToIndex(const Point& at) const;
 		Point IndexToPoint(unsigned int idx) const;
+		// This gets the "predecessor" tile for the algorithm that computes what should be removed
+		GridSquare* GetContentsOfPredecessor(const Point& at, unsigned int seqIdx, bool isDown,
+			                                  Point& predPt);
 
 		Point GetBoardSize() const { return m_size; }
 		unsigned int GetColumnSize() const { return m_columnSize; }
@@ -397,18 +408,11 @@ namespace geng::columns
 		bool GenerateNewPlayerColumn();
 		bool LockPlayerColumn();
 
-		// __Grid sets__ (for computing removables)
-		void AddSetFromPoint(bool isEnabled, Axis axis, 
-			const Point& origin,
-			unsigned long minSize);
-		void GenerateGridSets();
-
 		// __Removables__
-		bool MarkRemovables(const std::vector<Point>& scanSet, size_t start, size_t end, unsigned int count);
-		bool ComputeRemovablesInSet(const std::vector<Point>& scanSet, unsigned int count);
+
 		bool ComputeRemovables(unsigned int count);
 		void ExecuteRemove();
-		
+
 		// Compact columns by shifting all stones down
 		bool CompactColumn(unsigned int x);
 		bool CompactColumns();
@@ -429,14 +433,10 @@ namespace geng::columns
 		std::shared_ptr<IInput>  m_pInput;
 
 		// __Removable sets__
-		// These are sets of points to scan for sequences of identical entries
-		// They are parallel lines in different directions (horizontal, vertical, downsloping diagonal, upsloping diagonal)
-		// We save them in order to be able to scan quickly
-		std::vector<std::vector<Point> >  m_setsToScan;
 
 		// _Simulation state_
 
-		std::unordered_set<unsigned int> m_toRemove;
+		std::vector<unsigned int> m_toRemove;
 		// Store x coordinates of points to remove because that is where the holes will appear
 		// (This is an optimization to prevent needless work)
 		std::unordered_set<unsigned int> m_columnsToCompact;  

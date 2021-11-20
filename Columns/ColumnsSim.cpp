@@ -10,7 +10,7 @@ geng::columns::Point geng::columns::ColumnsSim::IndexToPoint(unsigned int idx) c
 	return Point{ idx % m_size.x, idx / m_size.x };
 }
 
-
+/*
 void geng::columns::ColumnsSim::GenerateGridSets()
 {
 	// Precompute the sets that 
@@ -35,12 +35,9 @@ void geng::columns::ColumnsSim::GenerateGridSets()
 
 	// Origin
 	// We assume the columns start with their bottom touching the first visible tiles
-	Point topCorner{ 0, m_columnSize };
-	AddSetFromPoint(true, Axis::Horizontal, topCorner, 2);
-	AddSetFromPoint(true, Axis::Vertical, topCorner, 2);
-	AddSetFromPoint(true, Axis::Downslope, topCorner, 2);
 
 	// Top row
+	Point topCorner{ 0, m_columnSize };
 	genV = true;
 	genU = true;
 	genD = true;
@@ -65,6 +62,37 @@ void geng::columns::ColumnsSim::GenerateGridSets()
 	// The vector of vectors should now be full with all the sets to check
 	// to find which squares need to be removed
 }
+*/
+
+/*
+
+void geng::columns::ColumnsSim::AddSetFromPoint(bool axisEnabled,
+	Axis axis,
+	const Point& origin,
+	unsigned long minSize)
+{
+	if (axisEnabled)
+	{
+		std::vector<Point>  ptSet;
+
+		fprintf(stderr, "Start set\n");
+		auto fillPoints = [&ptSet](const Point& member)
+		{
+			fprintf(stderr, "\tAdding %d %d\n", member.x, member.y);
+			ptSet.emplace_back(member);
+			return true;
+		};
+
+		IterateAxis(origin, axis, fillPoints);
+		if (ptSet.size() >= minSize)
+		{
+			fprintf(stderr, "End set\n");
+			m_setsToScan.emplace_back(std::move(ptSet));
+		}
+	}
+}
+
+*/
 
 geng::columns::GridContents geng::columns::ColumnsSim::GetContents(const Point& at, bool* pisvalid) const
 {
@@ -258,7 +286,6 @@ void geng::columns::ColumnsSim::SetPlayerColumn(const PlayerSet& playerColumn)
 
 		playerColumn.isHorizontal ? ++ptCol.x : ++ptCol.y;
 		!playerColumn.isInverted ? ++colorPos : --colorPos;
-
 	}
 	//fprintf(stderr, "/Set column\n");
 
@@ -440,82 +467,37 @@ bool geng::columns::ColumnsSim::LockPlayerColumn()
 	return GenerateNewPlayerColumn();
 }
 
-void geng::columns::ColumnsSim::AddSetFromPoint(bool axisEnabled,
-	Axis axis,
-	const Point& origin,
-	unsigned long minSize)
+geng::columns::GridSquare* 
+	geng::columns::ColumnsSim::GetContentsOfPredecessor(const Point& at, unsigned int seqIdx, bool isTopDown,
+		Point& ptNext)
 {
-	if (axisEnabled)
+	// Compute the next point
+	ptNext = at;
+
+	switch (seqIdx)
 	{
-		std::vector<Point>  ptSet;
-
-		fprintf(stderr, "Start set\n");
-		auto fillPoints = [&ptSet](const Point& member)
-		{
-			fprintf(stderr, "\tAdding %d %d\n", member.x, member.y);
-			ptSet.emplace_back(member);
-			return true;
-		};
-
-		IterateAxis(origin, axis, fillPoints);
-		if (ptSet.size() >= minSize)
-		{
-			fprintf(stderr, "Start set\n");
-			m_setsToScan.emplace_back(std::move(ptSet));
-		}
-	}
-}
-
-
-bool geng::columns::ColumnsSim::MarkRemovables(const std::vector<Point>& scanSet,
-	size_t start,
-	size_t end,
-	unsigned int count)
-{
-	bool hasRemovables{ false };
-	if (end - 1 - start >= count && IsRemovable(GetContents(scanSet[start])))
-	{
-		// Mark all points from "start" to "end" as removable
-		for (size_t i = start; i < end; ++i)
-		{
-			const Point& toRemove = scanSet[i];
-			m_toRemove.emplace(PointToIndex(toRemove));
-			hasRemovables = true;
-			m_columnsToCompact.emplace(toRemove.x);
-		}
-	}
-	return hasRemovables;
-}
-
-bool geng::columns::ColumnsSim::ComputeRemovablesInSet(const std::vector<Point>& scanSet, unsigned int count)
-{
-	// Find count matching removable points in a row
-	size_t seqStart = 0;
-	size_t seqCur = 0;
-
-	fprintf(stderr, "Compute removables\n");
-	bool hasRemovables{ false };
-	while (seqCur < scanSet.size())
-	{
-		fprintf(stderr, "scanSet cur %d %d\n", scanSet[seqCur].x, scanSet[seqCur].y);
-		if (GetContents(scanSet[seqStart]) != GetContents(scanSet[seqCur]))
-		{
-			if (MarkRemovables(scanSet, seqStart, seqCur, count))
-			{
-				hasRemovables = true;
-			}
-			seqStart = seqCur;
-		}
-		++seqCur;
+	case SEQ_NE:
+		isTopDown ? --ptNext.x : ++ptNext.x;
+		isTopDown ? --ptNext.y : ++ptNext.y;
+		break;
+	case SEQ_N:
+		isTopDown ? --ptNext.y : ++ptNext.y;
+		break;
+	case SEQ_NW:
+		isTopDown ? ++ptNext.x : --ptNext.y;
+		isTopDown ? --ptNext.y : ++ptNext.y;
+		break;
+	case SEQ_E:
+		isTopDown ? --ptNext.x : ++ptNext.x;
+		break;
 	}
 
-	// Last stretch
-	if (MarkRemovables(scanSet, seqStart, seqCur, count))
+	if (!InBounds(ptNext))
 	{
-		hasRemovables = true;
+		return nullptr;
 	}
 
-	return hasRemovables;
+	return &m_gameGrid[PointToIndex(ptNext)];
 }
 
 bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
@@ -524,16 +506,70 @@ bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 	m_columnsToCompact.clear();
 	m_toRemove.clear();
 
-	bool hasRemovables{ false };
-	for (size_t iSet = 0; iSet < m_setsToScan.size(); ++iSet)
+
+	for (unsigned int idx = 0; idx < m_gameGridSize; ++idx)
 	{
-		if (ComputeRemovablesInSet(m_setsToScan[iSet], count))
+		Point curPt = IndexToPoint(idx);
+
+		GridSquare& curSquare = m_gameGrid[idx];
+		curSquare.wasRemoved = false;
+
+		if (!IsRemovable(curSquare.contents))
 		{
-			hasRemovables = true;
+			// Ignore squares that cannot be removed
+			// The sequence numbers are of no interest as we are comparing for equality
+			continue;
+		}
+
+		for (unsigned int seqIdx = 0; seqIdx < 4; ++seqIdx)
+		{
+			Point predPt;
+			GridSquare* pPredecessor = GetContentsOfPredecessor(curPt, seqIdx, true, predPt);
+
+			if (pPredecessor && pPredecessor->contents == curSquare.contents)
+			{
+				fprintf(stderr, "ex %d %d\n", curPt.x, curPt.y);
+				fprintf(stderr, "Found predecessor\n");
+				curSquare.seqNumbers[seqIdx] = pPredecessor->seqNumbers[seqIdx] + 1;
+
+				// Mark me and up to n-1 of my predecessors
+				if (curSquare.seqNumbers[seqIdx] >= count)
+				{
+					curSquare.wasRemoved = true;
+					m_toRemove.emplace_back(idx);
+
+					GridSquare* pSetRem = pPredecessor;
+					int nToSet = count - 1;
+					while (nToSet >= 0)
+					{
+						if (!pSetRem->wasRemoved)
+						{
+							pSetRem->wasRemoved = true;
+							m_toRemove.emplace_back(PointToIndex(predPt));
+						}
+
+						// Try to get the next predecessor
+						Point nextPred;
+						pSetRem = GetContentsOfPredecessor(predPt, seqIdx, true, nextPred);
+
+						if (!pSetRem)
+						{
+							break;
+						}
+
+						predPt = nextPred;
+						--nToSet;
+					}
+				}
+			}
+			else
+			{
+				curSquare.seqNumbers[seqIdx] = 1;
+			}
 		}
 	}
 
-	return hasRemovables;
+	return !m_toRemove.empty();
 }
 
 void geng::columns::ColumnsSim::ExecuteRemove()
@@ -658,7 +694,6 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	GridSquare defaultSquare{ EMPTY, true};
 	std::fill(m_gameGrid.get(), m_gameGrid.get() + m_gameGridSize, defaultSquare);
 
-	GenerateGridSets();
 }
 
 geng::IFrameListener* geng::columns::ColumnsSim::GetFrameListener()
@@ -824,13 +859,13 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 	// drop column state.  Otherwise, we go to blinking
 
 	// (hardcoding three)
-	bool hasRemovables = m_owner.ComputeRemovables(3);
+	bool hasRemovables = m_owner.ComputeRemovables(m_owner.m_columnSize);
 
 	if (hasRemovables)
 	{
 		// Initialize the blink phase
 		clearState.blinkPhase = false;
-		clearState.blinkPhaseCount = false;
+		clearState.blinkPhaseCount = 1;
 		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
 
 		// Implement
@@ -849,7 +884,11 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 
 	if (clearState.nextBlinkTime <= stateArgs.simTime)
 	{
+		fprintf(stderr, "Next blink time\n");
 		++clearState.blinkPhaseCount;
+		clearState.blinkPhase = !clearState.blinkPhase;
+		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);
+
 		if (clearState.blinkPhaseCount == 2 * m_owner.m_flashCount)
 		{
 			// Done flashing.  Remove and go to compact again
@@ -859,8 +898,6 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 			Transition<CompactState>(*this, stateArgs);
 			return;
 		}
-		clearState.blinkPhase = !clearState.blinkPhase;
 		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
-		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);
 	}
 }
