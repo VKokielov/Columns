@@ -164,7 +164,7 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 			}
 			else
 			{
-			//	fprintf(stderr, "action %s starting\n", action.actionName.c_str());
+				//fprintf(stderr, "action %s starting\n", action.actionName.c_str());
 				action.state = ActionState::Starting;
 			}
 		}
@@ -172,7 +172,7 @@ void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
 		{
 			if (action.state == ActionState::On || action.state == ActionState::Starting)
 			{
-			//	fprintf(stderr, "action %s ending\n", action.actionName.c_str());
+				//fprintf(stderr, "action %s ending\n", action.actionName.c_str());
 				action.state = ActionState::Ending;
 			}
 			else

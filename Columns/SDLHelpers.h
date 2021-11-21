@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 #include <memory>
+#include <functional>
 
 namespace geng::sdl
 {
@@ -75,6 +76,67 @@ namespace geng::sdl
 	{
 		using TCreator = SDLRendererCreator;
 		using TDeleter = SDLRendererDeleter;
+	};
+
+	struct SDLTextureCreator
+	{
+	public:
+		template<typename Func, typename ... Args>
+		static SDL_Texture* Create(Func&& func, Args&& ... args)
+		{
+			return std::invoke(func, std::forward<Args>(args)...);
+		}
+	};
+
+	struct SDLTextureDeleter
+	{
+	public:
+		void operator()(SDL_Texture* pTexture)
+		{
+			SDL_DestroyTexture(pTexture);
+		}
+	};
+
+	template<>
+	struct SDLObjectTraits<SDL_Texture>
+	{
+		using TCreator = SDLTextureCreator;
+		using TDeleter = SDLTextureDeleter;
+	};
+
+	struct SDLSurfaceCreator
+	{
+	public:
+		template<typename Func, typename ... Args>
+		static SDL_Surface* Create(Func&& func, Args&& ... args)
+		{
+			return std::invoke(func, std::forward<Args>(args)...);
+		}
+	};
+
+	struct SDLSurfaceDeleter
+	{
+	public:
+		void operator()(SDL_Surface* pSurface)
+		{
+			SDL_FreeSurface(pSurface);
+		}
+	};
+
+	template<>
+	struct SDLObjectTraits<SDL_Surface>
+	{
+		using TCreator = SDLSurfaceCreator;
+		using TDeleter = SDLSurfaceDeleter;
+	};
+
+	struct SDLRWDeleter
+	{
+	public:
+		void operator()(SDL_RWops* pops)
+		{
+			SDL_RWclose(pops);
+		}
 	};
 
 	struct RGBA

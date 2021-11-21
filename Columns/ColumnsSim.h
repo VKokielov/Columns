@@ -127,6 +127,7 @@ namespace geng::columns
 		unsigned int flashMilliseconds;
 		unsigned int flashCount;
 		unsigned int actionThrottlePeriod;
+		unsigned int dropThrottlePeriod;
 
 		// Component names
 		const char* pInputName;
@@ -165,7 +166,9 @@ namespace geng::columns
 			ThrottledActionWrapper rotateAction;
 			ThrottledActionWrapper permuteAction;
 
-			SimActionWrappers(unsigned int throttlePeriod, ActionMapper& mapper);
+			SimActionWrappers(unsigned int throttlePeriod, 
+				unsigned int dropThrottlePeriod, 
+				ActionMapper& mapper);
 
 			void UpdateState(ActionMapper& mapper, unsigned long simTime);
 		};
@@ -427,7 +430,8 @@ namespace geng::columns
 		unsigned int m_dropMiliseconds;
 		unsigned int m_flashMiliseconds;
 		unsigned int m_flashCount;
-		unsigned int m_thorttlePeriod;
+		unsigned int m_throttlePeriod;
+		unsigned int m_dropThrottlePeriod;
 		std::string m_inputName;
 
 		std::shared_ptr<IInput>  m_pInput;

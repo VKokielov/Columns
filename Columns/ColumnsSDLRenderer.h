@@ -4,6 +4,7 @@
 #include "BaseGameComponent.h"
 #include "SDLHelpers.h"
 #include "ColumnsSim.h"
+#include "TrueTypeFont.h"
 #include <utility>
 
 namespace geng::columns
@@ -99,6 +100,11 @@ namespace geng::columns
 
 		// Sim
 		std::shared_ptr<ColumnsSim>  m_pSim;
+
+		// Font - calibri or failing that, some free variant 
+		std::shared_ptr<sdl::TTFResource>  m_pTextFont;
+
+		// Prerendered 
 	};
 
 

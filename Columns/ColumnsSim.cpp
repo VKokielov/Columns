@@ -587,8 +587,9 @@ const char* geng::columns::ColumnsSim::GetPermuteActionName()
 }
 
 geng::columns::ColumnsSim::SimActionWrappers::SimActionWrappers(unsigned int throttlePeriod, 
+							unsigned int dropThrottlePeriod,
 							ActionMapper& mapper)
-	:dropAction(GetDropActionName(), throttlePeriod, mapper)
+	:dropAction(GetDropActionName(), dropThrottlePeriod, mapper)
 	,shiftLeftAction(GetShiftLeftActionName(), throttlePeriod, mapper)
 	,shiftRightAction(GetShiftRightActionName(), throttlePeriod, mapper)
 	,rotateAction(GetRotateActionName(), throttlePeriod, mapper)
@@ -616,7 +617,8 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
 	m_gameGridSize(args.boardSize.x * args.boardSize.y),
 	m_inputName(args.pInputName),
-	m_thorttlePeriod(args.actionThrottlePeriod)
+	m_throttlePeriod(args.actionThrottlePeriod),
+	m_dropThrottlePeriod(args.dropThrottlePeriod)
 {
 	// Clear the grid
 	GridSquare defaultSquare{ EMPTY, true};
@@ -648,7 +650,8 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 		return false;
 	}
 
-	m_actionWrappers = std::make_shared<SimActionWrappers>(m_thorttlePeriod,
+	m_actionWrappers = std::make_shared<SimActionWrappers>(m_throttlePeriod,
+														m_dropThrottlePeriod,
 														*m_actionMapper.get());
 
 	GenerateNewPlayerColumn();
@@ -792,9 +795,9 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 	if (hasRemovables)
 	{
 		// Initialize the blink phase
-		clearState.blinkPhase = false;
-		clearState.blinkPhaseCount = 1;
-		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
+		clearState.blinkPhase = true;
+		clearState.blinkPhaseCount = 0;
+		clearState.nextBlinkTime = 0.5 * (stateArgs.simTime + m_owner.m_flashMiliseconds);
 
 		// Implement
 		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);

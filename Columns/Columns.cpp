@@ -70,7 +70,8 @@ int main(int, char**)
 
 	// SIMULATION
 	geng::columns::ColumnsSimArgs simArgs;
-	simArgs.actionThrottlePeriod = 200;
+	simArgs.actionThrottlePeriod = 250;
+	simArgs.dropThrottlePeriod = 150;
 	simArgs.boardSize.x = 9;
 	simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
 	simArgs.columnSize = 3;

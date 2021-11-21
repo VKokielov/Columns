@@ -179,7 +179,7 @@ void geng::columns::ColumnsSDLRenderer::Measure()
 	m_boardArea.h = gameRectH;
 
 	// One square down and one square behind from the board should be the "predictor"
-	m_predictorX = m_boardArea.x - m_squareSize;
+	m_predictorX = m_boardArea.x - 2 * m_squareSize;
 	m_predictorY = m_squareSize;
 
 
