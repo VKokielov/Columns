@@ -57,6 +57,9 @@
     <ClCompile Include="TrueTypeFont.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SDLText.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IFrameManager.h">
@@ -110,10 +113,13 @@
     <ClInclude Include="BaseResource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TrueTypeFont.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RawMemoryResource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDLText.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrueTypeFont.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

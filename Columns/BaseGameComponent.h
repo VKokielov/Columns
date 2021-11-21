@@ -79,4 +79,11 @@ namespace geng
 
 		return pTypedComponent;
 	}
+
+	template<typename T>
+	std::shared_ptr<T> GetComponentAs(IGame* pGame, const char* pName)
+	{
+		GetComponentResult gcr;
+		return GetComponentAs<T>(pGame, pName, gcr);
+	}
 }

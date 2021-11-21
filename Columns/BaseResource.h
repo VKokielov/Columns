@@ -39,5 +39,4 @@ namespace geng
 		std::string m_resType;
 	};
 
-
 }

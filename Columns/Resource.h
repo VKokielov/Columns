@@ -24,6 +24,18 @@ namespace geng
 	class ResourceSource
 	{
 	public:
+		ResourceSource(const char* pRestype, const char* pSourcePath)
+			:m_sourceType(ResourceSourceType::Filename),
+			m_typeName(pRestype),
+			m_path(pSourcePath)
+		{ }
+
+		ResourceSource(const char* pRestype, const std::shared_ptr<IResource>& srcRes)
+			:m_sourceType(ResourceSourceType::ResourceObj),
+			m_typeName(pRestype),
+			m_psrc(srcRes)
+		{ }
+
 		ResourceSourceType GetSourceType() const { return m_sourceType; }
 		const char* GetResourceType() const { return m_typeName.c_str(); }
 		const char* GetPath() const { return m_path.c_str(); }

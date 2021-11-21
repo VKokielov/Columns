@@ -34,6 +34,5 @@ bool geng::sdl::SetUp::Initialize(const std::shared_ptr<IGame>& pGame)
 
 void geng::sdl::SetUp::WindDown(const std::shared_ptr<IGame>& pGame)
 {
-	SDL_Quit();
-	TTF_Quit();
+
 }

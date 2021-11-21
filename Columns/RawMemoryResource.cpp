@@ -4,16 +4,16 @@
 #include <filesystem>
 #include <sstream>
 
-const char* geng::RawMemoryResource::GetTypeName()
-{
-	return "RawMemResource";
-}
-
 geng::RawMemoryResource::RawMemoryResource(std::unique_ptr<uint8_t[]>&& pMem, size_t size)
 	:BaseResource(RawMemoryResource::GetTypeName()),
 	m_pMem(std::move(pMem)),
 	m_size(size)
 { 
+}
+
+geng::RawMemoryResource::~RawMemoryResource()
+{
+	fprintf(stderr, "DESTROYING RAW MEMORY\n");
 }
 
 geng::RawMemoryFactory::RawMemoryFactory(size_t bufferSize)

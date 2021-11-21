@@ -5,6 +5,8 @@
 #include "SDLHelpers.h"
 #include "ColumnsSim.h"
 #include "TrueTypeFont.h"
+#include "SDLText.h"
+#include "ResourceLoader.h"
 #include <utility>
 
 namespace geng::columns
@@ -23,6 +25,7 @@ namespace geng::columns
 	public:
 		ColumnsSDLRenderer(const ColumnsRenderArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+
 		void OnFrame(IFrameManager* pManager) override;
 
 		IFrameListener* GetFrameListener() override;
@@ -68,6 +71,9 @@ namespace geng::columns
 			return result;
 		}
 
+		std::shared_ptr<sdl::TTFResource> 
+			InitializeFont(IGame* pGame, ResourceLoader* pLoader, int pointSize);
+
 		void RenderSquareAt(int x, int y,
 			geng::sdl::RGBA color);
 
@@ -101,10 +107,13 @@ namespace geng::columns
 		// Sim
 		std::shared_ptr<ColumnsSim>  m_pSim;
 
-		// Font - calibri or failing that, some free variant 
-		std::shared_ptr<sdl::TTFResource>  m_pTextFont;
+		// Prerendered text
+		sdl::Text m_scoreLabel;
+		sdl::Text m_levelLabel;
 
-		// Prerendered 
+		sdl::Text m_score;
+		sdl::Text m_level;
+
 	};
 
 

@@ -15,16 +15,17 @@ geng::columns::GridContents geng::columns::ColumnsSim::GetContents(const Point& 
 	unsigned int idx = PointToIndex(at);
 	if (pisvalid)
 	{
-		*pisvalid = true;
+		*pisvalid = false;
 	}
 
+	// thanks JJ
 	if (idx < m_gameGridSize)
 	{
-		return m_gameGrid[idx].contents;
 		if (pisvalid)
 		{
-			*pisvalid = false;
+			*pisvalid = true;
 		}
+		return m_gameGrid[idx].contents;
 	}
 
 	return EMPTY;
@@ -493,16 +494,40 @@ bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 void geng::columns::ColumnsSim::ExecuteRemove()
 {
 	
-	auto removeGem = [](ColumnsSim& sim, unsigned int point,
+	auto removeGem = [this](ColumnsSim& sim, unsigned int point,
 		GridSquare& gc) -> bool
 	{
 		// Of course, "remove" just means "set to blank" so no structural changes
-		sim.RemoveBlock(sim.IndexToPoint(point));
+		RemoveBlock(IndexToPoint(point));
+		
 		return true;
 	};
 
 	IterateSet(m_toRemove.begin(), m_toRemove.end(),removeGem);
+	m_clearedGems += (unsigned int)m_toRemove.size();
+	m_clearedGemsInLevel += (unsigned int)m_toRemove.size();
 	m_toRemove.clear();
+}
+
+bool geng::columns::ColumnsSim::ShouldLevelUp()
+{
+	return m_clearedGemsInLevel >= m_levelThreshhold;
+}
+void geng::columns::ColumnsSim::LevelUp()
+{
+	// Update times, etc
+	// Speed up by 10%
+	m_curDropMiliseconds -= m_curDropMiliseconds / 10;
+	if (m_curDropMiliseconds == m_minDropMiliseconds)
+	{
+		m_curDropMiliseconds = m_minDropMiliseconds;
+	}
+
+	m_clearedGemsInLevel = 0;
+	m_levelThreshhold += (m_levelThreshhold / 10);
+	m_levelThreshhold -= m_levelThreshhold % m_columnSize;
+
+	++m_level;
 }
 
 bool geng::columns::ColumnsSim::CompactColumn(unsigned int x)
@@ -654,6 +679,11 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 														m_dropThrottlePeriod,
 														*m_actionMapper.get());
 
+	// Save the parameter
+	m_curDropMiliseconds = m_dropMiliseconds;
+	// 10 times faster is good enough
+	m_minDropMiliseconds = m_dropMiliseconds / 10;
+
 	GenerateNewPlayerColumn();
 
 	return true;
@@ -694,7 +724,7 @@ void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
 void geng::columns::ColumnsSim::GameState
 ::OnEnterState(DropColumnState& dropState, const StateArgs& args)
 {
-	dropState.nextDropTime = args.simTime + m_owner.m_dropMiliseconds;
+	dropState.nextDropTime = args.simTime + m_owner.m_curDropMiliseconds;
 }
 
 void geng::columns::ColumnsSim::GameState
@@ -825,6 +855,12 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 			// When we return to this state after Compact, we will immediately go to Drop
 			// if there's nothing to clear
 			m_owner.ExecuteRemove();
+			// Level up?
+			if (m_owner.ShouldLevelUp())
+			{
+				m_owner.LevelUp();
+			}
+
 			Transition<CompactState>(*this, stateArgs);
 			return;
 		}

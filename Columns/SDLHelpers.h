@@ -84,7 +84,7 @@ namespace geng::sdl
 		template<typename Func, typename ... Args>
 		static SDL_Texture* Create(Func&& func, Args&& ... args)
 		{
-			return std::invoke(func, std::forward<Args>(args)...);
+			return std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
 		}
 	};
 
@@ -110,7 +110,7 @@ namespace geng::sdl
 		template<typename Func, typename ... Args>
 		static SDL_Surface* Create(Func&& func, Args&& ... args)
 		{
-			return std::invoke(func, std::forward<Args>(args)...);
+			return std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
 		}
 	};
 
@@ -119,6 +119,7 @@ namespace geng::sdl
 	public:
 		void operator()(SDL_Surface* pSurface)
 		{
+			fprintf(stderr, "Freeing SDL surface\n");
 			SDL_FreeSurface(pSurface);
 		}
 	};

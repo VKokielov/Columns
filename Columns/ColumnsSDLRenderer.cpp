@@ -1,6 +1,8 @@
 #include "ColumnsSDLRenderer.h"
 
 #include "SDLHelpers.h"
+#include "ResourceLoader.h"
+#include "RawMemoryResource.h"
 
 #include <sstream>
 
@@ -19,6 +21,42 @@ geng::columns::ColumnsSDLRenderer::ColumnsSDLRenderer(const ColumnsRenderArgs& a
 geng::IFrameListener* geng::columns::ColumnsSDLRenderer::GetFrameListener()
 {
 	return this;
+}
+
+std::shared_ptr<geng::sdl::TTFResource> geng::columns::ColumnsSDLRenderer::InitializeFont(geng::IGame* pGame, ResourceLoader* pLoader,
+	int pointSize)
+{
+	std::shared_ptr<sdl::TTFResource> pFont;
+
+	const char* pLoadedFilepath = "c:\\windows\\fonts\\calibri.ttf";
+	auto pResourceFile = LoadResource<RawMemoryResource>(pLoader, pLoadedFilepath);
+
+	if (!pResourceFile)
+	{
+		pGame->LogError("Could not find Calibri font in Windows directory -- trying free variant!");
+		pLoadedFilepath = "SourceSansPro-Regular.ttf";
+		pResourceFile = LoadResource<RawMemoryResource>(pLoader, pLoadedFilepath);
+
+		if (!pResourceFile)
+		{
+			pGame->LogError("ColumnsSDLRenderer: Missing Calibri font on Windows and free font file in game directory.");
+			return false;
+		}
+	}
+
+	sdl::FontArgs fontArgs;
+	fontArgs.pointSize = pointSize;
+	pFont = LoadResource<sdl::TTFResource>(pLoader, pResourceFile, fontArgs);
+	if (!pFont)
+	{
+		std::stringstream ssm;
+		ssm << "ColumnsSDLRenderer: could not process TTF file " 
+			<< pLoadedFilepath << ", error: " << pLoader->GetResourceLoadError();
+		std::string sErr = ssm.str();
+		pGame->LogError(sErr.c_str());
+	}
+
+	return pFont;
 }
 
 bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>& pGame)
@@ -66,6 +104,43 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_boardYOffset = m_pSim->GetColumnSize();
 
 	Measure();
+
+	// Initialize the font and texts
+	// Get the resource loader
+	auto pLoader = GetComponentAs<ResourceLoader>(pGame.get(), "ResourceLoader");
+
+	if (!pLoader)
+	{
+		pGame->LogError("ColumnsSDLRenderer: could not find ResourceLoader");
+		return false;
+	}
+
+	constexpr int FONT_SIZE_LABEL = 24;
+	constexpr int FONT_SIZE_VALUE = 28;
+	std::shared_ptr<sdl::TTFResource> pFontLabel = InitializeFont(pGame.get(), pLoader.get(), 
+		FONT_SIZE_LABEL);
+
+	if (!pFontLabel)
+	{
+		pGame->LogError("Error initializing label font");
+		return false;
+	}
+
+	std::shared_ptr<sdl::TTFResource> pFontValue = InitializeFont(pGame.get(), pLoader.get(),
+		FONT_SIZE_VALUE);
+	if (!pFontValue)
+	{
+		pGame->LogError("Error initializing value font");
+		return false;
+	}
+
+	m_scoreLabel.SetFont(pFontLabel);
+	m_scoreLabel.SetText("gems", m_pRenderer.get());
+	m_levelLabel.SetFont(pFontLabel);
+	m_scoreLabel.SetText("level", m_pRenderer.get());
+
+	m_score.SetFont(pFontValue);
+	m_level.SetFont(pFontValue);
 
 	return true;
 }
@@ -141,6 +216,31 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(IFrameManager* pManager)
 		RenderContentsAt(xRect, yRect, gem);
 		yRect += m_squareSize;
 	}
+
+	// Set the texts
+	constexpr size_t RENDERED_NUMBER_LENGTH = 25;
+
+	char txtScore[RENDERED_NUMBER_LENGTH];
+	snprintf(txtScore, sizeof(txtScore), "%u", m_pSim->GetGems());
+	m_score.SetText(txtScore, m_pRenderer.get());
+
+	char txtLevel[RENDERED_NUMBER_LENGTH];
+	snprintf(txtLevel, sizeof(txtLevel), "%u", m_pSim->GetLevel());
+	m_level.SetText(txtLevel, m_pRenderer.get());
+
+	// Draw the score label
+	int textX = m_boardArea.x - m_squareSize;
+	int textY = yRect + m_squareSize;
+
+	constexpr int TEXT_COLUMN_GAP = 20;
+
+	m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+	textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;
+	m_score.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+	textY += m_score.GetHeight() + TEXT_COLUMN_GAP;
+	m_levelLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+	textY += m_levelLabel.GetHeight() + TEXT_COLUMN_GAP;
+	m_level.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
 
 	// Draw the board
 	Point xOrigin{ 0, m_boardYOffset };

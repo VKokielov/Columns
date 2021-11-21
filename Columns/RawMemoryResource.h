@@ -8,9 +8,13 @@ namespace geng
 	class RawMemoryResource : public BaseResource
 	{
 	public:
-		static const char* GetTypeName();
+		static const char* GetTypeName()
+		{
+			return "RawMemResource";
+		}
 		
 		RawMemoryResource(std::unique_ptr<uint8_t[]>&& pMem, size_t size);
+		~RawMemoryResource();
 
 		size_t GetSize() const { return m_size; }
 		const uint8_t* GetData() const { return m_pMem.get(); }

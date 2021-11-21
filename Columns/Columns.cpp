@@ -18,27 +18,70 @@
 #include "SDLEventPoller.h"
 #include "ColumnsSim.h"
 #include "ActionMapper.h"
-#include "SDLSetup.h"
 #include "DefaultGame.h"
+#include "ResourceLoader.h"
+
+#include "RawMemoryResource.h"
+#include "TrueTypeFont.h"
 
 #include "ColumnsSDLRenderer.h"
 
 using namespace std;
 
-int main(int, char**)
+bool InitSDL()
 {
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
+		std::cerr << "SDL SetUp: SDL_Init failed; SDL error " << SDL_GetError() << '\n';
+		return false;
+	}
+
+	if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
+	{
+		std::cerr << "Unable to turn on LINEAR FILTERING\n";
+	}
+
+	if (TTF_Init() == -1)
+	{
+		std::cerr << "SDL SetUp: TTF_Init (font engine startup) failed; SDL-TTF error " << TTF_GetError()
+		<< '\n';
+		return false;
+	}
+
+	return true;
+}
+
+void DeinitSDL()
+{
+	SDL_Quit();
+	TTF_Quit();
+}
+
+void InitializeResourceLoader(geng::IGame* pGame)
+{
+	constexpr unsigned int RAW_MEM_BUFFER_SIZE = 1024;
+
+	auto pResLoader = std::make_shared<geng::ResourceLoader>();
+	
+	pResLoader->CreateType(geng::RawMemoryResource::GetTypeName());
+	auto pRawFactory = std::make_shared<geng::RawMemoryFactory>(RAW_MEM_BUFFER_SIZE);
+	pResLoader->AddFactory(pRawFactory);
+
+	pResLoader->CreateType(geng::sdl::TTFResource::GetTypeName());
+	auto pTTFFactory = std::make_shared<geng::sdl::TTFFactory>();
+	pResLoader->AddFactory(pTTFFactory);
+
+	pGame->AddComponent(pResLoader);
+}
+
+void InitializeGameComponents(geng::IGame* pGame)
+{
+	// It's important to keep these in a separate function so that the shared_ptrs
+	// are released before the game loop starts.  Unfortunately some libraries 
+	// don't like to have functions called on "final destruction".
 	using CSim = geng::columns::ColumnsSim;
 
-	geng::GameArgs gameArgs;
-	gameArgs.frameArgs.msBreather = 1;
-	gameArgs.frameArgs.msTimePerFrame = 20;
-
-	auto pGame = geng::DefaultGame::CreateGame(gameArgs);
-
-	// SETUP
-	geng::sdl::SetupArgs setUpArgs{ SDL_INIT_VIDEO };
-	auto pSetup = std::make_shared<geng::sdl::SetUp>(setUpArgs);
-	pGame->AddComponent(pSetup);
+	InitializeResourceLoader(pGame);
 
 	// EVENT POLLER
 	auto pEventPoller = std::make_shared<geng::sdl::EventPoller>();
@@ -62,7 +105,7 @@ int main(int, char**)
 
 	auto rotateAction = pActionMapper->CreateAction(CSim::GetRotateActionName());
 	pActionMapper->MapAction(rotateAction, SDLK_SPACE);
-	
+
 	auto permuteAction = pActionMapper->CreateAction(CSim::GetPermuteActionName());
 	pActionMapper->MapAction(permuteAction, SDLK_r);
 
@@ -84,7 +127,7 @@ int main(int, char**)
 
 	auto pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);
 	pGame->AddComponent(pSim);
-	
+
 	// RENDERER
 	geng::columns::ColumnsRenderArgs renderArgs;
 	renderArgs.windowX = 640 + 320;
@@ -92,14 +135,35 @@ int main(int, char**)
 	renderArgs.renderShadow = 4;
 	auto pRenderer = std::make_shared<geng::columns::ColumnsSDLRenderer>(renderArgs);
 	pGame->AddComponent(pRenderer);
+}
+
+int main(int, char**)
+{
+	if (!InitSDL())
+	{
+		return -1;
+	}
+
+	geng::GameArgs gameArgs;
+	gameArgs.frameArgs.msBreather = 1;
+	gameArgs.frameArgs.msTimePerFrame = 20;
+	auto pGame = geng::DefaultGame::CreateGame(gameArgs);
+	InitializeGameComponents(pGame.get());
 
 	// Run!
 	if (!pGame->Run())
 	{
 		std::cerr << "Exited abnormally\n";
+		pGame.reset();
 		return -1;
 	}
 
 	std::cout << "Game finished -- exiting\n";
+
+	// Destroy pGame to enable reasonably safe cleanup
+	pGame.reset();
+
+	DeinitSDL();
+
 	return 0;
 }

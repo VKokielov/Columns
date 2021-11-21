@@ -293,6 +293,9 @@ namespace geng::columns
 		{
 			return m_nextColors; 
 		}
+
+		const unsigned int GetLevel() const { return m_level; }
+		const unsigned int GetGems() const { return m_clearedGems; }
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
 		// an axis (horizontal, vertical, downslope, upslop)
@@ -415,6 +418,8 @@ namespace geng::columns
 
 		bool ComputeRemovables(unsigned int count);
 		void ExecuteRemove();
+		bool ShouldLevelUp();
+		void LevelUp();
 
 		// Compact columns by shifting all stones down
 		bool CompactColumn(unsigned int x);
@@ -457,5 +462,14 @@ namespace geng::columns
 		GameState m_gameState;
 
 		bool m_firstFrame{ true };
+
+		unsigned int m_clearedGems{ 0 };
+		unsigned int m_clearedGemsInLevel{ 0 };
+		unsigned int m_levelThreshhold{ 45 };
+		unsigned int m_level{ 1 };
+
+		unsigned int m_curDropMiliseconds{ 0 };
+		unsigned int m_minDropMiliseconds{ 0 };
+
 	};
 }
