@@ -119,7 +119,6 @@ namespace geng::sdl
 	public:
 		void operator()(SDL_Surface* pSurface)
 		{
-			fprintf(stderr, "Freeing SDL surface\n");
 			SDL_FreeSurface(pSurface);
 		}
 	};

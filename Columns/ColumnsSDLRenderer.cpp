@@ -137,7 +137,7 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_scoreLabel.SetFont(pFontLabel);
 	m_scoreLabel.SetText("gems", m_pRenderer.get());
 	m_levelLabel.SetFont(pFontLabel);
-	m_scoreLabel.SetText("level", m_pRenderer.get());
+	m_levelLabel.SetText("level", m_pRenderer.get());
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
@@ -232,7 +232,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(IFrameManager* pManager)
 	int textX = m_boardArea.x - m_squareSize;
 	int textY = yRect + m_squareSize;
 
-	constexpr int TEXT_COLUMN_GAP = 20;
+	constexpr int TEXT_COLUMN_GAP = 10;
 
 	m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
 	textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;

@@ -289,10 +289,13 @@ bool geng::columns::ColumnsSim::PermutePlayerColumn()
 {
 	PlayerSet newColumn{ m_playerColumn };
 
-	++newColumn.startPt;
-	if (newColumn.startPt == newColumn.Width())
+	if (newColumn.startPt == 0)
 	{
-		newColumn.startPt = 0;
+		newColumn.startPt = newColumn.Width() - 1;
+	}
+	else
+	{
+		--newColumn.startPt;
 	}
 
 	// No need to check - shifts happen in-place
@@ -517,8 +520,8 @@ void geng::columns::ColumnsSim::LevelUp()
 {
 	// Update times, etc
 	// Speed up by 10%
-	m_curDropMiliseconds -= m_curDropMiliseconds / 10;
-	if (m_curDropMiliseconds == m_minDropMiliseconds)
+	m_curDropMiliseconds -= m_curDropMiliseconds / 6;
+	if (m_curDropMiliseconds <= m_minDropMiliseconds)
 	{
 		m_curDropMiliseconds = m_minDropMiliseconds;
 	}
@@ -761,7 +764,7 @@ void geng::columns::ColumnsSim::GameState
 		}
 
 		// Update the drop time
-		dropState.nextDropTime = stateArgs.simTime + m_owner.m_dropMiliseconds;
+		dropState.nextDropTime = stateArgs.simTime + m_owner.m_curDropMiliseconds;
 	}
 
 	// The other actions.
