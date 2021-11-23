@@ -635,7 +635,7 @@ void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionMapper& map
 }
 
 geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
-	:BaseGameComponent("ColumnsSim", GameComponentType::Simulation),
+	:BaseGameComponent("ColumnsSim"),
 	m_gameState(*this),
 	m_size(args.boardSize),
 	m_columnSize(args.columnSize),
@@ -652,11 +652,6 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	GridSquare defaultSquare{ EMPTY, true};
 	std::fill(m_gameGrid.get(), m_gameGrid.get() + m_gameGridSize, defaultSquare);
 
-}
-
-geng::IFrameListener* geng::columns::ColumnsSim::GetFrameListener()
-{
-	return this;
 }
 
 bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
@@ -682,6 +677,7 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 														m_dropThrottlePeriod,
 														*m_actionMapper.get());
 
+
 	// Save the parameter
 	m_curDropMiliseconds = m_dropMiliseconds;
 	// 10 times faster is good enough
@@ -692,15 +688,11 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 	return true;
 }
 
-void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
+void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
+	const SimContextState* pContextState)
 {
 	StateArgs stateArgs;
-	
-	SimState state;
-	pManager->GetSimState(state, FID_SIMTIME);
-
-	stateArgs.pFrameManager = pManager;
-	stateArgs.simTime = state.simulatedTime;
+	stateArgs.simTime = pContextState->simulatedTime;
 
 	if (m_firstFrame)
 	{
@@ -710,7 +702,7 @@ void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
 
 	// This will update the actions with the state of the keyboard
 	//fprintf(stderr, "updst\n");
-	m_actionWrappers->UpdateState(*m_actionMapper, state.simulatedTime);
+	m_actionWrappers->UpdateState(*m_actionMapper, pContextState->simulatedTime);
 
 	m_gameState.StartFrame();
 

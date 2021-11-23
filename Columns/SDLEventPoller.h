@@ -4,19 +4,20 @@
 #include <vector>
 
 #include "BaseGameComponent.h"
-#include "IFrameManager.h"
 
 namespace geng::sdl
 {
 	// Gather together a stream of SDL events for the current frame
 
-	class EventPoller : public BaseGameComponent, IFrameListener
+	class EventPoller : public BaseGameComponent, 
+		public IGameListener,
+		public std::enable_shared_from_this<EventPoller>
 	{
 	public:
 		EventPoller();
 
-		IFrameListener* GetFrameListener() override;
-		void OnFrame(IFrameManager* pManager) override;
+		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+		void OnFrame(const SimState& simState, const SimContextState* pContextState) override;
 
 		template<typename F>
 		void IterateEvents(F&& callback)
@@ -34,8 +35,7 @@ namespace geng::sdl
 
 	private:
 		std::vector<SDL_Event>   m_events;
-
-		unsigned int m_frameCount{ 0 };
+		std::shared_ptr<IGame>   m_pGame;
 	};
 
 

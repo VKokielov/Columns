@@ -1,6 +1,5 @@
 #pragma once
 
-#include "IFrameManager.h"
 #include <chrono>
 #include <vector>
 #include <memory>

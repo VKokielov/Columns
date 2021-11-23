@@ -10,7 +10,6 @@
 #include <unordered_set>
 
 #include "IInput.h"
-#include "IFrameManager.h"
 #include "BaseGameComponent.h"
 
 namespace geng

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "IInput.h"
-#include "IFrameManager.h"
 #include "BaseGameComponent.h"
 #include "SDLEventPoller.h"
+#include "IGame.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -13,7 +13,7 @@ namespace geng::sdl
 {
 
 	class Input : public TemplatedGameComponent<IInput>,
-		public IFrameListener
+		public IGameListener
 	{
 	private:
 		struct KeyData_

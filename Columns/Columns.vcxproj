@@ -173,7 +173,6 @@
     <ClCompile Include="Columns.cpp" />
     <ClCompile Include="ColumnsSDLRenderer.cpp" />
     <ClCompile Include="ColumnsSim.cpp" />
-    <ClCompile Include="DefaultFrameManager.cpp" />
     <ClCompile Include="ActionMapper.cpp" />
     <ClCompile Include="DefaultGame.cpp" />
     <ClCompile Include="PuzzleSol.cpp" />

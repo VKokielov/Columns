@@ -3,7 +3,6 @@
 #include "IInput.h"
 #include "ActionMapper.h"
 #include "SimStateDispatcher.h"
-#include "IFrameManager.h"
 #include "BaseGameComponent.h"
 
 #include <memory>
@@ -133,7 +132,7 @@ namespace geng::columns
 		const char* pInputName;
 	};
 
-	class ColumnsSim : public IFrameListener, 
+	class ColumnsSim : public IGameListener, 
 						public BaseGameComponent
 	{
 	private:
@@ -154,7 +153,6 @@ namespace geng::columns
 
 		struct StateArgs
 		{
-			IFrameManager* pFrameManager;
 			unsigned long simTime;
 		};
 
@@ -260,9 +258,8 @@ namespace geng::columns
 		ColumnsSim(const ColumnsSimArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void OnFrame(IFrameManager* pManager) override;
-
-		IFrameListener* GetFrameListener() override;
+		void OnFrame(const SimState& rSimState,
+			const SimContextState* pContextState) override;
 
 		static const char* GetDropActionName();
 		static const char* GetShiftLeftActionName();
