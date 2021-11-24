@@ -180,31 +180,42 @@ bool geng::DefaultGame::AddComponent(const std::shared_ptr<IGameComponent>& pCom
 	m_componentMap.emplace(sname, m_components.size());
 	m_components.emplace_back(pComponent);
 
-	auto componentType = pComponent->GetType();
-	if (componentType == GameComponentType::IO
-		|| componentType == GameComponentType::Simulation)
-	{
-		// This should succeed if the class implements IFrameListener!
-		std::shared_ptr<IFrameListener> pFL = std::shared_ptr<IFrameListener>(pComponent, pComponent->GetFrameListener());
-		if (!pFL)
-		{
-			return false;
-		}
-
-	}
-
 	return true;
 }
 
 geng::ContextID geng::DefaultGame::CreateSimContext(const char* pName)
 {
+	// Make sure it's not in the set
+	std::string sname{ pName };
+	for (size_t i = 0; i < m_contexts.size(); ++i)
+	{
+		if (m_contexts[i].name == sname)
+		{
+			return EXECUTIVE_CONTEXT;
+		}
+	}
+
 	ContextID nextContext = m_contexts.size();
 	m_contexts.emplace_back(pName);
 	m_inputList.AddContext(nextContext);
 	m_simList.AddContext(nextContext);
 	m_renderList.AddContext(nextContext);
 
-	return true;
+	return nextContext;
+}
+
+geng::ContextID geng::DefaultGame::GetSimContext(const char* pName) const
+{
+	std::string sname{ pName };
+	for (size_t i = 0; i < m_contexts.size(); ++i)
+	{
+		if (m_contexts[i].name == sname)
+		{
+			return i;
+		}
+	}
+
+	return EXECUTIVE_CONTEXT;
 }
 
 bool geng::DefaultGame::AddListener(ListenerType listenerType,
@@ -377,7 +388,8 @@ void geng::DefaultGame::ContextInputCallbacks()
 {
 	auto callInput = [this](ContextID ctxId, const ListenerGroup& lgroup)
 	{
-		if (m_contexts[ctxId].contextState.focus.curValue)
+		if (m_contexts[ctxId].contextState.focus.curValue
+			|| m_contexts[ctxId].contextState.focus.prevValue)
 		{
 			lgroup.OnFrame(m_simState, &m_contexts[ctxId].contextState);
 		}
@@ -390,7 +402,8 @@ void geng::DefaultGame::ContextSimCallbacks()
 {
 	auto callSim = [this](ContextID ctxId, const ListenerGroup& lgroup)
 	{
-		if (m_contexts[ctxId].contextState.runstate.curValue)
+		if (m_contexts[ctxId].contextState.runstate.curValue
+			|| m_contexts[ctxId].contextState.runstate.prevValue)
 		{
 			lgroup.OnFrame(m_simState, &m_contexts[ctxId].contextState);
 		}
@@ -403,7 +416,8 @@ void geng::DefaultGame::ContextRenderCallbacks()
 {
 	auto callRender = [this](ContextID ctxId, const ListenerGroup& lgroup)
 	{
-		if (m_contexts[ctxId].contextState.visibility.curValue)
+		if (m_contexts[ctxId].contextState.visibility.curValue
+			|| m_contexts[ctxId].contextState.visibility.prevValue)
 		{
 			lgroup.OnFrame(m_simState, &m_contexts[ctxId].contextState);
 		}

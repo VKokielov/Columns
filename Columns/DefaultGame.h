@@ -131,6 +131,7 @@ namespace geng
 		void LogError(const char* pError) override;
 
 		ContextID CreateSimContext(const char* pName) override;
+		ContextID GetSimContext(const char* pName) const override;
 
 		bool AddListener(ListenerType listenerType,
 			ContextID contextId,

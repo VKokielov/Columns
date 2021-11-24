@@ -3,16 +3,11 @@
 #include <ctime>
 
 geng::sdl::Input::Input()
-	:TemplatedGameComponent<IInput>("SDLInput", GameComponentType::Simulation)
+	:TemplatedGameComponent<IInput>("SDLInput")
 {
-	std::random_device device;
-	m_generator.seed(device());
+
 }
 
-geng::IFrameListener* geng::sdl::Input::GetFrameListener()
-{
-	return this;
-}
 
 bool geng::sdl::Input::Initialize(const std::shared_ptr<IGame>& pGame)
 {
@@ -37,17 +32,18 @@ void geng::sdl::Input::AddCode(KeyCode code)
 {
 	if (m_state.count(code) == 0)
 	{
-		m_state.emplace(code, KeyData_());
+		KeyData_ kdata;
+		kdata.state.finalState = KeySignal::KeyDown;
+		kdata.state.numChanges = 0;
+
+		m_state.emplace(code, kdata);
 	}
 }
 
-unsigned long geng::sdl::Input::GetRandomNumber(unsigned long lowerBound, unsigned long upperBound)
-{
-	return m_generator() % (upperBound + 1 - lowerBound) + lowerBound;
-}
 
 bool geng::sdl::Input::QueryInput(MouseState* pMouseState,
-	geng::KeyState** ppKeyStates,
+	KeyboardState* pkeyboardState,
+	KeyState** ppKeyStates,
 	size_t nKeyStates)
 {
 	for (size_t i = 0; i < nKeyStates; ++i)
@@ -58,41 +54,26 @@ bool geng::sdl::Input::QueryInput(MouseState* pMouseState,
 			return false;
 		}
 
-		ppKeyStates[i]->signal = itCode->second.signal;
+		*ppKeyStates[i] = itCode->second.state;
+	}
+
+	if (pkeyboardState)
+	{
+		pkeyboardState->numKeysDownInFrame = m_downKeys;
 	}
 
 	return true;
 }
 
-void geng::sdl::Input::OnFrame(IFrameManager* pManager)
+void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* pContextState)
 {
-	++m_frame;
-
-	// Update "pressed" keys to "down" and "released" keys to "up"
-	std::unordered_set<KeyCode>  nextUpdated;
-
-	for (KeyCode kc : m_updatedKeys)
+	// Reset the keystate
+	for (auto& rKeyPair : m_state)
 	{
-		auto itKey = m_state.find(kc);
-
-		if (itKey->second.signal == KeySignal::KeyPressed)
-		{
-			if (itKey->second.shortPress && itKey->second.updateFrame == m_frame - 1)
-			{
-				itKey->second.signal = KeySignal::KeyReleased;
-				nextUpdated.emplace(kc);
-			}
-			itKey->second.signal = KeySignal::KeyDown;
-//			fprintf(stderr, "re-updating %d to %d\n", itKey->first, itKey->second);
-		}
-		else if (itKey->second.signal == KeySignal::KeyReleased)
-		{
-			itKey->second.signal = KeySignal::KeyUp;
-//			fprintf(stderr, "re-updating %d to %d\n", itKey->first, itKey->second);
-		}
+		rKeyPair.second.state.numChanges = 0;
 	}
-	m_updatedKeys = std::move(nextUpdated);
 
+	m_downKeys = 0;
 	auto evtHandler = [this](const SDL_Event& rEvent)
 	{
 		if (rEvent.type != SDL_KEYDOWN && rEvent.type != SDL_KEYUP)
@@ -110,22 +91,17 @@ void geng::sdl::Input::OnFrame(IFrameManager* pManager)
 			return false;
 		}
 
-//		fprintf(stderr, "Key event found\n");
+//		fprintf(stderr, "Key event found\n")
+		KeySignal newSignal = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyDown : KeySignal::KeyUp;
 
-		// Set the key state
-		itKey->second.shortPress
-			= rEvent.type == SDL_KEYUP
-			  && itKey->second.updateFrame == m_frame
-			  && itKey->second.signal == KeySignal::KeyPressed;
+		if (newSignal != itKey->second.state.finalState)
+		{
+			++itKey->second.state.numChanges;
+			itKey->second.state.finalState = newSignal;
+			
+			rEvent.type == SDL_KEYDOWN ? ++m_downKeys : --m_downKeys;
+		}
 
-		itKey->second.updateFrame = m_frame;
-
-		itKey->second.signal = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyPressed
-			: KeySignal::KeyReleased;
-
-//		fprintf(stderr, "Updating %d to %d\n", itKey->first, itKey->second);
-
-		m_updatedKeys.emplace(kcod);
 		return true;
 	};
 

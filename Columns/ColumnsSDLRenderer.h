@@ -13,22 +13,20 @@ namespace geng::columns
 {
 	struct ColumnsRenderArgs
 	{
-		unsigned int windowX;
-		unsigned int windowY;
-
 		unsigned int renderShadow;
 	};
 
 	class ColumnsSDLRenderer : public BaseGameComponent,
-							   public IFrameListener
+							   public IGameListener,
+		public std::enable_shared_from_this<ColumnsSDLRenderer>
 	{
 	public:
 		ColumnsSDLRenderer(const ColumnsRenderArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void OnFrame(IFrameManager* pManager) override;
+		void OnFrame(const SimState& rSimState,
+			const SimContextState* pContextState) override;
 
-		IFrameListener* GetFrameListener() override;
 	private:
 		template<typename T, T lower, T upper, typename U>
 		static void ClampTo(T& value, U delta)

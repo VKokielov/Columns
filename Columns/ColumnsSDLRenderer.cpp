@@ -3,24 +3,18 @@
 #include "SDLHelpers.h"
 #include "ResourceLoader.h"
 #include "RawMemoryResource.h"
+#include "SDLRendering.h"
 
 #include <sstream>
 
 geng::columns::ColumnsSDLRenderer::ColumnsSDLRenderer(const ColumnsRenderArgs& args)
-	:BaseGameComponent("ColumnsSDLRenderer", GameComponentType::IO),
-	m_windowX(args.windowX), m_windowY(args.windowY)
+	:BaseGameComponent("ColumnsSDLRenderer")
 { 
 	m_colorMap.emplace(RED, sdl::RGBA(135, 16, 0, SDL_ALPHA_OPAQUE));
 	m_colorMap.emplace(GREEN, sdl::RGBA(0,135,47,SDL_ALPHA_OPAQUE));
 	m_colorMap.emplace(YELLOW, sdl::RGBA(189, 173, 0, SDL_ALPHA_OPAQUE));
 	m_colorMap.emplace(MAGENTA, sdl::RGBA(145, 0, 189, SDL_ALPHA_OPAQUE));
 	m_colorMap.emplace(BLUE, sdl::RGBA(0, 44, 189, SDL_ALPHA_OPAQUE));
-}
-
-// This is used to avoid RTTI casts
-geng::IFrameListener* geng::columns::ColumnsSDLRenderer::GetFrameListener()
-{
-	return this;
 }
 
 std::shared_ptr<geng::sdl::TTFResource> geng::columns::ColumnsSDLRenderer::InitializeFont(geng::IGame* pGame, ResourceLoader* pLoader,
@@ -70,30 +64,18 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		return false;
 	}
 
-	// Create SDL resources
-	m_pWindow = sdl::CreateSDLObj<SDL_Window>("Columns", SDL_WINDOWPOS_UNDEFINED,
-		SDL_WINDOWPOS_UNDEFINED,
-		m_windowX, m_windowY, SDL_WINDOW_SHOWN);
+	auto pRendering = GetComponentAs<sdl::SDLRendering>(pGame.get(), "SDLRendering", getResult);
 
-	if (!m_pWindow)
+	if (!pRendering)
 	{
-		std::stringstream ssm;
-		ssm << "ColumnsSDLRenderer: could not create window; SDL error " << SDL_GetError();
-		std::string sErr = ssm.str();
-		pGame->LogError(sErr.c_str());
+		pGame->LogError("ColumnsSDLRenderer: could not get SDLRendering component");
 		return false;
 	}
 
-	m_pRenderer = sdl::CreateSDLObj<SDL_Renderer>(m_pWindow.get(), -1, SDL_RENDERER_ACCELERATED);
-
-	if (!m_pRenderer)
-	{
-		std::stringstream ssm;
-		ssm << "ColumnsSDLRenderer: could not create renderer; SDL error " << SDL_GetError();
-		std::string sErr = ssm.str();
-		pGame->LogError(sErr.c_str());
-		return false;
-	}
+	m_pWindow = pRendering->GetWindow();
+	m_pRenderer = pRendering->GetRenderer();
+	m_windowX = pRendering->GetWindowX();
+	m_windowY = pRendering->GetWindowY();
 
 	// Get board information
 	Point boardSize = m_pSim->GetBoardSize();
@@ -141,6 +123,24 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
+
+	// Subscribe
+	ContextID myContextId = pGame->GetSimContext("ColumnsSimContext");
+	if (myContextId == EXECUTIVE_CONTEXT)
+	{
+		pGame->LogError("ColumnsSDLRenderer: Context was not added.");
+		return false;
+	}
+
+	/*
+	if (!pGame->AddListener(ListenerType::Rendering,
+		myContextId,
+		shared_from_this()))
+	{
+		pGame->LogError("ColumnsSDLRenderer: Could not add myself as a rendering listener.");
+		return false;
+	}
+	*/
 
 	return true;
 }
@@ -197,7 +197,8 @@ void geng::columns::ColumnsSDLRenderer::RenderContentsAt(int x, int y,
 	}
 }
 
-void geng::columns::ColumnsSDLRenderer::OnFrame(IFrameManager* pManager)
+void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
+	const SimContextState* pContextState)
 {
 	SDL_SetRenderDrawColor(m_pRenderer.get(), 17, 23, 64, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(m_pRenderer.get());

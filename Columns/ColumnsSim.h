@@ -1,13 +1,16 @@
 #pragma once
 
 #include "IInput.h"
-#include "ActionMapper.h"
 #include "SimStateDispatcher.h"
 #include "BaseGameComponent.h"
+#include "ActionMapper.h"
+#include "ActionTranslator.h"
+#include "ActionWrapper.h"
 
 #include <memory>
 #include <array>
 #include <unordered_set>
+#include <random>
 
 namespace geng::columns
 {
@@ -133,7 +136,8 @@ namespace geng::columns
 	};
 
 	class ColumnsSim : public IGameListener, 
-						public BaseGameComponent
+						public BaseGameComponent,
+						public std::enable_shared_from_this<ColumnsSim>
 	{
 	private:
 		struct InitialState { };
@@ -168,7 +172,7 @@ namespace geng::columns
 				unsigned int dropThrottlePeriod, 
 				ActionMapper& mapper);
 
-			void UpdateState(ActionMapper& mapper, unsigned long simTime);
+			void UpdateState(ActionTranslator& mapper, unsigned long simTime);
 		};
 
 		// Drop->(lock)->Compact->Clear->?Compact,Drop
@@ -260,12 +264,6 @@ namespace geng::columns
 
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
-
-		static const char* GetDropActionName();
-		static const char* GetShiftLeftActionName();
-		static const char* GetShiftRightActionName();
-		static const char* GetRotateActionName();
-		static const char* GetPermuteActionName();
 
 		unsigned int PointToIndex(const Point& at) const;
 		Point IndexToPoint(unsigned int idx) const;
@@ -437,9 +435,9 @@ namespace geng::columns
 		std::string m_inputName;
 
 		std::shared_ptr<IInput>  m_pInput;
-
-		// __Removable sets__
-
+			
+		// Random number generation
+		unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound);
 		// _Simulation state_
 
 		std::vector<unsigned int> m_toRemove;
@@ -468,5 +466,7 @@ namespace geng::columns
 		unsigned int m_curDropMiliseconds{ 0 };
 		unsigned int m_minDropMiliseconds{ 0 };
 
+		// Random numbers
+		std::mt19937_64  m_generator;
 	};
 }

@@ -9,10 +9,6 @@ geng::sdl::EventPoller::EventPoller()
 bool geng::sdl::EventPoller::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	m_pGame = pGame;
-	m_pGame->AddListener(ListenerType::Executive, 
-						 EXECUTIVE_CONTEXT,
-						 shared_from_this());
-
 	return true;
 }
 

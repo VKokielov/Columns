@@ -1,17 +1,12 @@
 #pragma once
-
 #include "IInput.h"
 #include "BaseGameComponent.h"
-#include "SDLEventPoller.h"
-#include "IGame.h"
 
 #include <unordered_map>
-#include <unordered_set>
 
-namespace geng::sdl
+namespace geng
 {
-
-	class Input : public TemplatedGameComponent<IInput>,
+	class InputBridge : public TemplatedGameComponent<IInput>,
 		public IGameListener
 	{
 	private:
@@ -20,9 +15,7 @@ namespace geng::sdl
 			KeyState state;
 		};
 	public:
-
-		Input();
-		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+		InputBridge(const char* pName, const std::shared_ptr<IInput>& pUnderlying);
 
 		void AddCode(KeyCode code) override;
 		void OnFrame(const SimState& simState, const SimContextState* pContextState) override;
@@ -32,12 +25,11 @@ namespace geng::sdl
 			size_t nKeyStates) override;
 
 	private:
-		// The event poller polls events for the frame
-		std::shared_ptr<EventPoller>   m_pEventPoller;
-		std::unordered_map<KeyCode, KeyData_>   m_state;
+		MouseState m_mouseState;
+		KeyboardState m_keyboardState;
+		std::shared_ptr<IInput> m_pUnderlying;
+		std::unordered_map<KeyCode, KeyData_>   m_keyState;
+		std::vector<KeyState*> m_stateRefs;
 		unsigned int m_downKeys{ 0 };
-
 	};
-
-
 }

@@ -72,7 +72,7 @@ namespace geng
 		virtual void WindDown(const std::shared_ptr<IGame>& pGame) = 0;
 	};
 
-	class IGameListener : public IGameComponent
+	class IGameListener 
 	{
 	public:
 		// For "executive" listeners, the second value is nullptr
@@ -97,6 +97,7 @@ namespace geng
 
 		// Executive functions for managing contexts 
 		virtual ContextID CreateSimContext(const char* pName) = 0;
+		virtual ContextID GetSimContext(const char* pName) const = 0;
 
 		// Listener manipulation
 		virtual bool AddListener(ListenerType listenerType,

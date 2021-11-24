@@ -57,23 +57,6 @@ void DeinitSDL()
 	TTF_Quit();
 }
 
-void InitializeResourceLoader(geng::IGame* pGame)
-{
-	constexpr unsigned int RAW_MEM_BUFFER_SIZE = 1024;
-
-	auto pResLoader = std::make_shared<geng::ResourceLoader>();
-	
-	pResLoader->CreateType(geng::RawMemoryResource::GetTypeName());
-	auto pRawFactory = std::make_shared<geng::RawMemoryFactory>(RAW_MEM_BUFFER_SIZE);
-	pResLoader->AddFactory(pRawFactory);
-
-	pResLoader->CreateType(geng::sdl::TTFResource::GetTypeName());
-	auto pTTFFactory = std::make_shared<geng::sdl::TTFFactory>();
-	pResLoader->AddFactory(pTTFFactory);
-
-	pGame->AddComponent(pResLoader);
-}
-
 void InitializeGameComponents(geng::IGame* pGame)
 {
 	// It's important to keep these in a separate function so that the shared_ptrs
@@ -81,19 +64,14 @@ void InitializeGameComponents(geng::IGame* pGame)
 	// don't like to have functions called on "final destruction".
 	using CSim = geng::columns::ColumnsSim;
 
-	InitializeResourceLoader(pGame);
+//	InitializeResourceLoader(pGame);
 
 	// EVENT POLLER
-	auto pEventPoller = std::make_shared<geng::sdl::EventPoller>();
-	pGame->AddComponent(pEventPoller);
 
 	// INPUT
-	auto pInput = std::make_shared<geng::sdl::Input>();
-	pGame->AddComponent(pInput);
 
-	// ACTION MAPPER
-	auto pActionMapper = std::make_shared<geng::ActionMapper>("SDLInput");
 	// Map keys to SDL keycodes
+	/*
 	auto dropAction = pActionMapper->CreateAction(CSim::GetDropActionName());
 	pActionMapper->MapAction(dropAction, SDLK_s);
 
@@ -108,8 +86,7 @@ void InitializeGameComponents(geng::IGame* pGame)
 
 	auto permuteAction = pActionMapper->CreateAction(CSim::GetPermuteActionName());
 	pActionMapper->MapAction(permuteAction, SDLK_r);
-
-	pGame->AddComponent(pActionMapper);
+	*/
 
 	// SIMULATION
 	geng::columns::ColumnsSimArgs simArgs;

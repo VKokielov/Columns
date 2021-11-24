@@ -1,89 +1,10 @@
 #include "ActionMapper.h"
-
 #include <algorithm>
 
-geng::ActionMapper::ActionMapper(const char* pInputName)
-	:BaseGameComponent("ActionMapper", GameComponentType::Simulation),
-	m_inputName(pInputName)
+geng::ActionMapper::ActionMapper(const char* pName)
+	:BaseGameComponent(pName)
 {
 
-}
-
-// This is used to avoid RTTI casts
-geng::IFrameListener* geng::ActionMapper::GetFrameListener()
-{
-	return this;
-}
-
-bool geng::ActionMapper::Initialize(const std::shared_ptr<IGame>& pGame)
-{
-	GetComponentResult getResult;
-	m_pInput = GetComponentAs<IInput>(pGame.get(), m_inputName.c_str(), getResult);
-
-	if (!m_pInput)
-	{
-		pGame->LogError("ActionMapper: could not get input component");
-		return false;
-	}
-
-	// Add all my keys to the input
-	// TODO:  This also has to happen dynamically if new mappings are added
-	for (KeyCode kcUsed : m_usedKeys)
-	{
-		m_pInput->AddCode(kcUsed);
-	}
-
-	return true;
-}
-
-geng::ActionMapper::KeyInfo_* 
-	geng::ActionMapper::GetInfoForKey(geng::KeyCode keyCode, bool incRef)
-{
-	auto itInfoObj = m_keyInfoMap.find(keyCode);
-
-	KeyInfo_* pkinfo{ nullptr };
-	if (itInfoObj != m_keyInfoMap.end())
-	{
-		pkinfo = &itInfoObj->second;
-	}
-	else
-	{
-		auto emplResult = m_keyInfoMap.emplace(keyCode, KeyInfo_(keyCode));
-		pkinfo = &emplResult.first->second;
-		m_keyStates.emplace_back(&pkinfo->state);
-	}
-
-	if (incRef)
-	{
-		++pkinfo->refCount;
-	}
-
-	return pkinfo;
-}
-
-void geng::ActionMapper::ReleaseKey(geng::KeyCode keyCode)
-{
-	auto itInfoObj = m_keyInfoMap.find(keyCode);
-
-	if (itInfoObj != m_keyInfoMap.end())
-	{
-		KeyInfo_* pkinfo = &itInfoObj->second;
-
-		--pkinfo->refCount;
-
-		if (!pkinfo->refCount)
-		{
-			auto itState = std::find(m_keyStates.begin(), m_keyStates.end(), &pkinfo->state);
-			
-			// NOTE:  If the iterator above is end() then there is a bug in the code
-			if (itState != m_keyStates.end())
-			{
-				m_keyStates.erase(itState);
-			}
-
-			m_keyInfoMap.erase(itInfoObj);
-		}
-	}
 }
 
 geng::ActionID geng::ActionMapper::CreateAction(const char* pName)
@@ -122,63 +43,37 @@ geng::ActionID geng::ActionMapper::GetAction(const char* pName) const
 	return INVALID_ACTION;
 }
 
-void geng::ActionMapper::OnFrame(IFrameManager* pFrameManager)
+bool geng::ActionMapper::ClearMapping(ActionID actionId)
 {
-	// Get the states of all the keys in the state vector, then go through the entire action vector
-	// and update the state of each action
-	if (!m_pInput->QueryInput(&m_mouseState, m_keyStates.data(), m_keyStates.size()))
+	if (actionId < 0 || actionId >= m_actions.size())
+	{
+		return false;
+	}
+
+	m_actions[actionId].actionMapping.keyGroups.clear();
+	for (const auto& pListener : m_vMappingListeners)
+	{
+		pListener->OnMapping(actionId, m_actions[actionId].actionMapping);
+	}
+
+	return true;
+}
+
+void geng::ActionMapper::GetAllMappings(const std::shared_ptr<IActionMappingListener>& pListener)
+{
+	
+	for (ActionID id = 0; id < m_actions.size(); ++id)
+	{
+		pListener->OnMapping(id, m_actions[id].actionMapping);
+	}
+}
+void geng::ActionMapper::AddMappingListener(const std::shared_ptr<IActionMappingListener>& pListener)
+{
+	if (std::find(m_vMappingListeners.begin(), m_vMappingListeners.end(), pListener)
+		!= m_vMappingListeners.end())
 	{
 		return;
 	}
-	
-	/*
-			- When all keys are in "on" or "pressed" state, then the action is "on" or "starting"
-			- Otherwise (at least one key is "off" or "released") the action is "off" or "ending"
-			- The action is "on" if it was "on" or "starting" in the previous frame, otherwise "starting"
-			- The action is "ending" if it was "on" or "starting" in the previous frame, otherwise "off"
-	*/
 
-//	fprintf(stderr, "am frame\n");
-
-	for (ActionMapping_& action : m_actions)
-	{
-		bool isOn{ true };
-
-		for (KeyInfo_* actionKey : action.keyLocs)
-		{
-			if (actionKey->state.signal != KeySignal::KeyDown
-				&& actionKey->state.signal != KeySignal::KeyPressed)
-			{
-				isOn = false;
-				break;
-			}
-		}
-
-		action.prevState = action.state;
-		if (isOn)
-		{
-			if (action.state == ActionState::On || action.state == ActionState::Starting)
-			{
-			//	fprintf(stderr, "action %s on\n", action.actionName.c_str());
-				action.state = ActionState::On;
-			}
-			else
-			{
-				//fprintf(stderr, "action %s starting\n", action.actionName.c_str());
-				action.state = ActionState::Starting;
-			}
-		}
-		else
-		{
-			if (action.state == ActionState::On || action.state == ActionState::Starting)
-			{
-				//fprintf(stderr, "action %s ending\n", action.actionName.c_str());
-				action.state = ActionState::Ending;
-			}
-			else
-			{
-				action.state = ActionState::Off;
-			}
-		}
-	}
+	m_vMappingListeners.emplace_back(pListener);
 }

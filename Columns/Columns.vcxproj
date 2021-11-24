@@ -169,38 +169,49 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ActionTranslator.cpp" />
     <ClCompile Include="BaseResource.cpp" />
     <ClCompile Include="Columns.cpp" />
+    <ClCompile Include="ColumnsExecutive.cpp" />
     <ClCompile Include="ColumnsSDLRenderer.cpp" />
     <ClCompile Include="ColumnsSim.cpp" />
     <ClCompile Include="ActionMapper.cpp" />
+    <ClCompile Include="CommonSetup.cpp" />
     <ClCompile Include="DefaultGame.cpp" />
+    <ClCompile Include="InputBridge.cpp" />
     <ClCompile Include="PuzzleSol.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="SDLEventPoller.cpp" />
     <ClCompile Include="SDLInput.cpp" />
     <ClCompile Include="RawMemoryResource.cpp" />
+    <ClCompile Include="SDLRendering.cpp" />
     <ClCompile Include="SDLSetup.cpp" />
     <ClCompile Include="SDLText.cpp" />
     <ClCompile Include="TrueTypeFont.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActionTranslator.h" />
+    <ClInclude Include="ActionWrapper.h" />
     <ClInclude Include="BaseGameComponent.h" />
     <ClInclude Include="BaseResource.h" />
+    <ClInclude Include="ColumnsExecutive.h" />
     <ClInclude Include="ColumnsSDLRenderer.h" />
     <ClInclude Include="ColumnsSim.h" />
+    <ClInclude Include="CommonSetup.h" />
     <ClInclude Include="DefaultFrameManager.h" />
     <ClInclude Include="DefaultGame.h" />
     <ClInclude Include="IFrameManager.h" />
     <ClInclude Include="IGame.h" />
     <ClInclude Include="IInput.h" />
     <ClInclude Include="ActionMapper.h" />
+    <ClInclude Include="InputBridge.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="SDLEventPoller.h" />
     <ClInclude Include="SDLHelpers.h" />
     <ClInclude Include="SDLInput.h" />
     <ClInclude Include="RawMemoryResource.h" />
+    <ClInclude Include="SDLRendering.h" />
     <ClInclude Include="SDLSetup.h" />
     <ClInclude Include="SDLText.h" />
     <ClInclude Include="SimStateDispatcher.h" />
