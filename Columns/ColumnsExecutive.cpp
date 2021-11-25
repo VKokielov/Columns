@@ -122,19 +122,29 @@ void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 
 	m_pInput->QueryInput(nullptr, nullptr, &pksEsc, 1);
 
-	// "p" for pause
-	if (ksEsc.finalState == KeySignal::KeyDown
-		|| ksEsc.numChanges > 1)
+	if (ksEsc.numChanges > 1)
 	{
+		fprintf(stderr, "(colexec) state %d numchanges %d\n", ksEsc.finalState, ksEsc.numChanges);
+	}
+
+	bool pausePressed = (ksEsc.finalState == KeySignal::KeyDown && ksEsc.numChanges > 0)
+		|| (ksEsc.finalState == KeySignal::KeyUp && ksEsc.numChanges > 1);
+
+	// "p" for pause
+	if (pausePressed)
+	{
+		fprintf(stderr, "Got key press\n");
 		if (m_contextDesc == ContextDesc::ActiveGame)
 		{
 			m_pGame->SetRunState(m_simContextId, false);
 			m_paused = true;
+			m_contextDesc = ContextDesc::PausedGame;
 		}
 		else
 		{
 			m_pGame->SetRunState(m_simContextId, true);
 			m_paused = false;
+			m_contextDesc = ContextDesc::ActiveGame;
 		}
 	}
 

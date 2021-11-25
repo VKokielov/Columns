@@ -678,9 +678,10 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 													     *m_actionTranslator);
 
 	// Subscribe the translator to the mappings 
+	m_actionTranslator->SetInput(m_pInput);
 	m_actionMapper->GetAllMappings(m_actionTranslator);
 	m_actionMapper->AddMappingListener(m_actionTranslator);
-	m_actionTranslator->SetInput(m_pInput);
+
 
 	// Save the parameter
 	m_curDropMiliseconds = m_dropMiliseconds;

@@ -79,10 +79,10 @@ namespace geng
 	private:
 		bool IsOnAction(const KeyInfo_& key)
 		{
-			// 1. The key is down at the end of the frame
-			// 2. The key is up and number of changes is not 0 (still up) nor 1 (down, up).
-			return key.m_pkeyState->finalState == KeySignal::KeyDown
-				|| key.m_pkeyState->numChanges > 1;
+			return (key.m_pkeyState->finalState == KeySignal::KeyDown
+				&& key.m_pkeyState->numChanges > 0)
+				|| (key.m_pkeyState->finalState == KeySignal::KeyUp
+					&& key.m_pkeyState->numChanges > 1);
 		}
 
 		// Get a key, ensuring that it's added to the input object if one exists

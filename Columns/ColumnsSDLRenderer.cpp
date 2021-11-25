@@ -141,7 +141,7 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_levelLabel.SetFont(pFontLabel);
 	m_levelLabel.SetText("level", m_pRenderer.get(), sdl::TextQuality::Nice);
 	m_pauseLabel.SetFont(pFontBanner);
-	m_pauseLabel.SetText("PAUSE", m_pRenderer.get(), sdl::TextQuality::Nice);
+	m_pauseLabel.SetText("PAUSED", m_pRenderer.get(), sdl::TextQuality::Nice);
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
@@ -265,7 +265,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	// Pause??
 	if (m_pExecutive->IsPaused())
 	{
-		m_pauseLabel.RenderTo(m_pRenderer.get(), m_windowX / 2, 15, 0, 0, sdl::TextAlignment::Center);
+		m_pauseLabel.RenderTo(m_pRenderer.get(), m_windowX / 2, 30, 0, 0, sdl::TextAlignment::Center);
 	}
 
 	SDL_RenderPresent(m_pRenderer.get());

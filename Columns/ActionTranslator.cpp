@@ -2,17 +2,19 @@
 
 geng::ActionTranslator::KeyIndex geng::ActionTranslator::GetOrCreateKeyIndex(KeyCode key)
 {
+	fprintf(stderr, "get-key %d\n", key);
 	auto itKey = m_subKeyMap.find(key);
 	if (itKey != m_subKeyMap.end())
 	{
 		return itKey->second;
 	}
 
-	// Create a new key.  Add it to the input and recompute the ..
+	// Create a new key. 
 
 	KeyIndex keyIndex = m_keyStateVector.size();
 
 	m_keyStateVector.emplace_back();
+	m_keyStateVector.back().m_pkeyState->keyCode = key;
 	m_keyStateRefs.emplace_back(m_keyStateVector.back().m_pkeyState.get());
 	m_subKeyMap.emplace(key, keyIndex);
 	
@@ -70,6 +72,11 @@ void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
 		{
 			++nOnKeys;
 		}
+	}
+
+	if (nOnKeys > 0)
+	{
+		fprintf(stderr, "on keys %d\n", nOnKeys);
 	}
 
 	// Go through all my actions and update their state

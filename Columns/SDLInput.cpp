@@ -74,8 +74,9 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 		rKeyPair.second.state.numChanges = 0;
 	}
 
+	bool evtFound{ false };
 	m_downKeys = 0;
-	auto evtHandler = [this](const SDL_Event& rEvent)
+	auto evtHandler = [&evtFound, this](const SDL_Event& rEvent)
 	{
 		if (rEvent.type != SDL_KEYDOWN && rEvent.type != SDL_KEYUP)
 		{
@@ -92,7 +93,9 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 			return false;
 		}
 
-//		fprintf(stderr, "Key event found\n")
+		fprintf(stderr, "Key event found %d %d\n", rEvent.type, rEvent.key.keysym.sym);
+		evtFound = true;
+
 		KeySignal newSignal = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyDown : KeySignal::KeyUp;
 
 		if (newSignal != itKey->second.state.finalState)
@@ -107,4 +110,18 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 	};
 
 	m_pEventPoller->IterateEvents(evtHandler);
+
+	if (evtFound)
+	{
+		fprintf(stderr, ">>>>\n");
+
+		for (auto& rKeyPair : m_state)
+		{
+			fprintf(stderr, "key %d state %d numchanges %d\n",
+				rKeyPair.first, rKeyPair.second.state.finalState,
+				rKeyPair.second.state.numChanges);
+		}
+		fprintf(stderr, "<<<<\n");
+	}
+
 }
