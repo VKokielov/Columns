@@ -6,12 +6,6 @@ geng::sdl::EventPoller::EventPoller()
 
 }
 
-bool geng::sdl::EventPoller::Initialize(const std::shared_ptr<IGame>& pGame)
-{
-	m_pGame = pGame;
-	return true;
-}
-
 void geng::sdl::EventPoller::OnFrame(const SimState& simState, const SimContextState* pCtxState)
 {
 	m_events.clear();

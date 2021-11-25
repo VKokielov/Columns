@@ -5,6 +5,7 @@
 #include "SDLEventPoller.h"
 #include "SDLInput.h"
 #include "ActionMapper.h"
+#include "SDLRendering.h"
 
 #include "CommonSetup.h"
 
@@ -47,4 +48,15 @@ std::shared_ptr<geng::IGameComponent> geng::setup::InitializeActionMapper(geng::
 	auto pActionMapper = std::make_shared<geng::ActionMapper>(pName);
 	pGame->AddComponent(pActionMapper);
 	return pActionMapper;
+}
+
+std::shared_ptr<geng::IGameComponent> geng::setup::InitializeSDLRendering(geng::IGame* pGame,
+	const char* pWindowName,
+	int windowX,
+	int windowY)
+{
+	auto pRendering = std::make_shared<sdl::SDLRendering>(pWindowName, windowX, windowY);
+	pGame->AddComponent(pRendering);
+
+	return pRendering;
 }

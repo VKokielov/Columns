@@ -10,6 +10,7 @@ namespace geng
 		ActionWrapper() = delete;
 
 		bool Triggered() const { return m_triggered; }
+		const std::string& GetName() const { return m_name; }
 
 	protected:
 		// Default implementation: action in "starting" and "on" state
@@ -21,6 +22,7 @@ namespace geng
 
 		ActionWrapper(const char* pName, ActionMapper& rMapper)
 		{
+			m_name = pName;
 			m_id = rMapper.GetAction(pName);
 		}
 
@@ -35,7 +37,9 @@ namespace geng
 
 		ActionID GetID() const { return m_id; }
 
+
 	private:
+		std::string m_name;
 		ActionID m_id{ INVALID_ACTION };
 		bool m_triggered{ false };
 	};

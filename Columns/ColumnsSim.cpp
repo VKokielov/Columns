@@ -596,13 +596,15 @@ bool geng::columns::ColumnsSim::CompactColumns()
 
 geng::columns::ColumnsSim::SimActionWrappers::SimActionWrappers(unsigned int throttlePeriod, 
 							unsigned int dropThrottlePeriod,
-							ActionMapper& mapper)
+							ActionMapper& mapper,
+							ActionTranslator& translator)
 	:dropAction(ColumnsExecutive::GetDropActionName(), dropThrottlePeriod, mapper)
 	,shiftLeftAction(ColumnsExecutive::GetShiftLeftActionName(), throttlePeriod, mapper)
 	,shiftRightAction(ColumnsExecutive::GetShiftRightActionName(), throttlePeriod, mapper)
 	,rotateAction(ColumnsExecutive::GetRotateActionName(), throttlePeriod, mapper)
 	,permuteAction(ColumnsExecutive::GetPermuteActionName(), throttlePeriod, mapper)
 {
+	AddActions(mapper, translator);
 }
 
 void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionTranslator& translator, unsigned long simTime)
@@ -614,17 +616,30 @@ void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionTranslator&
 	permuteAction.UpdateState(translator, simTime);
 }
 
+void geng::columns::ColumnsSim::SimActionWrappers::AddActions(ActionMapper& mapper,
+							ActionTranslator& translator)
+{
+	std::vector<std::string> actionNames
+	{ dropAction.GetName(),
+	 shiftLeftAction.GetName(),
+	 shiftRightAction.GetName(),
+	 rotateAction.GetName(),
+	 permuteAction.GetName() };
+
+	translator.InitActions(&mapper, actionNames.begin(), actionNames.end());
+}
+
 geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	:BaseGameComponent("ColumnsSim"),
-	m_gameState(*this),
+	m_actionTranslator(new ActionTranslator()),
 	m_size(args.boardSize),
 	m_columnSize(args.columnSize),
 	m_dropMiliseconds(args.dropMilliseconds),
 	m_flashMiliseconds(args.flashMilliseconds),
 	m_flashCount(args.flashCount),
 	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
+	m_gameState(*this),
 	m_gameGridSize(args.boardSize.x * args.boardSize.y),
-	m_inputName(args.pInputName),
 	m_throttlePeriod(args.actionThrottlePeriod),
 	m_dropThrottlePeriod(args.dropThrottlePeriod)
 {
@@ -641,7 +656,7 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	GetComponentResult getResult;
-	m_pInput = GetComponentAs<IInput>(pGame.get(), m_inputName.c_str(), getResult);
+	m_pInput = GetComponentAs<IInput>(pGame.get(), ColumnsExecutive::GetColumnsInputBridgeName(), getResult);
 
 	if (!m_pInput)
 	{
@@ -649,7 +664,7 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 		return false;
 	}
 
-	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), "ActionMapper", getResult);
+	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), ColumnsExecutive::GetActionMapperName(), getResult);
 	
 	if (!m_actionMapper)
 	{
@@ -659,26 +674,13 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 
 	m_actionWrappers = std::make_shared<SimActionWrappers>(m_throttlePeriod,
 														m_dropThrottlePeriod,
-														*m_actionMapper.get());
+														*m_actionMapper.get(),
+													     *m_actionTranslator);
 
-	// Subscribe to the right context
-	/*
-	ContextID myContextId = pGame->GetSimContext(ColumnsExecutive::GetColumnsSimContextName());
-	if (myContextId == EXECUTIVE_CONTEXT)
-	{
-		pGame->LogError("ColumnsSim: Context was not added.");
-		return false;
-	}
-
-
-	if (!pGame->AddListener(ListenerType::Simulation,
-		myContextId,
-		shared_from_this()))
-	{
-		pGame->LogError("ColumnsSim: Could not add myself as a rendering listener.");
-		return false;
-	}
-	*/
+	// Subscribe the translator to the mappings 
+	m_actionMapper->GetAllMappings(m_actionTranslator);
+	m_actionMapper->AddMappingListener(m_actionTranslator);
+	m_actionTranslator->SetInput(m_pInput);
 
 	// Save the parameter
 	m_curDropMiliseconds = m_dropMiliseconds;
@@ -702,9 +704,10 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 		m_firstFrame = false;
 	}
 
-	// This will update the actions with the state of the keyboard
-	//fprintf(stderr, "updst\n");
-	m_actionWrappers->UpdateState(*m_actionMapper, pContextState->simulatedTime);
+	// This will update the translator with the state of the input
+	m_actionTranslator->UpdateOnFrame(pContextState->frameCount);
+	// This will update the referenced commands with the state of the translator
+	m_actionWrappers->UpdateState(*m_actionTranslator, pContextState->simulatedTime);
 
 	m_gameState.StartFrame();
 
@@ -824,7 +827,8 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 		// Initialize the blink phase
 		clearState.blinkPhase = true;
 		clearState.blinkPhaseCount = 0;
-		clearState.nextBlinkTime = 0.5 * (stateArgs.simTime + m_owner.m_flashMiliseconds);
+		clearState.nextBlinkTime = 
+			(unsigned long)(0.5 * (stateArgs.simTime + m_owner.m_flashMiliseconds));
 
 		// Implement
 		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);

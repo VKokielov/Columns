@@ -185,7 +185,6 @@
     <ClCompile Include="SDLInput.cpp" />
     <ClCompile Include="RawMemoryResource.cpp" />
     <ClCompile Include="SDLRendering.cpp" />
-    <ClCompile Include="SDLSetup.cpp" />
     <ClCompile Include="SDLText.cpp" />
     <ClCompile Include="TrueTypeFont.cpp" />
   </ItemGroup>
@@ -212,7 +211,6 @@
     <ClInclude Include="SDLInput.h" />
     <ClInclude Include="RawMemoryResource.h" />
     <ClInclude Include="SDLRendering.h" />
-    <ClInclude Include="SDLSetup.h" />
     <ClInclude Include="SDLText.h" />
     <ClInclude Include="SimStateDispatcher.h" />
     <ClInclude Include="TrueTypeFont.h" />

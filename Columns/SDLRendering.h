@@ -9,7 +9,9 @@ namespace geng::sdl
 	class SDLRendering : public BaseGameComponent
 	{
 	public:
-		SDLRendering(const char* pWindowTitle, int windowX, int windowY);
+		SDLRendering(const char* pWindowTitle, 
+			int windowX, 
+			int windowY);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
 		const std::shared_ptr<SDL_Window>& GetWindow()

@@ -130,9 +130,6 @@ namespace geng::columns
 		unsigned int flashCount;
 		unsigned int actionThrottlePeriod;
 		unsigned int dropThrottlePeriod;
-
-		// Component names
-		const char* pInputName;
 	};
 
 	class ColumnsSim : public IGameListener, 
@@ -170,9 +167,13 @@ namespace geng::columns
 
 			SimActionWrappers(unsigned int throttlePeriod, 
 				unsigned int dropThrottlePeriod, 
-				ActionMapper& mapper);
+				ActionMapper& mapper,
+				ActionTranslator& translator);
 
-			void UpdateState(ActionTranslator& mapper, unsigned long simTime);
+			void UpdateState(ActionTranslator& translator, unsigned long simTime);
+
+			void AddActions(ActionMapper& mapper, 
+					        ActionTranslator& translator);
 		};
 
 		// Drop->(lock)->Compact->Clear->?Compact,Drop
@@ -420,8 +421,12 @@ namespace geng::columns
 		bool CompactColumn(unsigned int x);
 		bool CompactColumns();
 
+		// Random number generation
+		unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound);
+
 		// Actions
 		std::shared_ptr<ActionMapper>  m_actionMapper;
+		std::shared_ptr<ActionTranslator> m_actionTranslator;
 		std::shared_ptr<SimActionWrappers>  m_actionWrappers;
 
 		// __Parameters__
@@ -436,10 +441,8 @@ namespace geng::columns
 
 		std::shared_ptr<IInput>  m_pInput;
 			
-		// Random number generation
-		unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound);
-		// _Simulation state_
 
+		// _Simulation state_
 		std::vector<unsigned int> m_toRemove;
 		// Store x coordinates of points to remove because that is where the holes will appear
 		// (This is an optimization to prevent needless work)

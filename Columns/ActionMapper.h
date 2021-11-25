@@ -71,6 +71,10 @@ namespace geng
 		ActionID CreateAction(const char* pName);
 		// Get an existing action
 		ActionID GetAction(const char* pName) const;
+		ActionID GetAction(const std::string& sName) const
+		{
+			return GetAction(sName.c_str());
+		}
 
 		bool ClearMapping(ActionID actionId);
 
