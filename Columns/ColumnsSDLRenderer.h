@@ -7,6 +7,7 @@
 #include "TrueTypeFont.h"
 #include "SDLText.h"
 #include "ResourceLoader.h"
+#include "ColumnsExecutive.h"
 #include <utility>
 
 namespace geng::columns
@@ -105,12 +106,18 @@ namespace geng::columns
 		// Sim
 		std::shared_ptr<ColumnsSim>  m_pSim;
 
+		// Executive
+		std::shared_ptr<ColumnsExecutive> m_pExecutive;
+
 		// Prerendered text
 		sdl::Text m_scoreLabel;
 		sdl::Text m_levelLabel;
+		sdl::Text m_pauseLabel;
 
 		sdl::Text m_score;
 		sdl::Text m_level;
+
+
 
 	};
 

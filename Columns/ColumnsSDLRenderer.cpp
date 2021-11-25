@@ -64,6 +64,14 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		return false;
 	}
 
+	m_pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), "ColumnsExecutive", getResult);
+
+	if (!m_pExecutive)
+	{
+		pGame->LogError("ColumnsSDLRenderer: could not get ColumnsExecutive");
+		return false;
+	}
+
 	auto pRendering = GetComponentAs<sdl::SDLRendering>(pGame.get(), "SDLRendering", getResult);
 
 	if (!pRendering)
@@ -99,6 +107,8 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 
 	constexpr int FONT_SIZE_LABEL = 24;
 	constexpr int FONT_SIZE_VALUE = 28;
+	constexpr int FONT_SIZE_BANNER = 48;
+
 	std::shared_ptr<sdl::TTFResource> pFontLabel = InitializeFont(pGame.get(), pLoader.get(), 
 		FONT_SIZE_LABEL);
 
@@ -116,10 +126,20 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		return false;
 	}
 
+	std::shared_ptr<sdl::TTFResource> pFontBanner = InitializeFont(pGame.get(), pLoader.get(),
+		FONT_SIZE_BANNER);
+	if (!pFontValue)
+	{
+		pGame->LogError("Error initializing banner font");
+		return false;
+	}
+
 	m_scoreLabel.SetFont(pFontLabel);
-	m_scoreLabel.SetText("gems", m_pRenderer.get());
+	m_scoreLabel.SetText("gems", m_pRenderer.get(), sdl::TextQuality::Nice);
 	m_levelLabel.SetFont(pFontLabel);
-	m_levelLabel.SetText("level", m_pRenderer.get());
+	m_levelLabel.SetText("level", m_pRenderer.get(), sdl::TextQuality::Nice);
+	m_pauseLabel.SetFont(pFontBanner);
+	m_pauseLabel.SetText("PAUSE", m_pRenderer.get(), sdl::TextQuality::Nice);
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
@@ -131,16 +151,6 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		pGame->LogError("ColumnsSDLRenderer: Context was not added.");
 		return false;
 	}
-
-	/*
-	if (!pGame->AddListener(ListenerType::Rendering,
-		myContextId,
-		shared_from_this()))
-	{
-		pGame->LogError("ColumnsSDLRenderer: Could not add myself as a rendering listener.");
-		return false;
-	}
-	*/
 
 	return true;
 }
@@ -257,6 +267,12 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	};
 
 	m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
+
+	// Pause??
+	if (m_pExecutive->IsPaused())
+	{
+		m_pauseLabel.RenderTo(m_pRenderer.get(), m_windowX / 2, 15, 0, 0, sdl::TextAlignment::Center);
+	}
 
 	SDL_RenderPresent(m_pRenderer.get());
 }

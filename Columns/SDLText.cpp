@@ -22,7 +22,8 @@ bool geng::sdl::Text::SetColor(const RGBA& color)
 	return SetText(m_text.c_str(), nullptr);
 }
 
-bool geng::sdl::Text::SetText(const char* pText, SDL_Renderer* pRenderer)
+bool geng::sdl::Text::SetText(const char* pText, SDL_Renderer* pRenderer,
+	TextQuality quality)
 {
 	if (!m_changeMade 
 		&& m_text == pText)
@@ -46,9 +47,22 @@ bool geng::sdl::Text::SetText(const char* pText, SDL_Renderer* pRenderer)
 
 	if (!m_text.empty())
 	{	
-		m_pSurface = CreateSDLObj<SDL_Surface>(TTF_RenderText_Solid, 
-											   m_pFont->GetFont(), m_text.c_str(), 
-											   m_color);
+		if (quality == TextQuality::Rough)
+		{
+			m_pSurface = CreateSDLObj<SDL_Surface>(TTF_RenderText_Solid,
+				m_pFont->GetFont(), m_text.c_str(),
+				m_color);
+		}
+		else if (quality == TextQuality::Nice)
+		{
+			m_pSurface = CreateSDLObj<SDL_Surface>(TTF_RenderText_Blended,
+				m_pFont->GetFont(), m_text.c_str(),
+				m_color);
+		}
+		else
+		{
+			return false;
+		}
 											   
 		if (!m_pSurface)
 		{
