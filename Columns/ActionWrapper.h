@@ -61,8 +61,9 @@ namespace geng
 
 			bool isOn = state == ActionState::On;
 
-			if (m_wasOn
-				|| (isOn && (m_throttleStart + m_throttlePeriod <= simTime)))
+			if (isOn 
+				&& (!m_wasOn
+					|| (m_throttleStart + m_throttlePeriod <= simTime)))
 			{
 				//				fprintf(stderr, "setting action %d to true with state %d\n", GetID(), state);
 				m_throttleStart = simTime;
@@ -72,7 +73,6 @@ namespace geng
 			{
 				SetTriggered(false);
 			}
-
 			m_wasOn = isOn;
 		}
 	private:

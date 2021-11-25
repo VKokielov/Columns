@@ -179,7 +179,7 @@
     <ClCompile Include="CommonSetup.cpp" />
     <ClCompile Include="DefaultGame.cpp" />
     <ClCompile Include="InputBridge.cpp" />
-    <ClCompile Include="PuzzleSol.cpp" />
+    <ClCompile Include="KeyDebug.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="SDLEventPoller.cpp" />
     <ClCompile Include="SDLInput.cpp" />
@@ -204,6 +204,7 @@
     <ClInclude Include="IInput.h" />
     <ClInclude Include="ActionMapper.h" />
     <ClInclude Include="InputBridge.h" />
+    <ClInclude Include="KeyDebug.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="SDLEventPoller.h" />

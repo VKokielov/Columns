@@ -1,5 +1,5 @@
 #include "InputBridge.h"
-
+#include "KeyDebug.h"
 
 geng::InputBridge::InputBridge(const char* pName, const std::shared_ptr<IInput>& pUnderlying)
 	:TemplatedGameComponent<IInput>(pName),
@@ -15,11 +15,12 @@ void geng::InputBridge::AddCode(KeyCode code)
 	if (m_keyState.count(code) == 0)
 	{
 		KeyData_ kdata;
-		kdata.state.finalState = KeySignal::KeyDown;
+		kdata.state.keyCode = code;
+		kdata.state.finalState = KeySignal::KeyUp;
 		kdata.state.numChanges = 0;
 
-		m_stateRefs.emplace_back(&kdata.state);
-		m_keyState.emplace(code, kdata);
+		auto emplaceResult = m_keyState.emplace(code, kdata);
+		m_stateRefs.emplace_back(&(emplaceResult.first->second.state));
 
 		m_pUnderlying->AddCode(code);
 	}
@@ -55,6 +56,15 @@ void geng::InputBridge::OnFrame(const SimState& simState, const SimContextState*
 	{
 		// In focus.  Get all the elements from the underlying input and count how many of them
 		// are actually down
+		/*
+#ifndef NDEBUG
+		if (g_keyPressedThisFrame)
+		{
+			fprintf(stderr, "input bridge Key pressed!\n");
+		}
+#endif
+		*/
+
 		m_pUnderlying->QueryInput(nullptr, nullptr, m_stateRefs.data(), m_stateRefs.size());
 
 		m_downKeys = 0;

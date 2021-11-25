@@ -11,11 +11,6 @@ geng::RawMemoryResource::RawMemoryResource(std::unique_ptr<uint8_t[]>&& pMem, si
 { 
 }
 
-geng::RawMemoryResource::~RawMemoryResource()
-{
-	fprintf(stderr, "DESTROYING RAW MEMORY\n");
-}
-
 geng::RawMemoryFactory::RawMemoryFactory(size_t bufferSize)
 	:BaseResourceFactory(RawMemoryResource::GetTypeName()),
 	m_bufferSize(bufferSize)

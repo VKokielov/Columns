@@ -79,8 +79,7 @@ namespace geng
 	private:
 		bool IsOnAction(const KeyInfo_& key)
 		{
-			return (key.m_pkeyState->finalState == KeySignal::KeyDown
-				&& key.m_pkeyState->numChanges > 0)
+			return key.m_pkeyState->finalState == KeySignal::KeyDown
 				|| (key.m_pkeyState->finalState == KeySignal::KeyUp
 					&& key.m_pkeyState->numChanges > 1);
 		}

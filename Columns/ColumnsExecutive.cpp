@@ -122,18 +122,12 @@ void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 
 	m_pInput->QueryInput(nullptr, nullptr, &pksEsc, 1);
 
-	if (ksEsc.numChanges > 1)
-	{
-		fprintf(stderr, "(colexec) state %d numchanges %d\n", ksEsc.finalState, ksEsc.numChanges);
-	}
-
 	bool pausePressed = (ksEsc.finalState == KeySignal::KeyDown && ksEsc.numChanges > 0)
 		|| (ksEsc.finalState == KeySignal::KeyUp && ksEsc.numChanges > 1);
 
 	// "p" for pause
 	if (pausePressed)
 	{
-		fprintf(stderr, "Got key press\n");
 		if (m_contextDesc == ContextDesc::ActiveGame)
 		{
 			m_pGame->SetRunState(m_simContextId, false);
@@ -163,7 +157,7 @@ void geng::columns::ColumnsExecutive::MapActions(ActionMapper& rMapper)
 
 	auto rightAction = rMapper.CreateAction(GetShiftRightActionName());
 	rMapper.MapAction(rightAction, SDLK_d);
-	rMapper.MapAction(leftAction, SDLK_RIGHT);
+	rMapper.MapAction(rightAction, SDLK_RIGHT);
 
 	auto rotateAction = rMapper.CreateAction(GetRotateActionName());
 	rMapper.MapAction(rotateAction, SDLK_SPACE);

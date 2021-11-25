@@ -1,4 +1,5 @@
 #include "SDLInput.h"
+#include "KeyDebug.h"
 
 #include <ctime>
 
@@ -74,16 +75,19 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 		rKeyPair.second.state.numChanges = 0;
 	}
 
-	bool evtFound{ false };
 	m_downKeys = 0;
-	auto evtHandler = [&evtFound, this](const SDL_Event& rEvent)
+
+#ifndef NDEBUG
+	g_keyChangedThisFrame = false;
+#endif
+
+	auto evtHandler = [this](const SDL_Event& rEvent)
 	{
 		if (rEvent.type != SDL_KEYDOWN && rEvent.type != SDL_KEYUP)
 		{
 			return false;
 		}
 
-//		fprintf(stderr, "Key event received\n");
 		KeyCode kcod = rEvent.key.keysym.sym;
 
 		auto itKey = m_state.find(kcod);
@@ -93,8 +97,9 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 			return false;
 		}
 
-		fprintf(stderr, "Key event found %d %d\n", rEvent.type, rEvent.key.keysym.sym);
-		evtFound = true;
+#ifndef NDEBUG
+		g_keyChangedThisFrame = true;
+#endif
 
 		KeySignal newSignal = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyDown : KeySignal::KeyUp;
 
@@ -111,7 +116,9 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 
 	m_pEventPoller->IterateEvents(evtHandler);
 
-	if (evtFound)
+	/*
+#ifndef NDEBUG
+	if (g_keyChangedThisFrame)
 	{
 		fprintf(stderr, ">>>>\n");
 
@@ -123,5 +130,6 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 		}
 		fprintf(stderr, "<<<<\n");
 	}
-
+#endif
+	*/
 }

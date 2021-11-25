@@ -211,15 +211,24 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(m_pRenderer.get(), &m_boardArea);
 
+	bool isPaused = m_pExecutive->IsPaused();
+
 	// Draw the predicting gems next to the board
 	const std::vector<GridContents>& nextGems = m_pSim->GetNextColors();
 
 	int xRect = m_predictorX;
 	int yRect = m_predictorY;
-	for (GridContents gem : nextGems)
+	if (!isPaused)
 	{
-		RenderContentsAt(xRect, yRect, gem);
-		yRect += m_squareSize;
+		for (GridContents gem : nextGems)
+		{
+			RenderContentsAt(xRect, yRect, gem);
+			yRect += m_squareSize;
+		}
+	}
+	else
+	{
+		yRect += m_squareSize * (int)nextGems.size();
 	}
 
 	// Set the texts
@@ -238,7 +247,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	int textY = yRect + m_squareSize;
 
 	constexpr int TEXT_COLUMN_GAP = 10;
-
+	
 	m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
 	textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;
 	m_score.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
@@ -260,7 +269,10 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 		RenderContentsAt(xSquare, ySquare, toDraw);
 	};
 
-	m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
+	if (!isPaused)
+	{
+		m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
+	}
 
 	// Pause??
 	if (m_pExecutive->IsPaused())

@@ -1,8 +1,8 @@
 #include "ActionTranslator.h"
+#include "KeyDebug.h"
 
 geng::ActionTranslator::KeyIndex geng::ActionTranslator::GetOrCreateKeyIndex(KeyCode key)
 {
-	fprintf(stderr, "get-key %d\n", key);
 	auto itKey = m_subKeyMap.find(key);
 	if (itKey != m_subKeyMap.end())
 	{
@@ -23,6 +23,7 @@ geng::ActionTranslator::KeyIndex geng::ActionTranslator::GetOrCreateKeyIndex(Key
 		m_pInput->AddCode(key);
 	}
 
+//	fprintf(stderr, "get-key %d index %llu\n", key, keyIndex);
 	return keyIndex;
 }
 
@@ -33,7 +34,9 @@ void geng::ActionTranslator::SetInput(const std::shared_ptr<IInput>& pInput)
 
 void geng::ActionTranslator::OnMapping(ActionID actionId, const ActionMapping& mapping)
 {
+	//fprintf(stderr, "Processing mapping %d\n", actionId);
 	auto itAction = m_actionMap.find(actionId);
+	unsigned int groupCount{ 0 };
 	if (itAction != m_actionMap.end())   // Ignore actions that don't concern me
 	{
 		ActionInfo_& rInfo = itAction->second;
@@ -41,16 +44,21 @@ void geng::ActionTranslator::OnMapping(ActionID actionId, const ActionMapping& m
 		rInfo.keyRefs.clear();
 		for (const auto& keyGroup : mapping.keyGroups)
 		{
+		//	fprintf(stderr, "keygroup:\n");
 			std::vector<KeyIndex>  transKeyGroup;
 			for (KeyCode key : keyGroup)
 			{
 				KeyIndex kidx = GetOrCreateKeyIndex(key);
+	//			fprintf(stderr, "\tkey %u\n", key);
 				transKeyGroup.emplace_back(kidx);
 			}
+	//		fprintf(stderr, "/keygroup\n");
 
+			++groupCount;
 			rInfo.keyRefs.emplace_back(std::move(transKeyGroup));
 		}
 	}
+	//fprintf(stderr, "Group count %u\n", groupCount);
 }
 
 void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
@@ -68,15 +76,11 @@ void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
 	unsigned int nOnKeys{ 0 };
 	for (KeyInfo_& rKey : m_keyStateVector)
 	{
+		//fprintf(stderr, "key state: ")
 		if (IsOnAction(rKey))
 		{
 			++nOnKeys;
 		}
-	}
-
-	if (nOnKeys > 0)
-	{
-		fprintf(stderr, "on keys %d\n", nOnKeys);
 	}
 
 	// Go through all my actions and update their state
@@ -88,7 +92,7 @@ void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
 		bool actionOn{ false };
 		for (const auto& keyGroup : rActionState.second.keyRefs)
 		{
-			if (rActionState.second.keyRefs.size() == nOnKeys)
+			if (keyGroup.size() == nOnKeys)
 			{
 				bool keysOn{ true };
 				for (KeyIndex index : keyGroup)
@@ -108,6 +112,13 @@ void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
 			}
 		}
 
-		rActionState.second.actState = actionOn ? ActionState::On : ActionState::Off;
+		ActionState nextState = actionOn ? ActionState::On : ActionState::Off;
+		/*
+		if (nextState != rActionState.second.actState)
+		{
+			fprintf(stderr, "Flipping action %d to state %d\n", rActionState.first, (int)nextState);
+		}
+		*/
+		rActionState.second.actState = nextState;
 	}
 }
