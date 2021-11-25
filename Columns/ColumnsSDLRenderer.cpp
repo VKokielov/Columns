@@ -64,7 +64,9 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		return false;
 	}
 
-	m_pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), "ColumnsExecutive", getResult);
+	m_pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), 
+		ColumnsExecutive::GetExecutiveName(), 
+		getResult);
 
 	if (!m_pExecutive)
 	{
@@ -143,14 +145,6 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
-
-	// Subscribe
-	ContextID myContextId = pGame->GetSimContext("ColumnsSimContext");
-	if (myContextId == EXECUTIVE_CONTEXT)
-	{
-		pGame->LogError("ColumnsSDLRenderer: Context was not added.");
-		return false;
-	}
 
 	return true;
 }

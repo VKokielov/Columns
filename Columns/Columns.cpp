@@ -43,13 +43,15 @@ void DeinitSDL()
 bool InitializeGameComponents(const std::shared_ptr<geng::IGame>& pGame)
 {
 	// The executive initializes all other components
-	auto pExecutive = std::make_shared<geng::columns::ColumnsExecutive>(pGame);
+	auto pExecutive = std::make_shared<geng::columns::ColumnsExecutive>();
 
-	if (!pExecutive->IsInitialized())
+	if (!pExecutive->AddToGame(pGame))
 	{
 		pGame->LogError("Unable to initialize the game -- see previous log for errors.");
 		return false;
 	}
+
+	pGame->AddComponent(pExecutive);
 
 	return true;
 }

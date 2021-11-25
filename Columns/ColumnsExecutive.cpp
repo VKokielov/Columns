@@ -9,11 +9,20 @@
 
 #include "InputBridge.h"
 
-geng::columns::ColumnsExecutive::ColumnsExecutive(const std::shared_ptr<IGame>& pGame)
-	:BaseGameComponent("ColumnsSimExecutive"),
+geng::columns::ColumnsExecutive::ColumnsExecutive()
+	:BaseGameComponent(GetExecutiveName()),
 	m_initialized(false),
-	m_pGame(pGame)
+	m_pGame()
 {
+
+
+	m_initialized = true;
+}
+
+bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pGame)
+{
+	m_pGame = pGame;
+
 	// Precreate certain components
 	setup::InitializeSDLRendering(pGame.get(), "Columns", 640 + 320, 480 + 240);
 	setup::InitializeResourceLoader(pGame.get());
@@ -21,6 +30,7 @@ geng::columns::ColumnsExecutive::ColumnsExecutive(const std::shared_ptr<IGame>& 
 		(setup::InitializeSDLPoller(pGame.get()));
 
 	m_pInput = std::static_pointer_cast<sdl::Input>(setup::InitializeSDLInput(pGame.get()));
+	m_pInput->AddCode(SDLK_p); // pause
 
 	auto pActionMapper = std::static_pointer_cast<ActionMapper>(setup::InitializeActionMapper(pGame.get(), GetActionMapperName()));
 	MapActions(*pActionMapper);
@@ -31,21 +41,21 @@ geng::columns::ColumnsExecutive::ColumnsExecutive(const std::shared_ptr<IGame>& 
 		pPoller))
 	{
 		pGame->LogError("Columns: unable to add SDL event poller as listener");
-		return;
+		return false;
 	}
 
 	if (!pGame->AddListener(ListenerType::Executive, EXECUTIVE_CONTEXT,
 		m_pInput))
 	{
 		pGame->LogError("Columns: unable to add SDL input handler as listener");
-		return;
+		return false;
 	}
-	
+
 	if (!pGame->AddListener(ListenerType::Executive, EXECUTIVE_CONTEXT,
 		shared_from_this()))
 	{
 		pGame->LogError("Columns: unable to add executive as listener");
-		return;
+		return false;
 	}
 
 	// Create the columns sim context
@@ -80,22 +90,27 @@ geng::columns::ColumnsExecutive::ColumnsExecutive(const std::shared_ptr<IGame>& 
 	if (!pGame->AddListener(ListenerType::Input, m_simContextId, pInputBridge))
 	{
 		pGame->LogError("Columns: unable to add input bridge as listener");
-		return;
+		return false;
 	}
 
 	if (!pGame->AddListener(ListenerType::Simulation, m_simContextId, pSim))
 	{
 		pGame->LogError("Columns: unable to add simulation as listener");
-		return;
+		return false;
 	}
 
 	if (!pGame->AddListener(ListenerType::Rendering, m_simContextId, pSim))
 	{
 		pGame->LogError("Columns: unable to add renderer as listener");
-		return;
+		return false;
 	}
 
-	m_initialized = true;
+	// Set focus, visibility, runstate...
+	pGame->SetFocus(m_simContextId);
+	pGame->SetVisibility(m_simContextId, true);
+	pGame->SetRunState(m_simContextId, true);
+
+	return true;
 }
 
 void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
@@ -178,4 +193,8 @@ const char* geng::columns::ColumnsExecutive::GetActionMapperName()
 const char* geng::columns::ColumnsExecutive::GetColumnsInputBridgeName()
 {
 	return "ColumnsInputBridge";
+}
+const char* geng::columns::ColumnsExecutive::GetExecutiveName()
+{
+	return "ColumnsExecutive";
 }

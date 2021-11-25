@@ -59,6 +59,7 @@ namespace geng
 				m_actionMap.emplace(actId, ActionInfo_());
 				++bActionNames;
 			}
+			return true;
 		}
 
 		void SetInput(const std::shared_ptr<IInput>& pInput);

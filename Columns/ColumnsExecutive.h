@@ -27,9 +27,12 @@ namespace geng::columns
 		static const char* GetColumnsSimContextName();
 		static const char* GetActionMapperName();
 		static const char* GetColumnsInputBridgeName();
+		static const char* GetExecutiveName();
 
 		// Create all the other components and add them to the game
-		ColumnsExecutive(const std::shared_ptr<IGame>& pGame);
+		ColumnsExecutive();
+		bool AddToGame(const std::shared_ptr<IGame>& pGame);
+
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
 

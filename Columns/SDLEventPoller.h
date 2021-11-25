@@ -16,6 +16,7 @@ namespace geng::sdl
 	public:
 		EventPoller();
 
+		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 		void OnFrame(const SimState& simState, const SimContextState* pContextState) override;
 
 		template<typename F>

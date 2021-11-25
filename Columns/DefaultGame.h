@@ -89,9 +89,16 @@ namespace geng
 
 			while (idx != m_lastIndex)
 			{
-				callback(m_listenerGroups[idx].contextId, m_listenerGroups[idx].group);
+				if (idx != EXECUTIVE_CONTEXT)
+				{
+					callback(m_listenerGroups[idx].contextId, m_listenerGroups[idx].group);
+				}
 				idx = m_listenerGroups[idx].nextIndex;
 			}
+
+			// One more step for "last"
+			callback(m_listenerGroups[idx].contextId, m_listenerGroups[idx].group);
+
 		}
 
 		bool AddListener(ContextID contextId,

@@ -33,7 +33,8 @@ void geng::sdl::Input::AddCode(KeyCode code)
 	if (m_state.count(code) == 0)
 	{
 		KeyData_ kdata;
-		kdata.state.finalState = KeySignal::KeyDown;
+		kdata.state.keyCode = code;
+		kdata.state.finalState = KeySignal::KeyUp;
 		kdata.state.numChanges = 0;
 
 		m_state.emplace(code, kdata);

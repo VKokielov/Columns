@@ -26,6 +26,7 @@ bool geng::ListenerTypeList::AddContext(ContextID contextId)
 
 	// Add and update the next index
 	size_t newLast = m_listenerGroups.size();
+	size_t curLast = 0;
 	if (m_listenerGroups.empty())
 	{
 		m_firstIndex = 0;
@@ -34,8 +35,11 @@ bool geng::ListenerTypeList::AddContext(ContextID contextId)
 	else
 	{
 		// add at the end
+		curLast = m_lastIndex;
 		m_listenerGroups[m_lastIndex].nextIndex = newLast;
+		m_lastIndex = newLast;
 	}
+	m_listenerGroups.emplace_back(contextId, 0, curLast);
 
 	return true;
 }
@@ -256,7 +260,7 @@ bool geng::DefaultGame::AddListener(ListenerType listenerType,
 	{
 		*plistenerId = lid;
 	}
-	return pList->AddListener(lid, contextId, pListener);
+	return pList->AddListener(contextId, lid, pListener);
 }
 
 bool geng::DefaultGame::MoveToFront(ListenerType listenerType, ContextID contextId)
@@ -323,8 +327,12 @@ bool geng::DefaultGame::SetVisibility(ContextID contextId, bool value)
 		return false;
 	}
 
-	// Note: the "prevvalue" is updated after frame processing
-	m_contexts[contextId].contextState.visibility.curValue = value;
+
+	m_contexts[contextId].m_nextVisible = value;
+	if (m_simState.execFrameCount == 0)
+	{
+		m_contexts[contextId].contextState.visibility.curValue = value;
+	}
 	return true;
 }
 
@@ -337,8 +345,11 @@ bool geng::DefaultGame::SetRunState(ContextID contextId, bool value)
 		return false;
 	}
 
-	// Note: the "prevvalue" is updated after frame processing
 	m_contexts[contextId].m_nextRun = value;
+	if (m_simState.execFrameCount == 0)
+	{
+		m_contexts[contextId].contextState.runstate.curValue = value;
+	}
 	return true;
 }
 
@@ -364,6 +375,10 @@ bool geng::DefaultGame::SetFocus(ContextID contextId)
 
 	if (contextId != EXECUTIVE_CONTEXT)
 	{
+		if (m_simState.execFrameCount == 0)
+		{
+			m_contexts[contextId].contextState.focus.curValue = true;
+		}
 		m_contexts[contextId].m_nextFocus = true;
 	}
 
@@ -490,8 +505,8 @@ void geng::DefaultGame::RunGameLoop()
 				m_simState.catchingUp = true;
 				m_executiveListeners.OnFrame(m_simState, nullptr);
 
-				// ContextInputCallbacks();
-				// ContextSimCallbacks(); 
+				ContextInputCallbacks();
+				ContextSimCallbacks(); 
 				
 				// NO rendering
 
@@ -550,7 +565,6 @@ bool geng::DefaultGame::Run()
 
 	m_isActive = true;
 	RunGameLoop();
-	//m_frameManager.Simulate();
 
 	// Wind down in reverse order
 	for (auto itRev = m_components.rbegin(); itRev != m_components.rend(); ++itRev)
