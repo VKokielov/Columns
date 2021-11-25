@@ -99,7 +99,7 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 		return false;
 	}
 
-	if (!pGame->AddListener(ListenerType::Rendering, m_simContextId, pSim))
+	if (!pGame->AddListener(ListenerType::Rendering, m_simContextId, pRenderer))
 	{
 		pGame->LogError("Columns: unable to add renderer as listener");
 		return false;

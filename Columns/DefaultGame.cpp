@@ -438,7 +438,7 @@ void geng::DefaultGame::ContextRenderCallbacks()
 		}
 	};
 
-	m_simList.IterContexts(callRender);
+	m_renderList.IterContexts(callRender);
 }
 
 void geng::DefaultGame::UpdateContextStateAfter()
