@@ -16,6 +16,7 @@ namespace geng
 		};
 	public:
 		InputBridge(const char* pName, const std::shared_ptr<IInput>& pUnderlying);
+		bool ForceState(const KeyState& keyState) override;
 
 		void AddCode(KeyCode code) override;
 		void OnFrame(const SimState& simState, const SimContextState* pContextState) override;

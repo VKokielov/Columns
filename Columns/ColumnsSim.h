@@ -228,6 +228,9 @@ namespace geng::columns
 				const StateArgs& args);
 
 			void OnEnterState(ClearState& state, const StateArgs& args);
+			void OnEnterState(GameOverState& state, const StateArgs& args);
+			void OnExitState(GameOverState& state, const StateArgs& args);
+
 
 			void OnState(DropColumnState& dropState, const StateArgs& stateArgs);
 			void OnState(CompactState& compactState, const StateArgs& stateArgs);
@@ -263,6 +266,8 @@ namespace geng::columns
 		ColumnsSim(const ColumnsSimArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
+		void ResetGame();
+
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
 
@@ -292,6 +297,8 @@ namespace geng::columns
 
 		const unsigned int GetLevel() const { return m_level; }
 		const unsigned int GetGems() const { return m_clearedGems; }
+
+		bool IsGameOver() const { return m_gameOver; }
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
 		// an axis (horizontal, vertical, downslope, upslop)
@@ -407,6 +414,10 @@ namespace geng::columns
 		// NOTE:  Used when the player column is locked in horizontal state
 		void AddPlayerColumnToCompactSet(const PlayerSet& playerColumn);
 		void GenerateNextColors();
+
+		// Create a player with the geometry of a new player column
+		PlayerSet NewPlayerColumnDef(); 
+		bool CanGenerateNewPlayerColumn();
 		bool GenerateNewPlayerColumn();
 		bool LockPlayerColumn();
 
@@ -440,8 +451,7 @@ namespace geng::columns
 		std::string m_inputName;
 
 		std::shared_ptr<IInput>  m_pInput;
-			
-
+		
 		// _Simulation state_
 		std::vector<unsigned int> m_toRemove;
 		// Store x coordinates of points to remove because that is where the holes will appear
@@ -459,7 +469,7 @@ namespace geng::columns
 
 		GameState m_gameState;
 
-		bool m_firstFrame{ true };
+		bool m_gameOver{ false };
 
 		unsigned int m_clearedGems{ 0 };
 		unsigned int m_clearedGemsInLevel{ 0 };
@@ -468,6 +478,8 @@ namespace geng::columns
 
 		unsigned int m_curDropMiliseconds{ 0 };
 		unsigned int m_minDropMiliseconds{ 0 };
+
+		bool m_needNewColumn{ false };
 
 		// Random numbers
 		std::mt19937_64  m_generator;

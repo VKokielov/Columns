@@ -23,6 +23,7 @@ namespace geng::sdl
 
 		Input();
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
+		bool ForceState(const KeyState& keyState) override;
 
 		void AddCode(KeyCode code) override;
 		void OnFrame(const SimState& simState, const SimContextState* pContextState) override;

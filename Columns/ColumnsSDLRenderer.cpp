@@ -142,6 +142,10 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_levelLabel.SetText("level", m_pRenderer.get(), sdl::TextQuality::Nice);
 	m_pauseLabel.SetFont(pFontBanner);
 	m_pauseLabel.SetText("PAUSED", m_pRenderer.get(), sdl::TextQuality::Nice);
+	m_gameOverLabel.SetFont(pFontBanner);
+	m_gameOverLabel.SetText("Game over!", m_pRenderer.get(), sdl::TextQuality::Nice);
+	m_pressSpaceLabel.SetFont(pFontBanner);
+	m_pressSpaceLabel.SetText("Press SPACE to start", m_pRenderer.get(), sdl::TextQuality::Nice);
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
@@ -275,9 +279,23 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	}
 
 	// Pause??
+	unsigned int bannerX = m_windowX / 2;
+	unsigned int bannerY = 30;
+
 	if (m_pExecutive->IsPaused())
 	{
-		m_pauseLabel.RenderTo(m_pRenderer.get(), m_windowX / 2, 30, 0, 0, sdl::TextAlignment::Center);
+		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
+	}
+	else if (!m_pExecutive->IsInGame())
+	{
+		if (m_pSim->IsGameOver())
+		{
+			m_gameOverLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
+		}
+		else
+		{
+			m_pressSpaceLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
+		}
 	}
 
 	SDL_RenderPresent(m_pRenderer.get());

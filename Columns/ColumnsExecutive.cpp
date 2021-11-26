@@ -6,6 +6,7 @@
 #include "ColumnsSim.h"
 #include "ColumnsSDLRenderer.h"
 #include <SDL.h>
+#include <array>
 
 #include "InputBridge.h"
 
@@ -31,6 +32,7 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 
 	m_pInput = std::static_pointer_cast<sdl::Input>(setup::InitializeSDLInput(pGame.get()));
 	m_pInput->AddCode(SDLK_p); // pause
+	m_pInput->AddCode(SDLK_SPACE); // space
 
 	auto pActionMapper = std::static_pointer_cast<ActionMapper>(setup::InitializeActionMapper(pGame.get(), GetActionMapperName()));
 	MapActions(*pActionMapper);
@@ -74,11 +76,12 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	simArgs.columnSize = 3;
 	// NOTE:  This speed may change!
 	simArgs.dropMilliseconds = 600;
+	//simArgs.dropMilliseconds = 80;
 	simArgs.flashMilliseconds = 300;
 	simArgs.flashCount = 3;
 
-	auto pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);
-	pGame->AddComponent(pSim);
+	m_pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);
+	pGame->AddComponent(m_pSim);
 
 	// Create the columns SDL renderer
 	geng::columns::ColumnsRenderArgs renderArgs;
@@ -93,7 +96,7 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 		return false;
 	}
 
-	if (!pGame->AddListener(ListenerType::Simulation, m_simContextId, pSim))
+	if (!pGame->AddListener(ListenerType::Simulation, m_simContextId, m_pSim))
 	{
 		pGame->LogError("Columns: unable to add simulation as listener");
 		return false;
@@ -108,7 +111,7 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	// Set focus, visibility, runstate...
 	pGame->SetFocus(m_simContextId);
 	pGame->SetVisibility(m_simContextId, true);
-	pGame->SetRunState(m_simContextId, true);
+	pGame->SetRunState(m_simContextId, false);
 
 	return true;
 }
@@ -116,28 +119,58 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
-	KeyState ksEsc;
-	ksEsc.keyCode = SDLK_p;
-	KeyState* pksEsc{ &ksEsc };
 
-	m_pInput->QueryInput(nullptr, nullptr, &pksEsc, 1);
+	KeyState ksPause;
+	ksPause.keyCode = SDLK_p;
+	KeyState ksSpace;
+	ksSpace.keyCode = SDLK_SPACE;
 
-	bool pausePressed = (ksEsc.finalState == KeySignal::KeyDown && ksEsc.numChanges > 0)
-		|| (ksEsc.finalState == KeySignal::KeyUp && ksEsc.numChanges > 1);
+	std::array pksArray{ &ksPause, &ksSpace };
+	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
 
-	// "p" for pause
-	if (pausePressed)
+	// Special key handling
+	KeyState resetKey{ 0, 0, KeySignal::KeyUp};
+	if (IsInGame())
 	{
-		if (m_contextDesc == ContextDesc::ActiveGame)
+		// First check if I should switch out of game
+		if (m_pSim->IsGameOver())
 		{
 			m_pGame->SetRunState(m_simContextId, false);
-			m_paused = true;
-			m_contextDesc = ContextDesc::PausedGame;
+			m_contextDesc = ContextDesc::NoGame;
 		}
-		else
+		else  // Pause handling
 		{
+			bool pausePressed = IsKeyPressedOnce(ksPause);
+
+			// "p" for pause
+			if (pausePressed)
+			{
+				resetKey.keyCode = SDLK_p;
+				m_pInput->ForceState(resetKey);
+
+				if (m_contextDesc == ContextDesc::ActiveGame)
+				{
+					m_pGame->SetRunState(m_simContextId, false);
+					m_contextDesc = ContextDesc::PausedGame;
+				}
+				else
+				{
+					m_pGame->SetRunState(m_simContextId, true);
+					m_contextDesc = ContextDesc::ActiveGame;
+				}
+			}
+		}
+	}
+	else
+	{
+		bool spacePressed = IsKeyPressedOnce(ksSpace);
+		if (spacePressed)
+		{
+			resetKey.keyCode = SDLK_SPACE;
+			m_pInput->ForceState(resetKey);
+
 			m_pGame->SetRunState(m_simContextId, true);
-			m_paused = false;
+			m_pSim->ResetGame();
 			m_contextDesc = ContextDesc::ActiveGame;
 		}
 	}

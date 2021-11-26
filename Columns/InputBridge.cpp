@@ -26,6 +26,18 @@ void geng::InputBridge::AddCode(KeyCode code)
 	}
 }
 
+bool geng::InputBridge::ForceState(const KeyState& keyState)
+{
+	auto itState = m_keyState.find(keyState.keyCode);
+	if (itState != m_keyState.end())
+	{
+		itState->second.state = keyState;
+		return true;
+	}
+
+	return false;
+}
+
 bool geng::InputBridge::QueryInput(MouseState* pMouseState,
 	KeyboardState* pkeyboardState,
 	KeyState** ppKeyStates,

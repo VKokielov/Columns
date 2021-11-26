@@ -67,6 +67,18 @@ bool geng::sdl::Input::QueryInput(MouseState* pMouseState,
 	return true;
 }
 
+bool geng::sdl::Input::ForceState(const KeyState& keyState)
+{
+	auto itState = m_state.find(keyState.keyCode);
+	if (itState != m_state.end())
+	{
+		itState->second.state = keyState;
+		return true;
+	}
+
+	return false;
+}
+
 void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* pContextState)
 {
 	// Reset the keystate

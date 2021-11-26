@@ -39,7 +39,7 @@ namespace geng
 		virtual ~IInput() = default;
 
 		virtual void AddCode(KeyCode code) = 0;
-
+		virtual bool ForceState(const KeyState& keyState) = 0;
 		virtual bool QueryInput(MouseState* pMouseState,
 			KeyboardState* pkeyboardState,
 			KeyState** ppKeyStates,

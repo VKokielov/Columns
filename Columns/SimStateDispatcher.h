@@ -33,12 +33,6 @@ namespace geng
 			std::visit(visitor, m_varStates);
 		}
 
-		template<typename TargetState>
-		void Transition()
-		{
-			m_varStates.emplace<TargetState>();
-		}
-
 		template<typename TargetState, typename Obj, typename ... Args>
 		void Transition(Obj& obj, Args&...args)
 		{

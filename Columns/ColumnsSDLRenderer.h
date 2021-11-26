@@ -113,6 +113,9 @@ namespace geng::columns
 		sdl::Text m_scoreLabel;
 		sdl::Text m_levelLabel;
 		sdl::Text m_pauseLabel;
+		sdl::Text m_gameOverLabel;
+		sdl::Text m_pressSpaceLabel;
+
 
 		sdl::Text m_score;
 		sdl::Text m_level;

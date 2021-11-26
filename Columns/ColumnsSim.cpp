@@ -333,6 +333,23 @@ void geng::columns::ColumnsSim::GenerateNextColors()
 	}
 }
 
+geng::columns::PlayerSet geng::columns::ColumnsSim::NewPlayerColumnDef()
+{
+	PlayerSet playerSet;
+	playerSet.locCenter.x = m_size.x / 2;
+	playerSet.locCenter.y = (m_columnSize - 1) / 2;
+	playerSet.colors = m_nextColors;
+	return playerSet;
+}
+
+bool geng::columns::ColumnsSim::CanGenerateNewPlayerColumn()
+{
+	PlayerSet newColumn{ NewPlayerColumnDef() };
+
+	// Can this column exist?
+	return IsValidShiftedPlayerColumn(newColumn, PointDelta{ 0,0 });
+}
+
 bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 {
 	// First materialize the new player column
@@ -341,10 +358,7 @@ bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 		GenerateNextColors();
 	}
 
-	PlayerSet newColumn;
-	newColumn.locCenter.x = m_size.x / 2;
-	newColumn.locCenter.y = (m_columnSize - 1) / 2;
-	newColumn.colors = m_nextColors;
+	PlayerSet newColumn{ NewPlayerColumnDef() };
 
 	// Invalidate the player column -- so game over happens right
 	m_validPlayerColumn = false;
@@ -385,7 +399,7 @@ bool geng::columns::ColumnsSim::LockPlayerColumn()
 	m_validPlayerColumn = false;
 	*/
 
-	return GenerateNewPlayerColumn();
+	return CanGenerateNewPlayerColumn();
 }
 
 geng::columns::GridSquare* 
@@ -643,13 +657,35 @@ geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
 	m_throttlePeriod(args.actionThrottlePeriod),
 	m_dropThrottlePeriod(args.dropThrottlePeriod)
 {
+
+
+}
+
+void geng::columns::ColumnsSim::ResetGame()
+{
 	// Seed the generator
 	std::random_device device;
 	m_generator.seed(device());
 
 	// Clear the grid
-	GridSquare defaultSquare{ EMPTY, true};
+	GridSquare defaultSquare{ EMPTY, true };
 	std::fill(m_gameGrid.get(), m_gameGrid.get() + m_gameGridSize, defaultSquare);
+
+	// Update the parameters
+	m_clearedGems = 0;
+	m_clearedGemsInLevel = 0;
+	m_levelThreshhold = 45;
+	m_level = 1;
+
+	m_curDropMiliseconds = m_dropMiliseconds;
+	// 10 times faster is good enough
+	m_minDropMiliseconds = m_dropMiliseconds / 10;
+
+	GenerateNewPlayerColumn();
+
+	StateArgs stateArgs;
+	stateArgs.simTime = 0;
+	m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
 
 }
 
@@ -682,13 +718,7 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 	m_actionMapper->GetAllMappings(m_actionTranslator);
 	m_actionMapper->AddMappingListener(m_actionTranslator);
 
-
-	// Save the parameter
-	m_curDropMiliseconds = m_dropMiliseconds;
-	// 10 times faster is good enough
-	m_minDropMiliseconds = m_dropMiliseconds / 10;
-
-	GenerateNewPlayerColumn();
+	ResetGame();
 
 	return true;
 }
@@ -698,12 +728,6 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 {
 	StateArgs stateArgs;
 	stateArgs.simTime = pContextState->simulatedTime;
-
-	if (m_firstFrame)
-	{
-		m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
-		m_firstFrame = false;
-	}
 
 	// This will update the translator with the state of the input
 	m_actionTranslator->UpdateOnFrame(pContextState->frameCount);
@@ -746,16 +770,17 @@ void geng::columns::ColumnsSim::GameState
 		// Execute drop.  If a drop can't be executed, lock the player's gems and switch to Compact mode
 		if (!m_owner.DropPlayerColumn())
 		{
-			// Lock the gems and generate a new column, then switch to compact mode
+			// Lock the gems and see if I can generate a new column, then switch to compact mode
 			if (!m_owner.LockPlayerColumn())
 			{
 				// Set to game over and terminate the frame
-				fprintf(stderr, "game over\n");
 				Transition<GameOverState>(*this, stateArgs);
 				return;
 			}
 
 			// Switch to compact mode and stay in frame
+			
+			m_owner.m_needNewColumn = true;
 			Transition<CompactState>(*this, stateArgs);
 			SetFrameComplete(false);
 			return;
@@ -836,6 +861,12 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 	}
 	else
 	{
+		// Is there an outstanding column generation?
+		if (m_owner.m_needNewColumn)
+		{
+			m_owner.GenerateNewPlayerColumn();
+			m_owner.m_needNewColumn = false;
+		}
 		Transition<DropColumnState>(*this, stateArgs);
 	}
 }
@@ -868,6 +899,16 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 		}
 		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
 	}
+}
+
+void geng::columns::ColumnsSim::GameState::OnEnterState(GameOverState& state, const StateArgs& args)
+{
+	m_owner.m_gameOver = true;
+}
+
+void geng::columns::ColumnsSim::GameState::OnExitState(GameOverState& state, const StateArgs& args)
+{
+	m_owner.m_gameOver = false;
 }
 
 unsigned long geng::columns::ColumnsSim::GetRandomNumber(unsigned long lowerBound, unsigned long upperBound)

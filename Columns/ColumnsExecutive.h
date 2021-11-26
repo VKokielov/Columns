@@ -3,6 +3,7 @@
 #include "BaseGameComponent.h"
 #include "ActionMapper.h"
 #include "SDLInput.h"
+#include "ColumnsSim.h"
 #include <memory>
 
 namespace geng::columns
@@ -10,7 +11,8 @@ namespace geng::columns
 	enum class ContextDesc
 	{
 		ActiveGame,
-		PausedGame
+		PausedGame,
+		NoGame
 	};
 
 	class ColumnsExecutive : public BaseGameComponent,
@@ -37,17 +39,24 @@ namespace geng::columns
 			const SimContextState* pContextState) override;
 
 		bool IsInitialized() const { return m_initialized; }
-		bool IsPaused() const { return m_paused; }
+		bool IsPaused() const { return m_contextDesc == ContextDesc::PausedGame; }
+		bool IsInGame() const { return m_contextDesc != ContextDesc::NoGame; }
 	private:
 		static void MapActions(ActionMapper& rMapper);
 
+		static bool IsKeyPressedOnce(const KeyState& keyState)
+		{
+			return (keyState.finalState == KeySignal::KeyDown && keyState.numChanges > 0)
+				|| (keyState.finalState == KeySignal::KeyUp && keyState.numChanges > 1);
+		}
+
 		bool m_initialized;
-		bool m_paused{ false };
 
 		std::shared_ptr<IGame> m_pGame;
 		std::shared_ptr<sdl::Input>  m_pInput;
+		std::shared_ptr<ColumnsSim> m_pSim;
 		ContextID m_simContextId;
-		ContextDesc m_contextDesc{ ContextDesc::ActiveGame };
+		ContextDesc m_contextDesc{ ContextDesc::NoGame };
 	};
 
 }
