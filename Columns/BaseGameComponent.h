@@ -19,11 +19,6 @@ namespace geng
 			return m_name.c_str();
 		}
 
-		GameComponentType GetType() const override
-		{
-			return m_type;
-		}
-
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override
 		{
 			return true;
@@ -32,20 +27,12 @@ namespace geng
 		void WindDown(const std::shared_ptr<IGame>& pGame) override
 		{ }
 
-		// By default return nullptr
-		IFrameListener* GetFrameListener() override
-		{
-			return nullptr;
-		}
-
 	protected:
-		TemplatedGameComponent(const char* pName, GameComponentType type)
-			:m_name(pName),
-			m_type(type)
+		TemplatedGameComponent(const char* pName)
+			:m_name(pName)
 		{ }
 	private:
 		std::string m_name;
-		GameComponentType m_type;
 	};
 
 	using BaseGameComponent = TemplatedGameComponent<IGameComponent>;

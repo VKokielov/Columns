@@ -1,4 +1,5 @@
 #include "ColumnsSim.h"
+#include "ColumnsExecutive.h"
 
 unsigned int geng::columns::ColumnsSim::PointToIndex(const Point& at) const
 {
@@ -289,10 +290,13 @@ bool geng::columns::ColumnsSim::PermutePlayerColumn()
 {
 	PlayerSet newColumn{ m_playerColumn };
 
-	++newColumn.startPt;
-	if (newColumn.startPt == newColumn.Width())
+	if (newColumn.startPt == 0)
 	{
-		newColumn.startPt = 0;
+		newColumn.startPt = newColumn.Width() - 1;
+	}
+	else
+	{
+		--newColumn.startPt;
 	}
 
 	// No need to check - shifts happen in-place
@@ -324,7 +328,7 @@ void geng::columns::ColumnsSim::GenerateNextColors()
 
 	for (size_t i = 0; i < m_columnSize; ++i)
 	{
-		GridContents nextColor = m_pInput->GetRandomNumber(1, GRID_LIMIT-1);
+		GridContents nextColor = GetRandomNumber(1, GRID_LIMIT-1);
 		m_nextColors.emplace_back(nextColor);
 	}
 }
@@ -517,8 +521,8 @@ void geng::columns::ColumnsSim::LevelUp()
 {
 	// Update times, etc
 	// Speed up by 10%
-	m_curDropMiliseconds -= m_curDropMiliseconds / 10;
-	if (m_curDropMiliseconds == m_minDropMiliseconds)
+	m_curDropMiliseconds -= m_curDropMiliseconds / 6;
+	if (m_curDropMiliseconds <= m_minDropMiliseconds)
 	{
 		m_curDropMiliseconds = m_minDropMiliseconds;
 	}
@@ -590,76 +594,69 @@ bool geng::columns::ColumnsSim::CompactColumns()
 	return compactedCol;
 }
 
-const char* geng::columns::ColumnsSim::GetDropActionName()
-{
-	return "DropColumnAction";
-}
-const char* geng::columns::ColumnsSim::GetShiftLeftActionName()
-{
-	return "ShiftColumnLeftAction";
-}
-const char* geng::columns::ColumnsSim::GetShiftRightActionName()
-{
-	return "ShiftColumnRightAction";
-}
-const char* geng::columns::ColumnsSim::GetRotateActionName()
-{
-	return "RotateColumnAction";
-}
-const char* geng::columns::ColumnsSim::GetPermuteActionName()
-{
-	return "PermuteColumnAction";
-}
-
 geng::columns::ColumnsSim::SimActionWrappers::SimActionWrappers(unsigned int throttlePeriod, 
 							unsigned int dropThrottlePeriod,
-							ActionMapper& mapper)
-	:dropAction(GetDropActionName(), dropThrottlePeriod, mapper)
-	,shiftLeftAction(GetShiftLeftActionName(), throttlePeriod, mapper)
-	,shiftRightAction(GetShiftRightActionName(), throttlePeriod, mapper)
-	,rotateAction(GetRotateActionName(), throttlePeriod, mapper)
-	,permuteAction(GetPermuteActionName(), throttlePeriod, mapper)
+							ActionMapper& mapper,
+							ActionTranslator& translator)
+	:dropAction(ColumnsExecutive::GetDropActionName(), dropThrottlePeriod, mapper)
+	,shiftLeftAction(ColumnsExecutive::GetShiftLeftActionName(), throttlePeriod, mapper)
+	,shiftRightAction(ColumnsExecutive::GetShiftRightActionName(), throttlePeriod, mapper)
+	,rotateAction(ColumnsExecutive::GetRotateActionName(), throttlePeriod, mapper)
+	,permuteAction(ColumnsExecutive::GetPermuteActionName(), throttlePeriod, mapper)
 {
+	AddActions(mapper, translator);
 }
 
-void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionMapper& mapper, unsigned long simTime)
+void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionTranslator& translator, unsigned long simTime)
 {
-	dropAction.UpdateState(mapper, simTime);
-	shiftLeftAction.UpdateState(mapper, simTime);
-	shiftRightAction.UpdateState(mapper, simTime);
-	rotateAction.UpdateState(mapper, simTime);
-	permuteAction.UpdateState(mapper, simTime);
+	dropAction.UpdateState(translator, simTime);
+	shiftLeftAction.UpdateState(translator, simTime);
+	shiftRightAction.UpdateState(translator, simTime);
+	rotateAction.UpdateState(translator, simTime);
+	permuteAction.UpdateState(translator, simTime);
+}
+
+void geng::columns::ColumnsSim::SimActionWrappers::AddActions(ActionMapper& mapper,
+							ActionTranslator& translator)
+{
+	std::vector<std::string> actionNames
+	{ dropAction.GetName(),
+	 shiftLeftAction.GetName(),
+	 shiftRightAction.GetName(),
+	 rotateAction.GetName(),
+	 permuteAction.GetName() };
+
+	translator.InitActions(&mapper, actionNames.begin(), actionNames.end());
 }
 
 geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
-	:BaseGameComponent("ColumnsSim", GameComponentType::Simulation),
-	m_gameState(*this),
+	:BaseGameComponent("ColumnsSim"),
+	m_actionTranslator(new ActionTranslator()),
 	m_size(args.boardSize),
 	m_columnSize(args.columnSize),
 	m_dropMiliseconds(args.dropMilliseconds),
 	m_flashMiliseconds(args.flashMilliseconds),
 	m_flashCount(args.flashCount),
 	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
+	m_gameState(*this),
 	m_gameGridSize(args.boardSize.x * args.boardSize.y),
-	m_inputName(args.pInputName),
 	m_throttlePeriod(args.actionThrottlePeriod),
 	m_dropThrottlePeriod(args.dropThrottlePeriod)
 {
+	// Seed the generator
+	std::random_device device;
+	m_generator.seed(device());
+
 	// Clear the grid
 	GridSquare defaultSquare{ EMPTY, true};
 	std::fill(m_gameGrid.get(), m_gameGrid.get() + m_gameGridSize, defaultSquare);
 
 }
 
-geng::IFrameListener* geng::columns::ColumnsSim::GetFrameListener()
-{
-	return this;
-}
-
 bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	GetComponentResult getResult;
-	m_pInput = GetComponentAs<IInput>(pGame.get(), m_inputName.c_str(), getResult);
+	m_pInput = GetComponentAs<IInput>(pGame.get(), ColumnsExecutive::GetColumnsInputBridgeName(), getResult);
 
 	if (!m_pInput)
 	{
@@ -667,7 +664,7 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 		return false;
 	}
 
-	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), "ActionMapper", getResult);
+	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), ColumnsExecutive::GetActionMapperName(), getResult);
 	
 	if (!m_actionMapper)
 	{
@@ -677,7 +674,14 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 
 	m_actionWrappers = std::make_shared<SimActionWrappers>(m_throttlePeriod,
 														m_dropThrottlePeriod,
-														*m_actionMapper.get());
+														*m_actionMapper.get(),
+													     *m_actionTranslator);
+
+	// Subscribe the translator to the mappings 
+	m_actionTranslator->SetInput(m_pInput);
+	m_actionMapper->GetAllMappings(m_actionTranslator);
+	m_actionMapper->AddMappingListener(m_actionTranslator);
+
 
 	// Save the parameter
 	m_curDropMiliseconds = m_dropMiliseconds;
@@ -689,15 +693,11 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 	return true;
 }
 
-void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
+void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
+	const SimContextState* pContextState)
 {
 	StateArgs stateArgs;
-	
-	SimState state;
-	pManager->GetSimState(state, FID_SIMTIME);
-
-	stateArgs.pFrameManager = pManager;
-	stateArgs.simTime = state.simulatedTime;
+	stateArgs.simTime = pContextState->simulatedTime;
 
 	if (m_firstFrame)
 	{
@@ -705,9 +705,10 @@ void geng::columns::ColumnsSim::OnFrame(IFrameManager* pManager)
 		m_firstFrame = false;
 	}
 
-	// This will update the actions with the state of the keyboard
-	//fprintf(stderr, "updst\n");
-	m_actionWrappers->UpdateState(*m_actionMapper, state.simulatedTime);
+	// This will update the translator with the state of the input
+	m_actionTranslator->UpdateOnFrame(pContextState->frameCount);
+	// This will update the referenced commands with the state of the translator
+	m_actionWrappers->UpdateState(*m_actionTranslator, pContextState->simulatedTime);
 
 	m_gameState.StartFrame();
 
@@ -761,7 +762,7 @@ void geng::columns::ColumnsSim::GameState
 		}
 
 		// Update the drop time
-		dropState.nextDropTime = stateArgs.simTime + m_owner.m_dropMiliseconds;
+		dropState.nextDropTime = stateArgs.simTime + m_owner.m_curDropMiliseconds;
 	}
 
 	// The other actions.
@@ -827,7 +828,8 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 		// Initialize the blink phase
 		clearState.blinkPhase = true;
 		clearState.blinkPhaseCount = 0;
-		clearState.nextBlinkTime = 0.5 * (stateArgs.simTime + m_owner.m_flashMiliseconds);
+		clearState.nextBlinkTime = 
+			(unsigned long)(0.5 * (stateArgs.simTime + m_owner.m_flashMiliseconds));
 
 		// Implement
 		SetBlinkState(m_owner.m_toRemove.begin(), m_owner.m_toRemove.end(), clearState.blinkPhase);
@@ -866,4 +868,9 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 		}
 		clearState.nextBlinkTime = stateArgs.simTime + m_owner.m_flashMiliseconds;
 	}
+}
+
+unsigned long geng::columns::ColumnsSim::GetRandomNumber(unsigned long lowerBound, unsigned long upperBound)
+{
+	return m_generator() % (upperBound + 1 - lowerBound) + lowerBound;
 }

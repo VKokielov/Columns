@@ -1,18 +1,14 @@
 #include "SDLInput.h"
+#include "KeyDebug.h"
 
 #include <ctime>
 
 geng::sdl::Input::Input()
-	:TemplatedGameComponent<IInput>("SDLInput", GameComponentType::Simulation)
+	:TemplatedGameComponent<IInput>("SDLInput")
 {
-	std::random_device device;
-	m_generator.seed(device());
+
 }
 
-geng::IFrameListener* geng::sdl::Input::GetFrameListener()
-{
-	return this;
-}
 
 bool geng::sdl::Input::Initialize(const std::shared_ptr<IGame>& pGame)
 {
@@ -37,17 +33,19 @@ void geng::sdl::Input::AddCode(KeyCode code)
 {
 	if (m_state.count(code) == 0)
 	{
-		m_state.emplace(code, KeyData_());
+		KeyData_ kdata;
+		kdata.state.keyCode = code;
+		kdata.state.finalState = KeySignal::KeyUp;
+		kdata.state.numChanges = 0;
+
+		m_state.emplace(code, kdata);
 	}
 }
 
-unsigned long geng::sdl::Input::GetRandomNumber(unsigned long lowerBound, unsigned long upperBound)
-{
-	return m_generator() % (upperBound + 1 - lowerBound) + lowerBound;
-}
 
 bool geng::sdl::Input::QueryInput(MouseState* pMouseState,
-	geng::KeyState** ppKeyStates,
+	KeyboardState* pkeyboardState,
+	KeyState** ppKeyStates,
 	size_t nKeyStates)
 {
 	for (size_t i = 0; i < nKeyStates; ++i)
@@ -58,40 +56,30 @@ bool geng::sdl::Input::QueryInput(MouseState* pMouseState,
 			return false;
 		}
 
-		ppKeyStates[i]->signal = itCode->second.signal;
+		*ppKeyStates[i] = itCode->second.state;
+	}
+
+	if (pkeyboardState)
+	{
+		pkeyboardState->numKeysDownInFrame = m_downKeys;
 	}
 
 	return true;
 }
 
-void geng::sdl::Input::OnFrame(IFrameManager* pManager)
+void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* pContextState)
 {
-	++m_frame;
-
-	// Update "pressed" keys to "down" and "released" keys to "up"
-	std::unordered_set<KeyCode>  nextUpdated;
-
-	for (KeyCode kc : m_updatedKeys)
+	// Reset the keystate
+	for (auto& rKeyPair : m_state)
 	{
-		auto itKey = m_state.find(kc);
-
-		if (itKey->second.signal == KeySignal::KeyPressed)
-		{
-			if (itKey->second.shortPress && itKey->second.updateFrame == m_frame - 1)
-			{
-				itKey->second.signal = KeySignal::KeyReleased;
-				nextUpdated.emplace(kc);
-			}
-			itKey->second.signal = KeySignal::KeyDown;
-//			fprintf(stderr, "re-updating %d to %d\n", itKey->first, itKey->second);
-		}
-		else if (itKey->second.signal == KeySignal::KeyReleased)
-		{
-			itKey->second.signal = KeySignal::KeyUp;
-//			fprintf(stderr, "re-updating %d to %d\n", itKey->first, itKey->second);
-		}
+		rKeyPair.second.state.numChanges = 0;
 	}
-	m_updatedKeys = std::move(nextUpdated);
+
+	m_downKeys = 0;
+
+#ifndef NDEBUG
+	g_keyChangedThisFrame = false;
+#endif
 
 	auto evtHandler = [this](const SDL_Event& rEvent)
 	{
@@ -100,7 +88,6 @@ void geng::sdl::Input::OnFrame(IFrameManager* pManager)
 			return false;
 		}
 
-//		fprintf(stderr, "Key event received\n");
 		KeyCode kcod = rEvent.key.keysym.sym;
 
 		auto itKey = m_state.find(kcod);
@@ -110,24 +97,39 @@ void geng::sdl::Input::OnFrame(IFrameManager* pManager)
 			return false;
 		}
 
-//		fprintf(stderr, "Key event found\n");
+#ifndef NDEBUG
+		g_keyChangedThisFrame = true;
+#endif
 
-		// Set the key state
-		itKey->second.shortPress
-			= rEvent.type == SDL_KEYUP
-			  && itKey->second.updateFrame == m_frame
-			  && itKey->second.signal == KeySignal::KeyPressed;
+		KeySignal newSignal = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyDown : KeySignal::KeyUp;
 
-		itKey->second.updateFrame = m_frame;
+		if (newSignal != itKey->second.state.finalState)
+		{
+			++itKey->second.state.numChanges;
+			itKey->second.state.finalState = newSignal;
+			
+			rEvent.type == SDL_KEYDOWN ? ++m_downKeys : --m_downKeys;
+		}
 
-		itKey->second.signal = rEvent.type == SDL_KEYDOWN ? KeySignal::KeyPressed
-			: KeySignal::KeyReleased;
-
-//		fprintf(stderr, "Updating %d to %d\n", itKey->first, itKey->second);
-
-		m_updatedKeys.emplace(kcod);
 		return true;
 	};
 
 	m_pEventPoller->IterateEvents(evtHandler);
+
+	/*
+#ifndef NDEBUG
+	if (g_keyChangedThisFrame)
+	{
+		fprintf(stderr, ">>>>\n");
+
+		for (auto& rKeyPair : m_state)
+		{
+			fprintf(stderr, "key %d state %d numchanges %d\n",
+				rKeyPair.first, rKeyPair.second.state.finalState,
+				rKeyPair.second.state.numChanges);
+		}
+		fprintf(stderr, "<<<<\n");
+	}
+#endif
+	*/
 }

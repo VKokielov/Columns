@@ -7,28 +7,27 @@
 #include "TrueTypeFont.h"
 #include "SDLText.h"
 #include "ResourceLoader.h"
+#include "ColumnsExecutive.h"
 #include <utility>
 
 namespace geng::columns
 {
 	struct ColumnsRenderArgs
 	{
-		unsigned int windowX;
-		unsigned int windowY;
-
 		unsigned int renderShadow;
 	};
 
 	class ColumnsSDLRenderer : public BaseGameComponent,
-							   public IFrameListener
+							   public IGameListener,
+		public std::enable_shared_from_this<ColumnsSDLRenderer>
 	{
 	public:
 		ColumnsSDLRenderer(const ColumnsRenderArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void OnFrame(IFrameManager* pManager) override;
+		void OnFrame(const SimState& rSimState,
+			const SimContextState* pContextState) override;
 
-		IFrameListener* GetFrameListener() override;
 	private:
 		template<typename T, T lower, T upper, typename U>
 		static void ClampTo(T& value, U delta)
@@ -107,12 +106,18 @@ namespace geng::columns
 		// Sim
 		std::shared_ptr<ColumnsSim>  m_pSim;
 
+		// Executive
+		std::shared_ptr<ColumnsExecutive> m_pExecutive;
+
 		// Prerendered text
 		sdl::Text m_scoreLabel;
 		sdl::Text m_levelLabel;
+		sdl::Text m_pauseLabel;
 
 		sdl::Text m_score;
 		sdl::Text m_level;
+
+
 
 	};
 

@@ -1,20 +1,19 @@
 #include "SDLEventPoller.h"
 
 geng::sdl::EventPoller::EventPoller()
-	:BaseGameComponent("SDLEventPoller", GameComponentType::Simulation)
+	:BaseGameComponent("SDLEventPoller")
 {
 
 }
 
-geng::IFrameListener* geng::sdl::EventPoller::GetFrameListener()
+bool geng::sdl::EventPoller::Initialize(const std::shared_ptr<IGame>& pGame)
 {
-	return this;
+	m_pGame = pGame;
+	return true;
 }
 
-void geng::sdl::EventPoller::OnFrame(IFrameManager* pManager)
+void geng::sdl::EventPoller::OnFrame(const SimState& simState, const SimContextState* pCtxState)
 {
-	++m_frameCount;
-
 	m_events.clear();
 
 	SDL_Event evt;
@@ -22,20 +21,10 @@ void geng::sdl::EventPoller::OnFrame(IFrameManager* pManager)
 	{
 		if (evt.type == SDL_QUIT)
 		{
-			SimState simstate;
-			simstate.quality = SimQuality::Stopped;
-			pManager->UpdateSimState(simstate, FID_QUALITY);
+			// Signal quit and ignore the rest of the queue
+			m_pGame->Quit();
 			break;
-		}
-
-		
-		/*
-		if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP)
-		{
-			fprintf(stderr, "Event %d for key %d frame %u\n", evt.type, (int)evt.key.keysym.sym, m_frameCount);
-		}
-		*/
-		
+		}		
 
 		m_events.emplace_back(evt);
 	}

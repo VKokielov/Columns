@@ -11,21 +11,26 @@ namespace geng
 	enum class KeySignal
 	{
 		KeyUp,   // 0
-		KeyPressed, // 1
-		KeyDown, // 2
-		KeyReleased // 3
+		KeyDown // 2
 	};
 	// Keyboard and mouse button input
 	struct KeyState
 	{
 		KeyCode keyCode;  // [in]
-		KeySignal signal;  // [out]
+		unsigned int numChanges;  // [out]
+		KeySignal finalState;  // [out]
+	};
+
+	struct KeyboardState
+	{
+		// Number of keys that were down at any moment in the last frame
+		unsigned int numKeysDownInFrame{ 0 };
 	};
 
 	struct MouseState
 	{
-		unsigned int x;
-		unsigned int y;
+		unsigned int x{};
+		unsigned int y{};
 	};
 
 	class IInput : public IGameComponent
@@ -36,10 +41,9 @@ namespace geng
 		virtual void AddCode(KeyCode code) = 0;
 
 		virtual bool QueryInput(MouseState* pMouseState,
+			KeyboardState* pkeyboardState,
 			KeyState** ppKeyStates,
 			size_t nKeyStates) = 0;
-
-		virtual unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound) = 0;
 	};
 
 

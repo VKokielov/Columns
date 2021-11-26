@@ -19,13 +19,20 @@ namespace geng::sdl
 		Center
 	};
 
+	enum class TextQuality
+	{
+		Rough,
+		Nice
+	};
+
 	class Text
 	{
 	public:		
 		void ResetFont();
 		bool SetFont(const std::shared_ptr<TTFResource>& pFont);
 		bool SetColor(const RGBA& color);
-		bool SetText(const char* pText, SDL_Renderer* pRenderer);
+		bool SetText(const char* pText, SDL_Renderer* pRenderer, 
+			TextQuality quality = TextQuality::Rough);
 		bool RenderTo(SDL_Renderer* pRenderer, int xCoord, int yCenter, 
 					 int maxWidth, int maxHeight, TextAlignment align);
 

@@ -1,14 +1,16 @@
 #pragma once
 
 #include "IInput.h"
-#include "ActionMapper.h"
 #include "SimStateDispatcher.h"
-#include "IFrameManager.h"
 #include "BaseGameComponent.h"
+#include "ActionMapper.h"
+#include "ActionTranslator.h"
+#include "ActionWrapper.h"
 
 #include <memory>
 #include <array>
 #include <unordered_set>
+#include <random>
 
 namespace geng::columns
 {
@@ -128,13 +130,11 @@ namespace geng::columns
 		unsigned int flashCount;
 		unsigned int actionThrottlePeriod;
 		unsigned int dropThrottlePeriod;
-
-		// Component names
-		const char* pInputName;
 	};
 
-	class ColumnsSim : public IFrameListener, 
-						public BaseGameComponent
+	class ColumnsSim : public IGameListener, 
+						public BaseGameComponent,
+						public std::enable_shared_from_this<ColumnsSim>
 	{
 	private:
 		struct InitialState { };
@@ -154,7 +154,6 @@ namespace geng::columns
 
 		struct StateArgs
 		{
-			IFrameManager* pFrameManager;
 			unsigned long simTime;
 		};
 
@@ -168,9 +167,13 @@ namespace geng::columns
 
 			SimActionWrappers(unsigned int throttlePeriod, 
 				unsigned int dropThrottlePeriod, 
-				ActionMapper& mapper);
+				ActionMapper& mapper,
+				ActionTranslator& translator);
 
-			void UpdateState(ActionMapper& mapper, unsigned long simTime);
+			void UpdateState(ActionTranslator& translator, unsigned long simTime);
+
+			void AddActions(ActionMapper& mapper, 
+					        ActionTranslator& translator);
 		};
 
 		// Drop->(lock)->Compact->Clear->?Compact,Drop
@@ -260,15 +263,8 @@ namespace geng::columns
 		ColumnsSim(const ColumnsSimArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void OnFrame(IFrameManager* pManager) override;
-
-		IFrameListener* GetFrameListener() override;
-
-		static const char* GetDropActionName();
-		static const char* GetShiftLeftActionName();
-		static const char* GetShiftRightActionName();
-		static const char* GetRotateActionName();
-		static const char* GetPermuteActionName();
+		void OnFrame(const SimState& rSimState,
+			const SimContextState* pContextState) override;
 
 		unsigned int PointToIndex(const Point& at) const;
 		Point IndexToPoint(unsigned int idx) const;
@@ -425,8 +421,12 @@ namespace geng::columns
 		bool CompactColumn(unsigned int x);
 		bool CompactColumns();
 
+		// Random number generation
+		unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound);
+
 		// Actions
 		std::shared_ptr<ActionMapper>  m_actionMapper;
+		std::shared_ptr<ActionTranslator> m_actionTranslator;
 		std::shared_ptr<SimActionWrappers>  m_actionWrappers;
 
 		// __Parameters__
@@ -440,11 +440,9 @@ namespace geng::columns
 		std::string m_inputName;
 
 		std::shared_ptr<IInput>  m_pInput;
-
-		// __Removable sets__
+			
 
 		// _Simulation state_
-
 		std::vector<unsigned int> m_toRemove;
 		// Store x coordinates of points to remove because that is where the holes will appear
 		// (This is an optimization to prevent needless work)
@@ -471,5 +469,7 @@ namespace geng::columns
 		unsigned int m_curDropMiliseconds{ 0 };
 		unsigned int m_minDropMiliseconds{ 0 };
 
+		// Random numbers
+		std::mt19937_64  m_generator;
 	};
 }

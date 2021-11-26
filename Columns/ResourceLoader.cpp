@@ -56,7 +56,7 @@ std::shared_ptr<geng::IResource> geng::ResourceType::LoadResource(const Resource
 
 // ResourceLoader
 geng::ResourceLoader::ResourceLoader()
-	:BaseGameComponent("ResourceLoader", geng::GameComponentType::SetUp)
+	:BaseGameComponent("ResourceLoader")
 { }
 
 bool geng::ResourceLoader::CreateType(const char* typeName)

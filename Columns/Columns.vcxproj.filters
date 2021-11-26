@@ -21,13 +21,7 @@
     <ClCompile Include="ColumnsSim.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DefaultFrameManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ActionMapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PuzzleSol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SDLEventPoller.cpp">
@@ -40,9 +34,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ColumnsSDLRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SDLSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ResourceLoader.cpp">
@@ -58,6 +49,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SDLText.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SDLRendering.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ActionTranslator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColumnsExecutive.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommonSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InputBridge.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyDebug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,9 +104,6 @@
     <ClInclude Include="BaseGameComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SDLSetup.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ColumnsSDLRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -120,6 +126,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TrueTypeFont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDLRendering.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ActionTranslator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ActionWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColumnsExecutive.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommonSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputBridge.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

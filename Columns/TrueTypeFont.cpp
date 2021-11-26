@@ -8,7 +8,6 @@ geng::sdl::TTFResource::TTFResource(TTF_Font* pFont,
 	m_pFont(pFont),
 	m_pFontRaw(pFontRaw)
 {
-	fprintf(stderr, "Open font %p\n", m_pFont);
 }
 
 geng::sdl::TTFResource::TTFResource(TTF_Font* pFont)
