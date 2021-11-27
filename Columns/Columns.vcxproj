@@ -193,6 +193,7 @@
   <ItemGroup>
     <ClInclude Include="ActionTranslator.h" />
     <ClInclude Include="ActionWrapper.h" />
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="BaseGameComponent.h" />
     <ClInclude Include="BaseResource.h" />
     <ClInclude Include="CheatTrie.h" />

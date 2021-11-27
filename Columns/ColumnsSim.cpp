@@ -576,11 +576,7 @@ void geng::columns::ColumnsSim::ComputeNextMagicLevel()
 {
 	if (m_nextMagicLevel == 0 || m_level == m_nextMagicLevel)
 	{
-		if (m_level < 5)
-		{
-			m_nextMagicLevel = m_level + 3;
-		}
-		else if (m_level < 8)
+		if (m_level < 9)
 		{
 			m_nextMagicLevel = m_level + 2;
 		}
@@ -762,6 +758,8 @@ void geng::columns::ColumnsSim::ResetGame()
 	m_nextMagicLevel = 0;
 	m_magicColumnNext = false;
 
+	ComputeNextMagicLevel();
+
 	m_curDropMiliseconds = m_dropMiliseconds;
 	// 10 times faster is good enough
 	m_minDropMiliseconds = m_dropMiliseconds / 10;
@@ -820,6 +818,8 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 	StateArgs stateArgs;
 	stateArgs.simTime = pContextState->simulatedTime;
 
+	m_cheatHappened = false;
+
 	bool cheatMagicColumn{ false };
 	
 	if (!m_pExecutive.expired())
@@ -833,8 +833,9 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 	}
 	if (cheatMagicColumn)
 	{
-	//	fprintf(stderr, "cheat -- magic column!\n");
+//		fprintf(stderr, "cheat -- magic column!\n");
 		m_magicColumnNext = true;
+		m_cheatHappened = true;
 	}
 
 	// This will update the translator with the state of the input

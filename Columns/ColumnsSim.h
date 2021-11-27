@@ -498,6 +498,9 @@ namespace geng::columns
 		bool m_needNewColumn{ false };
 		bool m_magicColumnNext{ false };
 
+		// Perframe
+		bool m_cheatHappened{ false };
+
 		std::vector<GridContents> m_colorsToClear;
 
 		// Random numbers
