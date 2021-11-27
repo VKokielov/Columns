@@ -65,7 +65,6 @@ namespace geng
 				&& (!m_wasOn
 					|| (m_throttleStart + m_throttlePeriod <= simTime)))
 			{
-				//				fprintf(stderr, "setting action %d to true with state %d\n", GetID(), state);
 				m_throttleStart = simTime;
 				SetTriggered(true);
 			}

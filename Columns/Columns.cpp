@@ -63,7 +63,7 @@ int main(int, char**)
 		return -1;
 	}
 
-	geng::GameArgs gameArgs;
+	geng::DefaultGameArgs gameArgs;
 	gameArgs.msBreather = 1;
 	gameArgs.msTimePerFrame = 20;
 	auto pGame = geng::DefaultGame::CreateGame(gameArgs);

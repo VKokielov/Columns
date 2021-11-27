@@ -127,7 +127,7 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 	};
 
 	m_pEventPoller->IterateEvents(evtHandler);
-
+	
 	/*
 #ifndef NDEBUG
 	if (g_keyChangedThisFrame)
@@ -144,4 +144,5 @@ void geng::sdl::Input::OnFrame(const SimState& simState, const SimContextState* 
 	}
 #endif
 	*/
+	
 }

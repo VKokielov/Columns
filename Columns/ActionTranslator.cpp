@@ -113,12 +113,14 @@ void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
 		}
 
 		ActionState nextState = actionOn ? ActionState::On : ActionState::Off;
+		
 		/*
 		if (nextState != rActionState.second.actState)
 		{
 			fprintf(stderr, "Flipping action %d to state %d\n", rActionState.first, (int)nextState);
 		}
 		*/
+		
 		rActionState.second.actState = nextState;
 	}
 }

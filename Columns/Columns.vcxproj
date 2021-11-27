@@ -171,6 +171,7 @@
   <ItemGroup>
     <ClCompile Include="ActionTranslator.cpp" />
     <ClCompile Include="BaseResource.cpp" />
+    <ClCompile Include="CheatTrie.cpp" />
     <ClCompile Include="Columns.cpp" />
     <ClCompile Include="ColumnsExecutive.cpp" />
     <ClCompile Include="ColumnsSDLRenderer.cpp" />
@@ -186,6 +187,7 @@
     <ClCompile Include="RawMemoryResource.cpp" />
     <ClCompile Include="SDLRendering.cpp" />
     <ClCompile Include="SDLText.cpp" />
+    <ClCompile Include="SDLTextKeycodes.cpp" />
     <ClCompile Include="TrueTypeFont.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -193,12 +195,14 @@
     <ClInclude Include="ActionWrapper.h" />
     <ClInclude Include="BaseGameComponent.h" />
     <ClInclude Include="BaseResource.h" />
+    <ClInclude Include="CheatTrie.h" />
     <ClInclude Include="ColumnsExecutive.h" />
     <ClInclude Include="ColumnsSDLRenderer.h" />
     <ClInclude Include="ColumnsSim.h" />
     <ClInclude Include="CommonSetup.h" />
     <ClInclude Include="DefaultFrameManager.h" />
     <ClInclude Include="DefaultGame.h" />
+    <ClInclude Include="EngAlgorithms.h" />
     <ClInclude Include="IFrameManager.h" />
     <ClInclude Include="IGame.h" />
     <ClInclude Include="IInput.h" />
@@ -214,6 +218,7 @@
     <ClInclude Include="SDLRendering.h" />
     <ClInclude Include="SDLText.h" />
     <ClInclude Include="SimStateDispatcher.h" />
+    <ClInclude Include="SDLTextKeycodes.h" />
     <ClInclude Include="TrueTypeFont.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

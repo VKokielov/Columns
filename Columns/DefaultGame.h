@@ -11,10 +11,9 @@
 
 namespace geng
 {
-	struct GameArgs
+	struct DefaultGameArgs : public GameArgs
 	{
 		unsigned long msBreather;
-		unsigned long msTimePerFrame;
 		unsigned long maxMsPerFrame; // For monitoring
 	};
 
@@ -128,7 +127,7 @@ namespace geng
 			{ }
 		};
 	public:
-		static std::shared_ptr<DefaultGame> CreateGame(const GameArgs& args);
+		static std::shared_ptr<DefaultGame> CreateGame(const DefaultGameArgs& args);
 
 		bool AddComponent(const std::shared_ptr<IGameComponent>& pComponent) override;
 
@@ -154,8 +153,10 @@ namespace geng
 		bool SetRunState(ContextID contextId, bool value) override;
 		bool SetFocus(ContextID contextId) override;
 
+		const GameArgs& GetGameArgs() const override;
+
 	private:
-		DefaultGame(const GameArgs& args);
+		DefaultGame(const DefaultGameArgs& args);
 
 		ListenerTypeList* SelectListenerList(ListenerType listenerType)
 		{
@@ -190,7 +191,7 @@ namespace geng
 
 		std::vector<std::shared_ptr<IGameComponent> > m_components;
 
-		GameArgs m_gameArgs;
+		DefaultGameArgs m_gameArgs;
 
 		// One entry per context
 		SimState m_simState;

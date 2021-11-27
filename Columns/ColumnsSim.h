@@ -6,6 +6,7 @@
 #include "ActionMapper.h"
 #include "ActionTranslator.h"
 #include "ActionWrapper.h"
+#include "CheatTrie.h"
 
 #include <memory>
 #include <array>
@@ -14,6 +15,8 @@
 
 namespace geng::columns
 {
+	// Forward declaration for the pointer
+	class ColumnsExecutive;
 
 	using GridContents = int;
 
@@ -24,6 +27,10 @@ namespace geng::columns
 	constexpr GridContents MAGENTA = 4;
 	constexpr GridContents BLUE = 5;
 	constexpr GridContents GRID_LIMIT = 6;
+
+	constexpr GridContents CLEARING = 1000;
+
+	constexpr CheatKey CHEAT_MAGIC_COLUMN = 0;
 
 	constexpr unsigned int SEQ_NE = 0;
 	constexpr unsigned int SEQ_N = 1;
@@ -413,6 +420,8 @@ namespace geng::columns
 		// Fill the compact set with the locations of the player column (if compaction is needed)
 		// NOTE:  Used when the player column is locked in horizontal state
 		void AddPlayerColumnToCompactSet(const PlayerSet& playerColumn);
+
+		bool ShouldGenerateClearing();
 		void GenerateNextColors();
 
 		// Create a player with the geometry of a new player column
@@ -424,8 +433,12 @@ namespace geng::columns
 		// __Removables__
 
 		bool ComputeRemovables(unsigned int count);
+
+		bool ComputeRemovablesOfColors(const std::vector<GridContents>& colors);
+
 		void ExecuteRemove();
 		bool ShouldLevelUp();
+		void ComputeNextMagicLevel();
 		void LevelUp();
 
 		// Compact columns by shifting all stones down
@@ -448,9 +461,9 @@ namespace geng::columns
 		unsigned int m_flashCount;
 		unsigned int m_throttlePeriod;
 		unsigned int m_dropThrottlePeriod;
-		std::string m_inputName;
 
 		std::shared_ptr<IInput>  m_pInput;
+		std::weak_ptr<ColumnsExecutive> m_pExecutive;
 		
 		// _Simulation state_
 		std::vector<unsigned int> m_toRemove;
@@ -469,17 +482,23 @@ namespace geng::columns
 
 		GameState m_gameState;
 
+		// This does not need to be reset because it is reset when the GameOver state is 
+		// exited
 		bool m_gameOver{ false };
 
 		unsigned int m_clearedGems{ 0 };
 		unsigned int m_clearedGemsInLevel{ 0 };
 		unsigned int m_levelThreshhold{ 45 };
 		unsigned int m_level{ 1 };
+		unsigned int m_nextMagicLevel{ 0 };
 
 		unsigned int m_curDropMiliseconds{ 0 };
 		unsigned int m_minDropMiliseconds{ 0 };
 
 		bool m_needNewColumn{ false };
+		bool m_magicColumnNext{ false };
+
+		std::vector<GridContents> m_colorsToClear;
 
 		// Random numbers
 		std::mt19937_64  m_generator;

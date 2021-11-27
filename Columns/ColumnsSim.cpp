@@ -1,5 +1,7 @@
 #include "ColumnsSim.h"
 #include "ColumnsExecutive.h"
+#include "EngAlgorithms.h"
+#include <iterator>
 
 unsigned int geng::columns::ColumnsSim::PointToIndex(const Point& at) const
 {
@@ -306,8 +308,12 @@ bool geng::columns::ColumnsSim::PermutePlayerColumn()
 
 void geng::columns::ColumnsSim::AddPlayerColumnToCompactSet(const PlayerSet& playerColumn)
 {
-	// This will succeed even if the column is vertical -- but will only create needless work
-	// Also for vertical columns it will add the same X coordinate multiply
+	if (!playerColumn.isHorizontal)
+	{
+		m_columnsToCompact.emplace(playerColumn.CenterX());
+		return;
+	}
+
 	unsigned int colLen = playerColumn.Width();
 	Point locStart{ playerColumn.StartX(), playerColumn.StartY() };
 
@@ -318,17 +324,29 @@ void geng::columns::ColumnsSim::AddPlayerColumnToCompactSet(const PlayerSet& pla
 		m_columnsToCompact.emplace(locStart.x);
 
 		++count;
-		playerColumn.isHorizontal ? ++locStart.x : ++locStart.y;
+		++locStart.x;
 	}
+}
+
+bool geng::columns::ColumnsSim::ShouldGenerateClearing()
+{
+	return m_magicColumnNext;
 }
 
 void geng::columns::ColumnsSim::GenerateNextColors()
 {
 	m_nextColors.clear();
 
+	bool genClearing = ShouldGenerateClearing();
+
+	if (genClearing)
+	{
+		m_magicColumnNext = false;
+	}
+
 	for (size_t i = 0; i < m_columnSize; ++i)
 	{
-		GridContents nextColor = GetRandomNumber(1, GRID_LIMIT-1);
+		GridContents nextColor = genClearing ? CLEARING : GetRandomNumber(1, GRID_LIMIT-1);
 		m_nextColors.emplace_back(nextColor);
 	}
 }
@@ -385,10 +403,7 @@ bool geng::columns::ColumnsSim::GenerateNewPlayerColumn()
 bool geng::columns::ColumnsSim::LockPlayerColumn()
 {
 	m_columnsToCompact.clear();
-	if (m_playerColumn.isHorizontal)
-	{
-		AddPlayerColumnToCompactSet(m_playerColumn);
-	}
+	AddPlayerColumnToCompactSet(m_playerColumn);
 
 	/*
 	fprintf(stderr, "Locking player column at center %d %d\n", m_playerColumn.locCenter.x, m_playerColumn.locCenter.y);
@@ -398,6 +413,8 @@ bool geng::columns::ColumnsSim::LockPlayerColumn()
 	}
 	m_validPlayerColumn = false;
 	*/
+
+	// Check if there is a "CLEARING" gem in the set.  For each clearing gem, 
 
 	return CanGenerateNewPlayerColumn();
 }
@@ -438,8 +455,7 @@ geng::columns::GridSquare*
 bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 {
 	// Go through each stored set and scan it to find removables
-	m_columnsToCompact.clear();
-	m_toRemove.clear();
+
 
 	for (unsigned int idx = 0; idx < m_gameGridSize; ++idx)
 	{
@@ -509,6 +525,30 @@ bool geng::columns::ColumnsSim::ComputeRemovables(unsigned int count)
 	return !m_toRemove.empty();
 }
 
+bool geng::columns::ColumnsSim::ComputeRemovablesOfColors
+		(const std::vector<GridContents>& colors)
+{
+	// Scan the grid and find removables of the color in question
+	for (unsigned int idx = 0; idx < m_gameGridSize; ++idx)
+	{
+		Point curPt = IndexToPoint(idx);
+
+		GridSquare& curSquare = m_gameGrid[idx];
+
+		for (GridContents colorToRemove : colors)
+		{
+			if (curSquare.contents == colorToRemove)
+			{
+				m_columnsToCompact.emplace(curPt.x);
+				m_toRemove.emplace_back(idx);
+				break;  // short-circuit the or
+			}
+		}
+	}
+
+	return !m_toRemove.empty();
+}
+
 void geng::columns::ColumnsSim::ExecuteRemove()
 {
 	
@@ -531,6 +571,26 @@ bool geng::columns::ColumnsSim::ShouldLevelUp()
 {
 	return m_clearedGemsInLevel >= m_levelThreshhold;
 }
+
+void geng::columns::ColumnsSim::ComputeNextMagicLevel()
+{
+	if (m_nextMagicLevel == 0 || m_level == m_nextMagicLevel)
+	{
+		if (m_level < 5)
+		{
+			m_nextMagicLevel = m_level + 3;
+		}
+		else if (m_level < 8)
+		{
+			m_nextMagicLevel = m_level + 2;
+		}
+		else
+		{
+			m_nextMagicLevel = m_level + 1;
+		}
+	}
+}
+
 void geng::columns::ColumnsSim::LevelUp()
 {
 	// Update times, etc
@@ -546,12 +606,21 @@ void geng::columns::ColumnsSim::LevelUp()
 	m_levelThreshhold -= m_levelThreshhold % m_columnSize;
 
 	++m_level;
+	if (m_nextMagicLevel == m_level)
+	{
+		m_magicColumnNext = true;
+	}
+
+	ComputeNextMagicLevel();
 }
 
 bool geng::columns::ColumnsSim::CompactColumn(unsigned int x)
 {
 	// This is just the partition algorithm applied to blank grid squares vs stones
 	// in effect, the nonblanks all end up on the bottom
+
+	// This algorithm is hardcoded to add any gem directly beneath a "clearing" gem
+	// to the list of types of gems to clear
 
 	// Returns true if at least one column was compacted
 	bool compactedCol{ false };
@@ -572,8 +641,9 @@ bool geng::columns::ColumnsSim::CompactColumn(unsigned int x)
 	{
 		Point readPt{ x,readY };
 		Point writePt{ x, writeY};
+		GridContents readContents = GetContents(readPt);
 
-		if (IsBlank(GetContents(readPt)))
+		if (IsBlank(readContents))
 		{
 			// Do not disturb the write pointer
 			--readY;
@@ -586,6 +656,19 @@ bool geng::columns::ColumnsSim::CompactColumn(unsigned int x)
 				MoveBlock(readPt, writePt);
 				compactedCol = true;
 			}
+
+			if (readContents == CLEARING
+				&& writeY < m_size.y - 1)
+			{
+				Point ptClearColor{ x, writeY + 1 };
+				GridContents clearColor = GetContents(ptClearColor);
+				// For later performance add each color only once
+				add_unique(m_colorsToClear.begin(),
+					m_colorsToClear.end(),
+					std::back_inserter(m_colorsToClear),
+					clearColor);
+			}
+
 			--readY;
 			--writeY;
 		}
@@ -638,7 +721,7 @@ void geng::columns::ColumnsSim::SimActionWrappers::AddActions(ActionMapper& mapp
 	 shiftLeftAction.GetName(),
 	 shiftRightAction.GetName(),
 	 rotateAction.GetName(),
-	 permuteAction.GetName() };
+	 permuteAction.GetName()};
 
 	translator.InitActions(&mapper, actionNames.begin(), actionNames.end());
 }
@@ -676,12 +759,15 @@ void geng::columns::ColumnsSim::ResetGame()
 	m_clearedGemsInLevel = 0;
 	m_levelThreshhold = 45;
 	m_level = 1;
+	m_nextMagicLevel = 0;
+	m_magicColumnNext = false;
 
 	m_curDropMiliseconds = m_dropMiliseconds;
 	// 10 times faster is good enough
 	m_minDropMiliseconds = m_dropMiliseconds / 10;
 
-	GenerateNewPlayerColumn();
+	m_needNewColumn = true;
+	m_colorsToClear.clear();
 
 	StateArgs stateArgs;
 	stateArgs.simTime = 0;
@@ -720,6 +806,11 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 
 	ResetGame();
 
+	auto pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), ColumnsExecutive::GetExecutiveName());
+	pExecutive->AddCheat("saxo", CHEAT_MAGIC_COLUMN);
+
+	m_pExecutive = pExecutive;
+
 	return true;
 }
 
@@ -729,11 +820,27 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 	StateArgs stateArgs;
 	stateArgs.simTime = pContextState->simulatedTime;
 
+	bool cheatMagicColumn{ false };
+	
+	if (!m_pExecutive.expired())
+	{
+		auto pExecutive = m_pExecutive.lock();
+
+		if (pExecutive)
+		{
+			cheatMagicColumn = FetchCheat(CHEAT_MAGIC_COLUMN, *pExecutive.get());
+		}
+	}
+	if (cheatMagicColumn)
+	{
+	//	fprintf(stderr, "cheat -- magic column!\n");
+		m_magicColumnNext = true;
+	}
+
 	// This will update the translator with the state of the input
 	m_actionTranslator->UpdateOnFrame(pContextState->frameCount);
 	// This will update the referenced commands with the state of the translator
 	m_actionWrappers->UpdateState(*m_actionTranslator, pContextState->simulatedTime);
-
 	m_gameState.StartFrame();
 
 	bool shouldContinue = true;
@@ -762,6 +869,12 @@ void geng::columns::ColumnsSim::GameState
 	//       could not be formed because the space to form it is taken.
 
 	SetFrameComplete(true);
+
+	if (m_owner.m_needNewColumn)
+	{
+		m_owner.GenerateNewPlayerColumn();
+		m_owner.m_needNewColumn = false;
+	}
 
 	// Drop?
 	if (m_owner.m_actionWrappers->dropAction.Triggered()
@@ -845,10 +958,22 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 	// Compute the removables.   If the set is empty, immediately switch to 
 	// drop column state.  Otherwise, we go to blinking
 
-	// (hardcoding three)
-	bool hasRemovables = m_owner.ComputeRemovables(m_owner.m_columnSize);
+	m_owner.m_columnsToCompact.clear();
+	m_owner.m_toRemove.clear();
 
-	if (hasRemovables)
+	m_owner.ComputeRemovables(m_owner.m_columnSize);
+
+	if (!m_owner.m_colorsToClear.empty())
+	{
+		std::vector<GridContents> toClear{ std::move(m_owner.m_colorsToClear) };
+		add_unique(toClear.begin(), toClear.end(), std::back_inserter(toClear),
+			CLEARING);
+
+		m_owner.ComputeRemovablesOfColors(std::move(toClear));
+		m_owner.m_colorsToClear.clear();
+	}
+
+	if (!m_owner.m_toRemove.empty())
 	{
 		// Initialize the blink phase
 		clearState.blinkPhase = true;
@@ -862,11 +987,6 @@ OnEnterState(ClearState& clearState, const StateArgs& stateArgs)
 	else
 	{
 		// Is there an outstanding column generation?
-		if (m_owner.m_needNewColumn)
-		{
-			m_owner.GenerateNewPlayerColumn();
-			m_owner.m_needNewColumn = false;
-		}
 		Transition<DropColumnState>(*this, stateArgs);
 	}
 }

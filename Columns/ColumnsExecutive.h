@@ -4,6 +4,7 @@
 #include "ActionMapper.h"
 #include "SDLInput.h"
 #include "ColumnsSim.h"
+#include "CheatTrie.h"
 #include <memory>
 
 namespace geng::columns
@@ -21,6 +22,8 @@ namespace geng::columns
 	{
 	public:
 		// Data
+		static constexpr unsigned int msToEnterCheat = 700;
+
 		static const char* GetDropActionName();
 		static const char* GetShiftLeftActionName();
 		static const char* GetShiftRightActionName();
@@ -41,6 +44,24 @@ namespace geng::columns
 		bool IsInitialized() const { return m_initialized; }
 		bool IsPaused() const { return m_contextDesc == ContextDesc::PausedGame; }
 		bool IsInGame() const { return m_contextDesc != ContextDesc::NoGame; }
+
+		// Only valid when the game is active
+
+		void UpdateCheatState(unsigned long execTime);
+		void AddCheat(const char* pText, CheatKey key);
+		bool HasCheat() const
+		{
+			return m_cheatKey.has_value();
+		}
+		CheatKey GetCheat() const
+		{
+			return m_cheatKey.has_value() ? *m_cheatKey : CheatKey();
+		}
+		void ResetCheat()
+		{
+			m_cheatKey.reset();
+			m_cheatState = CHEAT_TRIE_ROOT;
+		}
 	private:
 		static void MapActions(ActionMapper& rMapper);
 
@@ -50,6 +71,8 @@ namespace geng::columns
 				|| (keyState.finalState == KeySignal::KeyUp && keyState.numChanges > 1);
 		}
 
+		void SetupCheats(IInput* pInput);
+
 		bool m_initialized;
 
 		std::shared_ptr<IGame> m_pGame;
@@ -57,6 +80,28 @@ namespace geng::columns
 		std::shared_ptr<ColumnsSim> m_pSim;
 		ContextID m_simContextId;
 		ContextDesc m_contextDesc{ ContextDesc::NoGame };
+		
+		bool m_cheatsEnabled{ true };
+		std::vector<KeyState> m_alphaKeyStates;
+		std::vector<KeyState*> m_alphaKeyRefs;
+ 
+		CheatTrie m_cheatTrie;
+		TrieIndex m_cheatState{ CHEAT_TRIE_ROOT };
+		unsigned long m_lastCheatInputTime;
+		std::optional<CheatKey> m_cheatKey;
 	};
+
+	// Helper function for getting cheats
+	inline bool FetchCheat(CheatKey cheatKey, ColumnsExecutive& columnsExec)
+	{
+		if (!columnsExec.HasCheat() || columnsExec.GetCheat() != cheatKey)
+		{
+			return false;
+		}
+
+		columnsExec.ResetCheat();
+
+		return true;
+	}
 
 }

@@ -4,6 +4,7 @@
 #include "SDLEventPoller.h"
 #include "SDLInput.h"
 #include "ColumnsSim.h"
+#include "SDLTextKeycodes.h"
 #include "ColumnsSDLRenderer.h"
 #include <SDL.h>
 #include <array>
@@ -15,8 +16,6 @@ geng::columns::ColumnsExecutive::ColumnsExecutive()
 	m_initialized(false),
 	m_pGame()
 {
-
-
 	m_initialized = true;
 }
 
@@ -70,7 +69,7 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	// Create the columns sim
 	geng::columns::ColumnsSimArgs simArgs;
 	simArgs.actionThrottlePeriod = 250;
-	simArgs.dropThrottlePeriod = 150;
+	simArgs.dropThrottlePeriod = 100;
 	simArgs.boardSize.x = 9;
 	simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
 	simArgs.columnSize = 3;
@@ -113,6 +112,8 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	pGame->SetVisibility(m_simContextId, true);
 	pGame->SetRunState(m_simContextId, false);
 
+	SetupCheats(m_pInput.get());
+
 	return true;
 }
 
@@ -127,6 +128,11 @@ void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 
 	std::array pksArray{ &ksPause, &ksSpace };
 	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
+
+	if (m_cheatsEnabled && m_contextDesc == ContextDesc::ActiveGame)
+	{
+		UpdateCheatState(rSimState.execSimulatedTime);
+	}
 
 	// Special key handling
 	KeyState resetKey{ 0, 0, KeySignal::KeyUp};
@@ -177,6 +183,81 @@ void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 
 }
 
+void geng::columns::ColumnsExecutive::UpdateCheatState(unsigned long execTime)
+{
+	if (m_cheatKey.has_value())
+	{
+		// Do not react to inputs until output has been read off and reset
+		return;
+	}
+
+	if (m_cheatState != CHEAT_TRIE_ROOT
+		&& (m_lastCheatInputTime + msToEnterCheat <= execTime))
+	{
+		// Cheat is invalidated
+		m_cheatState = CHEAT_TRIE_ROOT;
+	}
+
+	m_pInput->QueryInput(nullptr, nullptr, m_alphaKeyRefs.data(), m_alphaKeyRefs.size());
+
+	// Find the first active key
+	char curC;
+	bool hasChar{ false };
+	for (KeyState& state : m_alphaKeyStates)
+	{
+		if (IsKeyPressedOnce(state))
+		{
+			hasChar = true;
+			curC = sdl::GetTextFromKeyCode(state.keyCode);
+			break;
+		}
+	}
+
+	if (hasChar)
+	{
+//		fprintf(stderr, "got char %c\n", curC);
+		TrieIndex nextNode = m_cheatTrie.GetNext(m_cheatState, curC);
+		if (nextNode != CHEAT_TRIE_ROOT)
+		{
+			// Advance
+			m_lastCheatInputTime = execTime;
+			m_cheatState = nextNode;
+			// Cheat?
+			if (m_cheatTrie.HasKey(m_cheatState))
+			{
+//				fprintf(stderr, "Has key!!\n");
+				m_cheatKey.emplace(m_cheatTrie.GetKey(m_cheatState));
+				m_cheatState = CHEAT_TRIE_ROOT;
+			}
+		}
+	}
+}
+
+void geng::columns::ColumnsExecutive::SetupCheats(IInput* pInput)
+{
+	// This may be called multiple times to do identical work but how often?
+	// Leave it this way for simplicity
+
+	if (m_alphaKeyStates.empty())
+	{
+		std::vector<KeyCode> alphaKeys;
+		sdl::AddAllTextKeys(alphaKeys);
+
+		// Resize the key state array to prevent reallocations
+		m_alphaKeyStates.resize(alphaKeys.size());
+		for (size_t i = 0; i < alphaKeys.size(); ++i)
+		{
+			KeyState kstate{ alphaKeys[i], 0, KeySignal::KeyUp };
+			m_alphaKeyStates[i] = kstate;
+			m_alphaKeyRefs.emplace_back(&m_alphaKeyStates[i]);
+		}
+	}
+
+	for (size_t i = 0; i < m_alphaKeyStates.size(); ++i)
+	{
+		pInput->AddCode(m_alphaKeyStates[i].keyCode);
+	}
+}
 
 void geng::columns::ColumnsExecutive::MapActions(ActionMapper& rMapper)
 {
@@ -197,6 +278,12 @@ void geng::columns::ColumnsExecutive::MapActions(ActionMapper& rMapper)
 
 	auto permuteAction = rMapper.CreateAction(GetPermuteActionName());
 	rMapper.MapAction(permuteAction, SDLK_r);
+
+}
+
+void geng::columns::ColumnsExecutive::AddCheat(const char* pText, CheatKey key)
+{
+	m_cheatTrie.AddEntry(pText, key);
 }
 
 const char* geng::columns::ColumnsExecutive::GetDropActionName()

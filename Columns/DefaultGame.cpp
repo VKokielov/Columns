@@ -158,14 +158,14 @@ bool geng::ListenerTypeList::AddListener(ContextID contextId,
 	return m_listenerGroups[contextId].group.AddListener(lid, pListener);
 }
 
-geng::DefaultGame::DefaultGame(const GameArgs& args)
+geng::DefaultGame::DefaultGame(const DefaultGameArgs& args)
 	:m_gameArgs(args)
 {
 	// Add the executive context (just a placeholder)
 	CreateSimContext("ExecutiveContext");
 }
 
-std::shared_ptr<geng::DefaultGame> geng::DefaultGame::CreateGame(const GameArgs& args)
+std::shared_ptr<geng::DefaultGame> geng::DefaultGame::CreateGame(const DefaultGameArgs& args)
 {
 	return std::shared_ptr<geng::DefaultGame>(new DefaultGame(args));
 }
@@ -598,4 +598,9 @@ const std::shared_ptr<geng::IGameComponent>&
 	auto itComponent = m_componentMap.find(pName);
 
 	return m_components[itComponent->second];
+}
+
+const geng::GameArgs& geng::DefaultGame::GetGameArgs() const
+{
+	return m_gameArgs;
 }

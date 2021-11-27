@@ -79,6 +79,8 @@ namespace geng::columns
 		void RenderFullAt(int x, int y,
 			geng::sdl::RGBA color);
 
+		void RenderClearingAt(int x, int y);
+
 		void RenderContentsAt(int x, int y,
 			GridContents gc);
 
@@ -116,11 +118,17 @@ namespace geng::columns
 		sdl::Text m_gameOverLabel;
 		sdl::Text m_pressSpaceLabel;
 
-
 		sdl::Text m_score;
 		sdl::Text m_level;
 
+		// Not counted but faithfully taken from the input
+		unsigned int m_renderFrames{ 0 };
+		unsigned int m_renderFramesAtLastSwitch{ 0 };
+		unsigned int m_phaseCount{ 0 };
 
+		unsigned int m_phaseLength{ 0 };
+
+		constexpr static unsigned int PHASE_MS = 5;
 
 	};
 

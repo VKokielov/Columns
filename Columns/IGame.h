@@ -19,6 +19,11 @@ namespace geng
 	using ListenerID = size_t;
 	constexpr ContextID EXECUTIVE_CONTEXT = 0;
 
+	struct GameArgs
+	{
+		unsigned long msTimePerFrame;
+	};
+
 	struct SimState
 	{
 		// Number of miliseconds per frame (1/ideal framerate)
@@ -115,6 +120,8 @@ namespace geng
 		virtual bool SetVisibility(ContextID contextId, bool value) = 0;
 		virtual bool SetRunState(ContextID contextId, bool value) = 0;
 		virtual bool SetFocus(ContextID contextId) = 0;
+
+		virtual const GameArgs& GetGameArgs() const = 0;
 	};
 
 }
