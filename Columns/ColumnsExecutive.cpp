@@ -172,6 +172,7 @@ void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 		bool spacePressed = IsKeyPressedOnce(ksSpace);
 		if (spacePressed)
 		{
+			// This prevents the simulation from reading off the key after it was handled here
 			resetKey.keyCode = SDLK_SPACE;
 			m_pInput->ForceState(resetKey);
 

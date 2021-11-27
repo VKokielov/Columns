@@ -146,6 +146,8 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_gameOverLabel.SetText("Game over!", m_pRenderer.get(), sdl::TextQuality::Nice);
 	m_pressSpaceLabel.SetFont(pFontBanner);
 	m_pressSpaceLabel.SetText("Press SPACE to start", m_pRenderer.get(), sdl::TextQuality::Nice);
+	m_cheatAcceptedLabel.SetFont(pFontBanner);
+	m_cheatAcceptedLabel.SetText("Cheat ACCEPTED", m_pRenderer.get(), sdl::TextQuality::Nice);
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
@@ -340,7 +342,13 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 		m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
 	}
 
-	// Pause??
+	// Banner
+	if (m_pSim->CheatHappened())
+	{
+		m_timeHideCheatLabel = rSimState.execSimulatedTime
+			+ CHEAT_BANNER_MS;
+	}
+
 	unsigned int bannerX = m_windowX / 2;
 	unsigned int bannerY = 30;
 
@@ -358,6 +366,11 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 		{
 			m_pressSpaceLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
 		}
+	}
+	else if (m_timeHideCheatLabel != 0 &&
+		m_timeHideCheatLabel >= rSimState.execSimulatedTime)
+	{
+		m_cheatAcceptedLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
 	}
 
 	SDL_RenderPresent(m_pRenderer.get());

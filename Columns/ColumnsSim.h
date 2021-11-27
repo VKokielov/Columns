@@ -306,6 +306,9 @@ namespace geng::columns
 		const unsigned int GetGems() const { return m_clearedGems; }
 
 		bool IsGameOver() const { return m_gameOver; }
+		bool CheatHappened() const {
+			return m_cheatHappened;
+		}
 	private:
 		// Starting at grid location X, check whether there are enough blocks of the same color to remove along
 		// an axis (horizontal, vertical, downslope, upslop)

@@ -117,6 +117,7 @@ namespace geng::columns
 		sdl::Text m_pauseLabel;
 		sdl::Text m_gameOverLabel;
 		sdl::Text m_pressSpaceLabel;
+		sdl::Text m_cheatAcceptedLabel;
 
 		sdl::Text m_score;
 		sdl::Text m_level;
@@ -128,8 +129,10 @@ namespace geng::columns
 
 		unsigned int m_phaseLength{ 0 };
 
-		constexpr static unsigned int PHASE_MS = 5;
+		unsigned int m_timeHideCheatLabel{ 0 };
 
+		constexpr static unsigned int PHASE_MS = 5;
+		constexpr static unsigned int CHEAT_BANNER_MS = 1500;
 	};
 
 

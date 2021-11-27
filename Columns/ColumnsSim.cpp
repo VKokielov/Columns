@@ -576,9 +576,13 @@ void geng::columns::ColumnsSim::ComputeNextMagicLevel()
 {
 	if (m_nextMagicLevel == 0 || m_level == m_nextMagicLevel)
 	{
-		if (m_level < 9)
+		if (m_level == 1 || m_level >= 6 && m_level < 9)
 		{
 			m_nextMagicLevel = m_level + 2;
+		}
+		else if (m_level < 5)
+		{
+			m_nextMagicLevel = m_level + 3;
 		}
 		else
 		{
