@@ -8,6 +8,7 @@
 #include "SDLText.h"
 #include "ResourceLoader.h"
 #include "ColumnsExecutive.h"
+#include "Animation.h"
 #include <utility>
 
 namespace geng::columns
@@ -122,16 +123,16 @@ namespace geng::columns
 		sdl::Text m_score;
 		sdl::Text m_level;
 
-		// Not counted but faithfully taken from the input
-		unsigned int m_renderFrames{ 0 };
-		unsigned int m_renderFramesAtLastSwitch{ 0 };
-		unsigned int m_phaseCount{ 0 };
+		Animation m_magicAnimation;
+		Animation m_screenFadeToDark;
 
-		unsigned int m_phaseLength{ 0 };
+		bool m_wasPaused{ false };
 
 		unsigned int m_timeHideCheatLabel{ 0 };
 
-		constexpr static unsigned int PHASE_MS = 5;
+		constexpr static unsigned long MAGIC_PHASE_COUNT = 3;
+		constexpr static unsigned long MAGIC_TOTAL_MS = 600;
+
 		constexpr static unsigned int CHEAT_BANNER_MS = 1500;
 	};
 

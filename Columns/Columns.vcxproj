@@ -170,6 +170,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ActionTranslator.cpp" />
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="BaseResource.cpp" />
     <ClCompile Include="CheatTrie.cpp" />
     <ClCompile Include="Columns.cpp" />

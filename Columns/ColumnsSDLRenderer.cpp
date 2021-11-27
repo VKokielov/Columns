@@ -155,11 +155,15 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	// Compute the phase length based on the simulation properties
 	const GameArgs& gameArgs = pGame->GetGameArgs();
 
+	/*
 	m_phaseLength = PHASE_MS / gameArgs.msTimePerFrame;
 	if ((PHASE_MS % gameArgs.msTimePerFrame) != 0)
 	{
 		++m_phaseLength;
 	}
+	*/
+	m_magicAnimation.SetArguments(AnimationArgsForTime(MAGIC_PHASE_COUNT, gameArgs.msTimePerFrame,
+		MAGIC_TOTAL_MS));
 
 	return true;
 }
@@ -207,7 +211,7 @@ void geng::columns::ColumnsSDLRenderer::RenderClearingAt(int x, int y)
 	static sdl::RGBA black{ 0,0,0, SDL_ALPHA_OPAQUE };
 	static sdl::RGBA gold{ 255,163,77, SDL_ALPHA_OPAQUE };
 
-	std::array colorArray{ &gold, &black, &black, &black };
+	std::array<sdl::RGBA*, MAGIC_PHASE_COUNT+1> colorArray{ &gold, &black, &black, &black };
 
 	SDL_Rect rectBody{ x, y, m_squareSize, m_squareSize };
 	size_t idx = 0;
@@ -220,12 +224,11 @@ void geng::columns::ColumnsSDLRenderer::RenderClearingAt(int x, int y)
 		squareDelta = 1;
 	}
 
-	// Offset depends on the phase
-	size_t phaseOffset = (m_phaseCount / 5) % colorArray.size();
+	unsigned long arrayPhase = m_magicAnimation.GetCurrentTick();
 
 	while (rectBody.h > 0)
 	{
-		sdl::RGBA* pColor = colorArray[(idx + phaseOffset) % colorArray.size()];
+		sdl::RGBA* pColor = colorArray[(arrayPhase + idx) % colorArray.size()];
 		sdl::SetDrawColor(m_pRenderer.get(), *pColor);
 		SDL_RenderFillRect(m_pRenderer.get(), &rectBody);
 
@@ -262,6 +265,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
 	// Phase updates
+	/*
 	m_renderFrames = pContextState->frameCount;
 
 	if (m_renderFramesAtLastSwitch == 0
@@ -270,7 +274,10 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 		++m_phaseCount;
 		m_renderFramesAtLastSwitch = m_renderFrames;
 	}
+	*/
 
+	// Forward; wrap around
+	m_magicAnimation.Step(true, true);
 
 	SDL_SetRenderDrawColor(m_pRenderer.get(), 17, 23, 64, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(m_pRenderer.get());
