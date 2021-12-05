@@ -180,6 +180,9 @@
     <ClCompile Include="ActionMapper.cpp" />
     <ClCompile Include="CommonSetup.cpp" />
     <ClCompile Include="DefaultGame.cpp" />
+    <ClCompile Include="FileCommandReader.cpp" />
+    <ClCompile Include="FileCommandWriter.cpp" />
+    <ClCompile Include="Filestream.cpp" />
     <ClCompile Include="InputBridge.cpp" />
     <ClCompile Include="KeyDebug.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
@@ -192,25 +195,34 @@
     <ClCompile Include="TrueTypeFont.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActionCommands.h" />
     <ClInclude Include="ActionTranslator.h" />
     <ClInclude Include="ActionWrapper.h" />
     <ClInclude Include="Animation.h" />
+    <ClInclude Include="BaseCommand.h" />
     <ClInclude Include="BaseGameComponent.h" />
     <ClInclude Include="BaseResource.h" />
+    <ClInclude Include="Bytestream.h" />
     <ClInclude Include="CheatTrie.h" />
     <ClInclude Include="ColumnsExecutive.h" />
     <ClInclude Include="ColumnsSDLRenderer.h" />
     <ClInclude Include="ColumnsSim.h" />
+    <ClInclude Include="CommandInterface.h" />
     <ClInclude Include="CommonSetup.h" />
     <ClInclude Include="DefaultFrameManager.h" />
     <ClInclude Include="DefaultGame.h" />
     <ClInclude Include="EngAlgorithms.h" />
+    <ClInclude Include="FileCommandReader.h" />
+    <ClInclude Include="FileCommandWriter.h" />
+    <ClInclude Include="Filestream.h" />
+    <ClInclude Include="FileUtils.h" />
     <ClInclude Include="IFrameManager.h" />
     <ClInclude Include="IGame.h" />
     <ClInclude Include="IInput.h" />
     <ClInclude Include="ActionMapper.h" />
     <ClInclude Include="InputBridge.h" />
     <ClInclude Include="KeyDebug.h" />
+    <ClInclude Include="MessageStream.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="SDLEventPoller.h" />
@@ -219,6 +231,7 @@
     <ClInclude Include="RawMemoryResource.h" />
     <ClInclude Include="SDLRendering.h" />
     <ClInclude Include="SDLText.h" />
+    <ClInclude Include="SerializedCommands.h" />
     <ClInclude Include="SimStateDispatcher.h" />
     <ClInclude Include="SDLTextKeycodes.h" />
     <ClInclude Include="TrueTypeFont.h" />

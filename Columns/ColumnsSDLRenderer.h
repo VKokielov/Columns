@@ -100,6 +100,7 @@ namespace geng::columns
 		int m_boardBottom{ 0 };
 		int m_squareSize{ 0 };
 
+		SDL_Rect m_curtainArea;
 		SDL_Rect m_boardArea;
 
 		// SDL
@@ -124,14 +125,18 @@ namespace geng::columns
 		sdl::Text m_level;
 
 		Animation m_magicAnimation;
-		Animation m_screenFadeToDark;
+		Animation m_screenFadeAnimation;
 
+		/*
 		bool m_wasPaused{ false };
+		bool m_fadeToDark{ false };
+		*/
 
 		unsigned int m_timeHideCheatLabel{ 0 };
 
 		constexpr static unsigned long MAGIC_PHASE_COUNT = 3;
 		constexpr static unsigned long MAGIC_TOTAL_MS = 600;
+		constexpr static unsigned long FADE_TOTAL_MS = 2000;
 
 		constexpr static unsigned int CHEAT_BANNER_MS = 1500;
 	};

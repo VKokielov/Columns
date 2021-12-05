@@ -139,7 +139,7 @@ bool geng::Animation::Step(bool forward, bool wrapAround)
 				nextScaledTicks = targetScaledTicks;
 			}
 		}
-		else
+		else if (nextScaledTicks > 0)
 		{
 			unsigned long targetScaledTicks = nextScaledTicks - m_args.frameCount;
 				

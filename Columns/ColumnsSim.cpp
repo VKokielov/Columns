@@ -1,6 +1,7 @@
 #include "ColumnsSim.h"
 #include "ColumnsExecutive.h"
 #include "EngAlgorithms.h"
+#include "ActionCommands.h"
 #include <iterator>
 
 unsigned int geng::columns::ColumnsSim::PointToIndex(const Point& at) const

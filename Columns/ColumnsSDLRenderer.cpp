@@ -154,16 +154,11 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 
 	// Compute the phase length based on the simulation properties
 	const GameArgs& gameArgs = pGame->GetGameArgs();
-
-	/*
-	m_phaseLength = PHASE_MS / gameArgs.msTimePerFrame;
-	if ((PHASE_MS % gameArgs.msTimePerFrame) != 0)
-	{
-		++m_phaseLength;
-	}
-	*/
 	m_magicAnimation.SetArguments(AnimationArgsForTime(MAGIC_PHASE_COUNT, gameArgs.msTimePerFrame,
 		MAGIC_TOTAL_MS));
+
+	m_screenFadeAnimation.SetArguments(AnimationArgsForTime(127, gameArgs.msTimePerFrame,
+		FADE_TOTAL_MS));
 
 	return true;
 }
@@ -265,16 +260,6 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
 	// Phase updates
-	/*
-	m_renderFrames = pContextState->frameCount;
-
-	if (m_renderFramesAtLastSwitch == 0
-		|| m_renderFrames - m_renderFramesAtLastSwitch > m_phaseLength)
-	{
-		++m_phaseCount;
-		m_renderFramesAtLastSwitch = m_renderFrames;
-	}
-	*/
 
 	// Forward; wrap around
 	m_magicAnimation.Step(true, true);
@@ -287,6 +272,28 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	SDL_RenderFillRect(m_pRenderer.get(), &m_boardArea);
 
 	bool isPaused = m_pExecutive->IsPaused();
+
+	// Update the fade to dark animation
+	if (isPaused)
+	{
+		// -> dark
+		if (!m_screenFadeAnimation.IsAtEnd())
+		{
+	//		fprintf(stderr, "\nCurrent ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			m_screenFadeAnimation.Step(true, false);
+	//		fprintf(stderr, "\nNew ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+		}
+	}
+	else
+	{
+		// -> light
+		if (!m_screenFadeAnimation.IsAtStart())
+		{
+	//		fprintf(stderr, "\nCurrent ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			m_screenFadeAnimation.Step(false, false);
+	//		fprintf(stderr, "\nNew ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+		}
+	}
 
 	// Draw the predicting gems next to the board
 	const std::vector<GridContents>& nextGems = m_pSim->GetNextColors();
@@ -359,11 +366,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	unsigned int bannerX = m_windowX / 2;
 	unsigned int bannerY = 30;
 
-	if (m_pExecutive->IsPaused())
-	{
-		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
-	}
-	else if (!m_pExecutive->IsInGame())
+	if (!isPaused && !m_pExecutive->IsInGame())
 	{
 		if (m_pSim->IsGameOver())
 		{
@@ -380,6 +383,24 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 		m_cheatAcceptedLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
 	}
 
+	// Draw the "curtain"
+	if (!m_screenFadeAnimation.IsAtStart())
+	{
+		Uint8 uiAlpha = (Uint8)m_screenFadeAnimation.GetCurrentTick();
+		//fprintf(stderr, "Filling rect %hhu...\n", uiAlpha);
+
+		SDL_SetRenderDrawBlendMode(m_pRenderer.get(), SDL_BLENDMODE_BLEND);
+		SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, uiAlpha);
+		SDL_RenderFillRect(m_pRenderer.get(), &m_curtainArea);
+		SDL_SetRenderDrawBlendMode(m_pRenderer.get(), SDL_BLENDMODE_NONE);
+	}
+
+	if (isPaused)
+	{
+		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
+	}
+
+
 	SDL_RenderPresent(m_pRenderer.get());
 }
 
@@ -395,6 +416,11 @@ void geng::columns::ColumnsSDLRenderer::Measure()
 	// Compute game rectangle dimensions
 	unsigned int gameRectW = m_squareSize * m_boardX;
 	unsigned int gameRectH = m_squareSize * visibleY;  // approximately window size (to within one square)
+
+	m_curtainArea.x = 0;
+	m_curtainArea.y = 0;
+	m_curtainArea.w = m_windowX;
+	m_curtainArea.h = m_windowY;
 
 	m_boardArea.x = (m_windowX - gameRectW) / 2;
 	m_boardArea.y = 0;
