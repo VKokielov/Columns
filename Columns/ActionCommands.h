@@ -13,34 +13,50 @@ namespace geng
 	// (which should have been updated beforehand) and sets the state of the command based
 	// on this value
 
+	class ActionCommandStreamArgs : public ICommandStreamArgs
+	{
+	public:
+		ActionCommandStreamArgs(const std::shared_ptr<ActionCommand>& pCommand,
+			const std::shared_ptr<ActionTranslator>& pTranslator,
+			unsigned long msPerFrame,
+			ActionID actionId)
+			:m_pCommand(pCommand),
+			m_pTranslator(pTranslator),
+			m_msPerFrame(msPerFrame),
+			m_actionId(m_actionId)
+		{ }
+
+	private:
+		std::shared_ptr<ActionCommand>      m_pCommand;
+		std::shared_ptr<ActionTranslator>   m_pTranslator;
+		unsigned long m_msPerFrame{ 0 };
+		ActionID m_actionId;
+
+		friend class ActionCommandStream;
+	};
+
 	class ActionCommandStream : public ICommandStream
 	{
 	public:
 		bool UpdateOnFrame(unsigned long frameIndex) override
 		{
-			ActionState curActionState = m_pTranslator->GetActionState(m_actionId);
+			ActionState curActionState = m_args.m_pTranslator->GetActionState(m_args.m_actionId);
 
-			bool curCommandState = GetCommandState(frameIndex * m_msPerFrame, curActionState);
+			bool curCommandState = GetCommandState(frameIndex * m_args.m_msPerFrame, curActionState);
 
 			if (frameIndex == 0 || 
 				m_prevState != curCommandState)
 			{
 				// This will also invoke relevant listeners
-				m_pCommand->SetState(curCommandState);
+				m_args.m_pCommand->SetState(curCommandState);
 			}
 			m_prevState = curCommandState;
 			return true;
 		}
 
 	protected:
-		ActionCommandStream(const std::shared_ptr<ActionCommand>& pCommand,
-			const std::shared_ptr<ActionTranslator>& pTranslator,
-			unsigned long msPerFrame,
-			ActionID actionId)
-			:m_msPerFrame(msPerFrame),
-			m_actionId(actionId),
-			m_pCommand(pCommand),
-			m_pTranslator(pTranslator)
+		ActionCommandStream(ActionCommandStreamArgs&& args)
+			:m_args(std::move(args))
 		{
 
 		}
@@ -54,10 +70,7 @@ namespace geng
 		}
 
 	private:
-		unsigned long m_msPerFrame{ 0 };
-		ActionID m_actionId;
-		std::shared_ptr<ActionCommand>      m_pCommand;
-		std::shared_ptr<ActionTranslator>   m_pTranslator;
+		ActionCommandStreamArgs  m_args;
 
 		bool m_prevState{ false };
 	};
@@ -65,11 +78,8 @@ namespace geng
 	class ThrottledActionCommandStream : public ActionCommandStream
 	{
 	public:
-		ThrottledActionCommandStream(const std::shared_ptr<ActionCommand>& pCommand,
-			const std::shared_ptr<ActionTranslator>& pTranslator,
-			unsigned long msPerFrame,
-			ActionID actionId)
-			:ActionCommandStream(pCommand, pTranslator, msPerFrame, actionId)
+		ThrottledActionCommandStream(ActionCommandStreamArgs&& args)
+			:ActionCommandStream(std::move(args))
 		{ }
 
 	protected:

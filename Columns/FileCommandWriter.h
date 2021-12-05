@@ -24,6 +24,11 @@ namespace geng::serial
 		FileCommandWriter(FileUPtr&& pFile,
 			const std::vector<std::shared_ptr<ISerializableCommand> >&
 			commandList);
+
+		// This is done thus strangely to avoid declaring the class enable_shared_from_this
+		// simply for this one step
+		static void SubscribeToCommands(const std::shared_ptr<FileCommandWriter>& pThis, 
+			bool subscribe = true);
 	
 		// Must be called before the commands are updated
 		void BeginFrame(unsigned long curFrame);
@@ -31,6 +36,14 @@ namespace geng::serial
 			const ICommand& cmd) override;
 		// Must be called after the commands are updated
 		void EndFrame();
+
+		bool IsValid() const {
+			return m_valid;
+		}
+
+		const std::string& GetError() const {
+			return m_error;
+		}
 
 	private:
 		void SaveFrame();
@@ -41,6 +54,9 @@ namespace geng::serial
 
 		// We only write frames with at least one changed command
 		unsigned int m_frameChanges{ 0 };
+
+		bool m_valid{ false };
+		std::string m_error;
 	};
 
 }

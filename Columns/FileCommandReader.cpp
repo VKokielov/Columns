@@ -137,6 +137,20 @@ geng::serial::FileCommandReader::FileCommandReader(FileUPtr&& pFile,
 	m_valid = true;
 }
 
+const std::shared_ptr<geng::ICommandStream>& geng::serial::FileCommandReader::GetCommandStream(const char* pCommandKey)
+{
+	static std::shared_ptr<geng::ICommandStream> nullStream;
+
+	auto itStream = m_commandStreamMap.find(std::string(pCommandKey));
+
+	if (itStream != m_commandStreamMap.end())
+	{
+		return m_commandStreams[itStream->second].cmdStream;
+	}
+
+	return nullStream;
+}
+
 bool geng::serial::FileCommandReader::LoadNextFrame()
 {
 	// Read the next frame from the file into the buffer, putting the contents into

@@ -49,6 +49,8 @@ namespace geng::serial
 
 		const std::shared_ptr<ICommandStream>& GetCommandStream(const char* pCommandKey);
 
+		bool IsValid() const { return m_valid; }
+		const std::string& GetError() const { return m_error; }
 	private:
 		unsigned long CurrentFrame() const { return m_currentFrame; }
 		// Set the frame and load the deltas

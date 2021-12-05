@@ -40,4 +40,12 @@ namespace geng
 
 	};
 
+	// TODO:  Does this really belong here?  It would be much better in a "preheader" for
+	// CommandManager
+	class ICommandStreamArgs
+	{
+	public:
+		virtual ~ICommandStreamArgs() = default;
+	};
+
 }

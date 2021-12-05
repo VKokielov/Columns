@@ -178,6 +178,7 @@
     <ClCompile Include="ColumnsSDLRenderer.cpp" />
     <ClCompile Include="ColumnsSim.cpp" />
     <ClCompile Include="ActionMapper.cpp" />
+    <ClCompile Include="CommandManager.cpp" />
     <ClCompile Include="CommonSetup.cpp" />
     <ClCompile Include="DefaultGame.cpp" />
     <ClCompile Include="FileCommandReader.cpp" />
@@ -208,14 +209,17 @@
     <ClInclude Include="ColumnsSDLRenderer.h" />
     <ClInclude Include="ColumnsSim.h" />
     <ClInclude Include="CommandInterface.h" />
+    <ClInclude Include="CommandManager.h" />
     <ClInclude Include="CommonSetup.h" />
     <ClInclude Include="DefaultFrameManager.h" />
     <ClInclude Include="DefaultGame.h" />
     <ClInclude Include="EngAlgorithms.h" />
+    <ClInclude Include="FactoryImpl.h" />
     <ClInclude Include="FileCommandReader.h" />
     <ClInclude Include="FileCommandWriter.h" />
     <ClInclude Include="Filestream.h" />
     <ClInclude Include="FileUtils.h" />
+    <ClInclude Include="IFactory.h" />
     <ClInclude Include="IFrameManager.h" />
     <ClInclude Include="IGame.h" />
     <ClInclude Include="IInput.h" />

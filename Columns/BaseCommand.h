@@ -103,6 +103,10 @@ namespace geng
 		};
 
 	public:
+		TypedCommand(const char* pKey)
+			:m_key(pKey)
+		{ }
+
 		const char* GetKey() const override
 		{
 			return m_key.c_str();
@@ -160,7 +164,7 @@ namespace geng
 
 	private:
 		std::string  m_key;
-		State m_commandState;
+		State m_commandState{};
 		std::vector<Subscriber_>
 			m_vCommandListeners;
 	};

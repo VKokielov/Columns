@@ -34,6 +34,25 @@ geng::serial::FileCommandWriter::FileCommandWriter(FileUPtr&& pFile,
 
 	const uint16_t endMarker{ 0 };
 	m_fileStream.Write(&endMarker, sizeof(endMarker));
+
+	m_valid = true;
+}
+
+void geng::serial::FileCommandWriter::SubscribeToCommands(const std::shared_ptr<FileCommandWriter>& pThis, bool subscribe)
+{
+	SubID cmdIdx{ 0 };
+	for (Command_& cmd : pThis->m_commands)
+	{
+		if (subscribe)
+		{
+			cmd.pCommand->Subscribe(pThis, cmdIdx);
+		}
+		else
+		{
+			cmd.pCommand->Unsubscribe(pThis);
+		}
+		++cmdIdx;
+	}
 }
 
 void geng::serial::FileCommandWriter::BeginFrame(unsigned long currentFrame)
@@ -41,6 +60,7 @@ void geng::serial::FileCommandWriter::BeginFrame(unsigned long currentFrame)
 	m_frameChanges = 0;
 	m_currentFrame = currentFrame;
 }
+
 void geng::serial::FileCommandWriter::OnCommandChanged(SubID subId,
 	const ICommand& cmd)
 {
