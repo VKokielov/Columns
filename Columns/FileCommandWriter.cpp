@@ -66,7 +66,7 @@ void geng::serial::FileCommandWriter::OnCommandChanged(SubID subId,
 {
 	Command_& cmdObject = m_commands[subId];
 
-	if (cmdObject.lastUpdatedFrame == -1 ||
+	if (cmdObject.lastUpdatedFrame == INITIAL_FRAME_TAG ||
 		cmdObject.lastUpdatedFrame < m_currentFrame)
 	{
 		cmdObject.pDelta->OnCommand(*cmdObject.pCommand.get());

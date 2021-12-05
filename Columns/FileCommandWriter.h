@@ -3,6 +3,7 @@
 #include "SerializedCommands.h"
 #include "Filestream.h"
 #include <vector>
+#include <limits>
 
 namespace geng::serial
 {
@@ -10,13 +11,15 @@ namespace geng::serial
 	class FileCommandWriter : public ICommandListener
 	{
 	private:
+		static constexpr unsigned long INITIAL_FRAME_TAG =
+			std::numeric_limits<unsigned long>::max();
+
 		struct Command_
 		{
 			std::shared_ptr<ISerializableCommand>  pCommand;
 			std::shared_ptr<ICommandDelta>  pDelta;
 			// Prevents changes from being applied twice
-			// -1 is the maximum value minus 1
-			unsigned long lastUpdatedFrame{ -1 };
+			unsigned long lastUpdatedFrame{ INITIAL_FRAME_TAG };
 
 			Command_(const std::shared_ptr<ISerializableCommand>& pCommand_);
 		};

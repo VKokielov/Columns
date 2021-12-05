@@ -54,7 +54,7 @@ namespace geng
 				pListener(pListener_)
 			{ }
 
-			void Dispatch(const ICommand& cmd)
+			void Dispatch(const ICommand& cmd) const
 			{
 				pListener->OnCommandChanged(id, cmd);
 			}
