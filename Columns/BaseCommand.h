@@ -141,6 +141,11 @@ namespace geng
 			}
 		}
 
+		void Reset() override
+		{
+			m_commandState = State{};
+		}
+
 		serial::ICommandDelta*
 			AllocateDeltaObject() override
 		{

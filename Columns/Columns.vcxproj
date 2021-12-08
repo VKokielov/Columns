@@ -175,6 +175,7 @@
     <ClCompile Include="CheatTrie.cpp" />
     <ClCompile Include="Columns.cpp" />
     <ClCompile Include="ColumnsExecutive.cpp" />
+    <ClCompile Include="ColumnsInput.cpp" />
     <ClCompile Include="ColumnsSDLRenderer.cpp" />
     <ClCompile Include="ColumnsSim.cpp" />
     <ClCompile Include="ActionMapper.cpp" />
@@ -198,7 +199,6 @@
   <ItemGroup>
     <ClInclude Include="ActionCommands.h" />
     <ClInclude Include="ActionTranslator.h" />
-    <ClInclude Include="ActionWrapper.h" />
     <ClInclude Include="Animation.h" />
     <ClInclude Include="BaseCommand.h" />
     <ClInclude Include="BaseGameComponent.h" />
@@ -206,6 +206,7 @@
     <ClInclude Include="Bytestream.h" />
     <ClInclude Include="CheatTrie.h" />
     <ClInclude Include="ColumnsExecutive.h" />
+    <ClInclude Include="ColumnsInput.h" />
     <ClInclude Include="ColumnsSDLRenderer.h" />
     <ClInclude Include="ColumnsSim.h" />
     <ClInclude Include="CommandInterface.h" />
@@ -227,6 +228,7 @@
     <ClInclude Include="InputBridge.h" />
     <ClInclude Include="KeyDebug.h" />
     <ClInclude Include="MessageStream.h" />
+    <ClInclude Include="SharedValueCommand.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="SDLEventPoller.h" />

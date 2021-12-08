@@ -16,6 +16,12 @@ namespace geng::columns
 		NoGame
 	};
 
+	struct ThrottleSettings
+	{
+		unsigned int dropThrottlePeriod;
+		unsigned int nonDropThrottlePeriod;
+	};
+
 	class ColumnsExecutive : public BaseGameComponent,
 		public IGameListener,
 		public std::enable_shared_from_this<ColumnsExecutive>
@@ -24,6 +30,9 @@ namespace geng::columns
 		// Data
 		static constexpr unsigned int msToEnterCheat = 700;
 
+		// These functions are expected to return pointers to statically allocated
+		// constant strings, so they can be set inside structs without constructing std::strings
+		// around them
 		static const char* GetDropActionName();
 		static const char* GetShiftLeftActionName();
 		static const char* GetShiftRightActionName();
@@ -32,6 +41,7 @@ namespace geng::columns
 		static const char* GetColumnsSimContextName();
 		static const char* GetActionMapperName();
 		static const char* GetColumnsInputBridgeName();
+		static const char* GetColumnsInputComponentName();
 		static const char* GetExecutiveName();
 
 		// Create all the other components and add them to the game
@@ -63,7 +73,9 @@ namespace geng::columns
 			m_cheatState = CHEAT_TRIE_ROOT;
 		}
 	private:
-		static void MapActions(ActionMapper& rMapper);
+		static void MapActions(ActionMapper& rMapper,
+							std::vector<ActionDesc>& columnsActions,
+							const ThrottleSettings& throttleSettings);
 
 		static bool IsKeyPressedOnce(const KeyState& keyState)
 		{
@@ -77,14 +89,18 @@ namespace geng::columns
 
 		std::shared_ptr<IGame> m_pGame;
 		std::shared_ptr<sdl::Input>  m_pInput;
+		std::shared_ptr<ColumnsInput>  m_pColumnsInput;
 		std::shared_ptr<ColumnsSim> m_pSim;
+		geng::columns::ColumnsSimArgs m_simArgs;
 		ContextID m_simContextId;
 		ContextDesc m_contextDesc{ ContextDesc::NoGame };
+
 		
 		bool m_cheatsEnabled{ true };
 		std::vector<KeyState> m_alphaKeyStates;
 		std::vector<KeyState*> m_alphaKeyRefs;
  
+		// Cheat state
 		CheatTrie m_cheatTrie;
 		TrieIndex m_cheatState{ CHEAT_TRIE_ROOT };
 		unsigned long m_lastCheatInputTime;

@@ -2,6 +2,7 @@
 
 #include "BaseCommand.h"
 #include "ActionTranslator.h"
+#include "FactoryImpl.h"
 
 namespace geng
 {
@@ -13,7 +14,7 @@ namespace geng
 	// (which should have been updated beforehand) and sets the state of the command based
 	// on this value
 
-	class ActionCommandStreamArgs : public ICommandStreamArgs
+	class ActionCommandStreamArgs
 	{
 	public:
 		ActionCommandStreamArgs(const std::shared_ptr<ActionCommand>& pCommand,
@@ -55,8 +56,8 @@ namespace geng
 		}
 
 	protected:
-		ActionCommandStream(ActionCommandStreamArgs&& args)
-			:m_args(std::move(args))
+		ActionCommandStream(const ActionCommandStreamArgs& args)
+			:m_args(args)
 		{
 
 		}
@@ -78,8 +79,8 @@ namespace geng
 	class ThrottledActionCommandStream : public ActionCommandStream
 	{
 	public:
-		ThrottledActionCommandStream(ActionCommandStreamArgs&& args)
-			:ActionCommandStream(std::move(args))
+		ThrottledActionCommandStream(const ActionCommandStreamArgs& args)
+			:ActionCommandStream(args)
 		{ }
 
 	protected:
@@ -101,5 +102,4 @@ namespace geng
 		unsigned long m_msThrottlePeriod{ 0 };
 		unsigned long m_nextOnTime{ 0 };
 	};
-
 }

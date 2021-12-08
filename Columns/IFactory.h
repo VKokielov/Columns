@@ -4,27 +4,20 @@
 
 namespace geng
 {
-	struct void_tag { };
 
 	template<typename T>
-	struct FactoryTraits
-	{
-		using TArgument = void_tag;
-	};
-
-	template<typename T, typename A 
-		= typename FactoryTraits<T>::TArgument>
 	class IFactory
 	{
 	public:
+		using TObj = T;
+
 		virtual ~IFactory() = default;
 
-		// Result should be destroyable by "delete"
-		virtual T* Create(A arg) = 0;
+		virtual T* Create() = 0;
 	};
 
-	template<typename T, typename A>
+	template<typename T>
 	using FactorySharedPtr
-		= std::shared_ptr<IFactory<T, A> >;
+		= std::shared_ptr<IFactory<T> >;
 
 }

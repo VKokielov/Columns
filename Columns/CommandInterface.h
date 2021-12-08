@@ -24,6 +24,7 @@ namespace geng
 		virtual void Subscribe(const std::shared_ptr<ICommandListener>& pListener,
 			SubID subISd) = 0;
 		virtual void Unsubscribe(const std::shared_ptr<ICommandListener>& pListener) = 0;
+		virtual void Reset() = 0;
 
 		virtual ~ICommand() = default;
 	};
@@ -38,14 +39,6 @@ namespace geng
 		
 		virtual ~ICommandStream() = default;
 
-	};
-
-	// TODO:  Does this really belong here?  It would be much better in a "preheader" for
-	// CommandManager
-	class ICommandStreamArgs
-	{
-	public:
-		virtual ~ICommandStreamArgs() = default;
 	};
 
 }

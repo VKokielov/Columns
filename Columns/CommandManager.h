@@ -26,44 +26,20 @@ namespace geng
 	class CommandDesc
 	{
 	public:
-		CommandDesc(const char* pCommandKey,
-			const std::shared_ptr<ICommandStreamArgs>& pStreamArgs,
-			const FactorySharedPtr<serial::ISerializableCommand, const char*>& pCommandFactory,
-			const FactorySharedPtr<ICommandStream, ICommandStreamArgs>& pStreamFactory)
-			:m_commandKey(pCommandKey),
-			m_pStreamArgs(pStreamArgs),
-			m_pCommandFactory(pCommandFactory),
+		CommandDesc(
+			const std::shared_ptr<serial::ISerializableCommand>& pCommand,
+			const FactorySharedPtr<ICommandStream>& pStreamFactory)
+			:m_pCommand(pCommand),
 			m_pStreamFactory(pStreamFactory)
 		{
 
 		}
 
 	private:
-		// The command key identifies the command
-		std::string m_commandKey;
-		// The stream args specify how to initialize the stream when not in playback mode
-		std::shared_ptr<ICommandStreamArgs> m_pStreamArgs;
-		// The command factory gives the type of the command
-		FactorySharedPtr<serial::ISerializableCommand, const char*> m_pCommandFactory;
+		std::shared_ptr<serial::ISerializableCommand> m_pCommand;
 		// The command stream factory gives the type of the stream that will produce commands
 		// This is used only when not in playback mode
-		FactorySharedPtr<ICommandStream, ICommandStreamArgs> m_pStreamFactory;
-
-		friend class CommandManager;
-	};
-
-	class CommandList
-	{
-	public:
-
-		void AddCommand(const CommandDesc& cmdDesc)
-		{
-			m_commands.push_back(cmdDesc);
-		}
-
-	private:
-		std::vector<CommandDesc>  m_commands;
-
+		FactorySharedPtr<ICommandStream> m_pStreamFactory;
 		friend class CommandManager;
 	};
 
@@ -80,13 +56,14 @@ namespace geng
 
 		CommandManager(PlaybackMode pbMode, 
 			const char* pPBFile,
-			const CommandList& cmdList);
+			const std::vector<CommandDesc>& cmdList);
 
 		// In read mode, unsubscribe the commands from the reader in order
 		// to free up circular refs
 		~CommandManager();
 
 		void OnFrame(unsigned long frameIndex);
+		void EndFrame();
 
 		PlaybackMode GetPBMode() const { return m_playbackMode; }
 

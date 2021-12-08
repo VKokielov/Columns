@@ -1,11 +1,13 @@
 #include "ColumnsExecutive.h"
 #include "CommonSetup.h"
 
+
 #include "SDLEventPoller.h"
 #include "SDLInput.h"
 #include "ColumnsSim.h"
 #include "SDLTextKeycodes.h"
 #include "ColumnsSDLRenderer.h"
+#include "ColumnsInput.h"
 #include <SDL.h>
 #include <array>
 
@@ -33,8 +35,13 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	m_pInput->AddCode(SDLK_p); // pause
 	m_pInput->AddCode(SDLK_SPACE); // space
 
+	ThrottleSettings throttleSettings;
+	throttleSettings.dropThrottlePeriod = 100;
+	throttleSettings.nonDropThrottlePeriod = 250;
+
 	auto pActionMapper = std::static_pointer_cast<ActionMapper>(setup::InitializeActionMapper(pGame.get(), GetActionMapperName()));
-	MapActions(*pActionMapper);
+	std::vector<ActionDesc>  actionDescriptions;
+	MapActions(*pActionMapper, actionDescriptions, throttleSettings);
 
 	// Add the event poller and the overall input as executive listeners to execute before the executive itself
 	// This means they will run first in any frame, regardless of context
@@ -66,20 +73,23 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	auto pInputBridge = std::make_shared<InputBridge>(GetColumnsInputBridgeName(), m_pInput);
 	pGame->AddComponent(pInputBridge);
 
-	// Create the columns sim
-	geng::columns::ColumnsSimArgs simArgs;
-	simArgs.actionThrottlePeriod = 250;
-	simArgs.dropThrottlePeriod = 100;
-	simArgs.boardSize.x = 9;
-	simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
-	simArgs.columnSize = 3;
-	// NOTE:  This speed may change!
-	simArgs.dropMilliseconds = 600;
-	//simArgs.dropMilliseconds = 80;
-	simArgs.flashMilliseconds = 300;
-	simArgs.flashCount = 3;
+	// Create the columns input component
+	m_pColumnsInput = std::make_shared<ColumnsInput>(actionDescriptions, 
+														2,  // note: MAXIMUM player count! 
+														pGame->GetGameArgs().msTimePerFrame);
+	pGame->AddComponent(m_pColumnsInput);
 
-	m_pSim = std::make_shared<geng::columns::ColumnsSim>(simArgs);
+	// Preinitialize, but do not yet use, the columns sim arguments
+
+	m_simArgs.boardSize.x = 9;
+	m_simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
+	m_simArgs.columnSize = 3;
+	// NOTE:  This speed may change!
+	m_simArgs.dropMilliseconds = 600;
+	m_simArgs.flashMilliseconds = 300;
+	m_simArgs.flashCount = 3;
+
+	m_pSim = std::make_shared<geng::columns::ColumnsSim>();
 	pGame->AddComponent(m_pSim);
 
 	// Create the columns SDL renderer
@@ -92,6 +102,12 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	if (!pGame->AddListener(ListenerType::Input, m_simContextId, pInputBridge))
 	{
 		pGame->LogError("Columns: unable to add input bridge as listener");
+		return false;
+	}
+
+	if (!pGame->AddListener(ListenerType::Input, m_simContextId, m_pColumnsInput))
+	{
+		pGame->LogError("Columns: unable to add Colunns input component as listener");
 		return false;
 	}
 
@@ -177,7 +193,13 @@ void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 			m_pInput->ForceState(resetKey);
 
 			m_pGame->SetRunState(m_simContextId, true);
-			m_pSim->ResetGame();
+			// The sim input function should be called before the sim function
+			InputArgs inputArgs;
+			inputArgs.pbMode = PlaybackMode::Record;
+			inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
+
+			m_pColumnsInput->ResetGame(inputArgs);
+			m_pSim->ResetGame(m_simArgs);
 			m_contextDesc = ContextDesc::ActiveGame;
 		}
 	}
@@ -260,26 +282,32 @@ void geng::columns::ColumnsExecutive::SetupCheats(IInput* pInput)
 	}
 }
 
-void geng::columns::ColumnsExecutive::MapActions(ActionMapper& rMapper)
+void geng::columns::ColumnsExecutive::MapActions(ActionMapper& rMapper, 
+	std::vector<ActionDesc>& columnsActions,
+	const ThrottleSettings& throttleSettings)
 {
 	auto dropAction = rMapper.CreateAction(GetDropActionName());
 	rMapper.MapAction(dropAction, SDLK_s);
 	rMapper.MapAction(dropAction, SDLK_DOWN);
+	columnsActions.emplace_back(GetDropActionName(), throttleSettings.dropThrottlePeriod);
 
 	auto leftAction = rMapper.CreateAction(GetShiftLeftActionName());
 	rMapper.MapAction(leftAction, SDLK_a);
 	rMapper.MapAction(leftAction, SDLK_LEFT);
+	columnsActions.emplace_back(GetShiftLeftActionName(), throttleSettings.nonDropThrottlePeriod);
 
 	auto rightAction = rMapper.CreateAction(GetShiftRightActionName());
 	rMapper.MapAction(rightAction, SDLK_d);
 	rMapper.MapAction(rightAction, SDLK_RIGHT);
+	columnsActions.emplace_back(GetShiftRightActionName(), throttleSettings.nonDropThrottlePeriod);
 
 	auto rotateAction = rMapper.CreateAction(GetRotateActionName());
 	rMapper.MapAction(rotateAction, SDLK_SPACE);
+	columnsActions.emplace_back(GetRotateActionName(), throttleSettings.nonDropThrottlePeriod);
 
 	auto permuteAction = rMapper.CreateAction(GetPermuteActionName());
 	rMapper.MapAction(permuteAction, SDLK_r);
-
+	columnsActions.emplace_back(GetPermuteActionName(), throttleSettings.nonDropThrottlePeriod);
 }
 
 void geng::columns::ColumnsExecutive::AddCheat(const char* pText, CheatKey key)
@@ -318,6 +346,10 @@ const char* geng::columns::ColumnsExecutive::GetActionMapperName()
 const char* geng::columns::ColumnsExecutive::GetColumnsInputBridgeName()
 {
 	return "ColumnsInputBridge";
+}
+const char* geng::columns::ColumnsExecutive::GetColumnsInputComponentName()
+{
+	return "ColumnsInputComponent";
 }
 const char* geng::columns::ColumnsExecutive::GetExecutiveName()
 {

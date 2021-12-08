@@ -4,38 +4,37 @@
 
 geng::CommandManager::CommandManager(PlaybackMode pbMode,
 	const char* pPBFile,
-	const CommandList& cmdList)
+	const std::vector<CommandDesc>& cmdList)
 	:m_playbackMode(pbMode),
 	m_fileName(pPBFile)
 {
 	// Use the command list to construct a vector of serializable commands
 	std::vector<std::shared_ptr<serial::ISerializableCommand> > commandList;
 
-	for (const CommandDesc& cmdDesc : cmdList.m_commands)
+	for (const CommandDesc& cmdDesc : cmdList)
 	{
-		std::shared_ptr<serial::ISerializableCommand> pCmd;
-		
+		if (!cmdDesc.m_pCommand)
+		{
+			// Skip nullptr (bug)
+			continue;
+		}
+
 		Command_ cmdInManager;
 
-		cmdInManager.pCommand.reset(cmdDesc.m_pCommandFactory->Create(cmdDesc.m_commandKey.c_str()));
-		if (!cmdInManager.pCommand)
-		{
-			m_error = "CommandManager: could not construct the command: ";
-			m_error += cmdDesc.m_commandKey;
-			return;
-		}
+		cmdInManager.pCommand = cmdDesc.m_pCommand;
+		
 
 		commandList.emplace_back(cmdInManager.pCommand);
 
 		if (UserControl(pbMode))
 		{
 			// Create the stream too when it's used here
-			cmdInManager.pStream.reset(cmdDesc.m_pStreamFactory->Create(*cmdDesc.m_pStreamArgs));
+			cmdInManager.pStream.reset(cmdDesc.m_pStreamFactory->Create());
 
 			if (!cmdInManager.pStream)
 			{
 				m_error = "CommandManager: could not create user command stream: ";
-				m_error += cmdDesc.m_commandKey;
+				m_error += cmdDesc.m_pCommand->GetKey();
 				return;
 			}
 		}
@@ -90,12 +89,17 @@ void geng::CommandManager::OnFrame(unsigned long frameIndex)
 	{
 		cmdInManager.pStream->UpdateOnFrame(frameIndex);
 	}
+}
+
+void geng::CommandManager::EndFrame()
+{
+	// This function is called at the end of all frame updates, to register "on-demand"
+	// states correctly
 
 	if (m_playbackMode == PlaybackMode::Record)
 	{
 		m_pWriter->EndFrame();
 	}
-
 }
 
 bool geng::CommandManager::OpenFile(const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList)

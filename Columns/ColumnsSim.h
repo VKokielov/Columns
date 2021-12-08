@@ -3,10 +3,11 @@
 #include "IInput.h"
 #include "SimStateDispatcher.h"
 #include "BaseGameComponent.h"
-#include "ActionMapper.h"
-#include "ActionTranslator.h"
-#include "ActionWrapper.h"
 #include "CheatTrie.h"
+#include "CommandManager.h"
+#include "SharedValueCommand.h"
+#include "ActionCommands.h"
+#include "ColumnsInput.h"
 
 #include <memory>
 #include <array>
@@ -164,25 +165,6 @@ namespace geng::columns
 			unsigned long simTime;
 		};
 
-		struct SimActionWrappers
-		{
-			ThrottledActionWrapper dropAction;
-			ThrottledActionWrapper shiftLeftAction;
-			ThrottledActionWrapper shiftRightAction;
-			ThrottledActionWrapper rotateAction;
-			ThrottledActionWrapper permuteAction;
-
-			SimActionWrappers(unsigned int throttlePeriod, 
-				unsigned int dropThrottlePeriod, 
-				ActionMapper& mapper,
-				ActionTranslator& translator);
-
-			void UpdateState(ActionTranslator& translator, unsigned long simTime);
-
-			void AddActions(ActionMapper& mapper, 
-					        ActionTranslator& translator);
-		};
-
 		// Drop->(lock)->Compact->Clear->?Compact,Drop
 		class GameState : public SimStateDispatcher<GameState,
 													InitialState,
@@ -270,10 +252,10 @@ namespace geng::columns
 		};
 
 	public:
-		ColumnsSim(const ColumnsSimArgs& args);
+		ColumnsSim();
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void ResetGame();
+		void ResetGame(const ColumnsSimArgs& args);
 
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
@@ -387,6 +369,9 @@ namespace geng::columns
 			return contents == EMPTY;
 		}
 
+		// _Overall state_
+		void LoadArgs(const ColumnsSimArgs& args);
+
 		// _Grid operations_ 
 
 		GridContents GetContents(const Point& at, bool* isValid = nullptr) const;
@@ -434,9 +419,7 @@ namespace geng::columns
 		bool LockPlayerColumn();
 
 		// __Removables__
-
 		bool ComputeRemovables(unsigned int count);
-
 		bool ComputeRemovablesOfColors(const std::vector<GridContents>& colors);
 
 		void ExecuteRemove();
@@ -448,15 +431,16 @@ namespace geng::columns
 		bool CompactColumn(unsigned int x);
 		bool CompactColumns();
 
-		// Random number generation
-		unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound);
-
-		// Actions
-		std::shared_ptr<ActionMapper>  m_actionMapper;
-		std::shared_ptr<ActionTranslator> m_actionTranslator;
-		std::shared_ptr<SimActionWrappers>  m_actionWrappers;
+		// Input component
+		std::shared_ptr<ColumnsInput>   m_pColumnsInput;
+		ActionCommandID m_dropId;
+		ActionCommandID m_shiftLeftId;
+		ActionCommandID m_shiftRightId;
+		ActionCommandID m_rotateId;
+		ActionCommandID m_permuteId;
 
 		// __Parameters__
+		bool m_paramsInit{ false };
 		Point m_size;
 		unsigned int m_columnSize;
 		unsigned int m_dropMiliseconds;
@@ -465,7 +449,6 @@ namespace geng::columns
 		unsigned int m_throttlePeriod;
 		unsigned int m_dropThrottlePeriod;
 
-		std::shared_ptr<IInput>  m_pInput;
 		std::weak_ptr<ColumnsExecutive> m_pExecutive;
 		
 		// _Simulation state_
@@ -507,6 +490,10 @@ namespace geng::columns
 		std::vector<GridContents> m_colorsToClear;
 
 		// Random numbers
+		// The seed is stored and "pulled in" via the command
+		// This means it will be sent and received correctly via multiplayer
+		std::shared_ptr<RandomSeedType>  m_pSeed{ new RandomSeedType() };
 		std::mt19937_64  m_generator;
+
 	};
 }
