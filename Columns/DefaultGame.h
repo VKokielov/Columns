@@ -152,6 +152,7 @@ namespace geng
 		bool SetVisibility(ContextID contextId, bool value) override;
 		bool SetRunState(ContextID contextId, bool value) override;
 		bool SetFocus(ContextID contextId) override;
+		bool SetFrameIndex(ContextID contextId, unsigned long frameCount = 0) override;
 
 		const GameArgs& GetGameArgs() const override;
 

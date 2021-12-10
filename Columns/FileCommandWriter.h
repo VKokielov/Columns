@@ -48,6 +48,8 @@ namespace geng::serial
 			return m_error;
 		}
 
+		void Flush();
+
 	private:
 		void SaveFrame();
 

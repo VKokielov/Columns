@@ -70,9 +70,11 @@ namespace geng::columns
 
 		bool Initialize(const std::shared_ptr<IGame>& pGame);
 
-		void ResetGame(const InputArgs& args);
+		void OnStartGame(const InputArgs& args);
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
+		void OnPauseGame(bool pauseState) { }
+		void OnEndGame();
 
 		ActionCommandID GetIDFor(const char* pActionName,
 			unsigned int playerId,
@@ -101,9 +103,8 @@ namespace geng::columns
 		std::shared_ptr<IInput>  m_pInput;
 
 		// Random seed
-		std::shared_ptr<RandomSeedType>   m_seedValue;
+		std::shared_ptr<SharedValue<RandomSeedType> >   m_seedValue;
 		std::mt19937_64  m_generator;
-		bool m_newGame{ false };
 
 		// Random seed command
 		std::shared_ptr<SharedValueCommand<RandomSeedType> >  m_seedCommand;

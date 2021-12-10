@@ -133,6 +133,37 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	return true;
 }
 
+// Overall state
+void geng::columns::ColumnsExecutive::OnEnterState(NoGameState& ngs)
+{
+	m_prevContextState = m_contextState;
+	m_contextState = ContextState::NoGame;
+}
+void geng::columns::ColumnsExecutive::OnExitState(NoGameState& ngs)
+{
+
+}
+void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
+{
+	m_prevContextState = m_contextState;
+	m_contextState = ContextState::ActiveGame;
+
+	
+}
+void geng::columns::ColumnsExecutive::OnExitState(ActiveGameState& ags)
+{
+
+}
+void geng::columns::ColumnsExecutive::OnEnterState(PausedGameState& pgs)
+{
+	m_prevContextState = m_contextState;
+	m_contextState = ContextState::PausedGame;
+}
+void geng::columns::ColumnsExecutive::OnExitState(PausedGameState& pgs)
+{
+
+}
+
 void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {

@@ -57,6 +57,8 @@ namespace geng::serial
 
 		bool CanWrite(size_t byteCount) override;
 		size_t Write(const void* pBuff, size_t byteCount) override;
+		bool Flush() override;
+
 	};
 
 }

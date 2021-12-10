@@ -128,16 +128,17 @@ geng::serial::FileCommandReader::FileCommandReader(FileUPtr&& pFile,
 		return;
 	}
 
-	if (!LoadNextFrame())
+	// Try to load the next frame.  If this fails, the playback is error-complete
+	if (LoadNextFrame())
 	{
-		m_fileComplete = true;
+		m_filePBStatus = FilePlaybackStatus::FilePlaybackOpen;
 	}
 
 	// Done.  
 	m_valid = true;
 }
 
-const std::shared_ptr<geng::ICommandStream>& geng::serial::FileCommandReader::GetCommandStream(const char* pCommandKey)
+std::shared_ptr<geng::ICommandStream> geng::serial::FileCommandReader::GetCommandStream(const char* pCommandKey)
 {
 	static std::shared_ptr<geng::ICommandStream> nullStream;
 
@@ -181,6 +182,13 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 	// Read each delta into its command
 	m_nextDeltas.clear();
 
+	// Deal with the end packet case -- no more data
+	// We will wait for the frame in question before marking complete
+	if (deltaCount == 0)
+	{
+		return true;
+	}
+
 	for (uint32_t iDelta = 0; iDelta < deltaCount; ++iDelta)
 	{
 		uint32_t commandIndex;
@@ -211,6 +219,13 @@ bool geng::serial::FileCommandReader::SetFrame(unsigned long curFrame)
 		return false;
 	}
 
+	// If there are no deltas for this frame, we consider playback ended
+	if (m_nextDeltas.empty())
+	{
+		m_filePBStatus = FilePlaybackStatus::FilePlaybackComplete;
+		return true;
+	}
+
 	// Apply and load the next frame
 	for (size_t deltaIndex : m_nextDeltas)
 	{
@@ -220,6 +235,7 @@ bool geng::serial::FileCommandReader::SetFrame(unsigned long curFrame)
 	// This will update the next frame
 	if (!LoadNextFrame())
 	{
+		m_filePBStatus = FilePlaybackStatus::FileError;
 		return false;
 	}
 

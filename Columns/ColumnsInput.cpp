@@ -81,11 +81,9 @@ bool geng::columns::ColumnsInput::Initialize(const std::shared_ptr<IGame>& pGame
 	return true;
 }
 
-void geng::columns::ColumnsInput::ResetGame(const InputArgs& args)
+void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
 {
-	// Seed the random generator
-	std::random_device randomDevice;
-	*m_seedValue = randomDevice();
+
 
 	std::vector<CommandDesc>  commandDescriptions;
 
@@ -117,12 +115,25 @@ void geng::columns::ColumnsInput::ResetGame(const InputArgs& args)
 	// Create a new command-manager
 	m_pCommandManager.reset(new CommandManager(args.pbMode, args.pFileName, commandDescriptions));
 
-	m_newGame = true;
+	// Generate the seed for the random generator (when not playing back; when playing back the seed
+	// value will land in the command from the file)
+
+	if (args.pbMode != PlaybackMode::Playback)
+	{
+		std::random_device randomDevice;
+		m_seedValue->targetFrame = 0;
+		m_seedValue->val = randomDevice();
+	}
 }
 
 void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
+	if (!pContextState->runstate.curValue)
+	{
+		// Nothing to do here if we're not running
+		return;
+	}
 
 	// This will update the translator with the state of the input
 	m_actionTranslator->UpdateOnFrame(pContextState->frameCount);
@@ -135,12 +146,16 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	// sim
 	m_pCommandManager->EndFrame();
 
-	if (m_newGame)
+	// Seed the random number generator with the value read from the command
+	if (m_seedCommand->GetState().hasVal)
 	{
-		// Seed the random number generator with the value read from the command
-		m_generator.seed(*m_seedValue);
-		m_newGame = false;
+		m_generator.seed(m_seedCommand->GetState().val);
 	}
+}
+
+void geng::columns::ColumnsInput::OnEndGame()
+{
+
 }
 
 geng::columns::ActionCommandID geng::columns::ColumnsInput::GetIDFor(const char* pActionName,

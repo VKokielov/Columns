@@ -5,15 +5,16 @@
 #include "SDLInput.h"
 #include "ColumnsSim.h"
 #include "CheatTrie.h"
+#include "SimStateDispatcher.h"
 #include <memory>
 
 namespace geng::columns
 {
-	enum class ContextDesc
+	enum class ContextState
 	{
+		NoGame,
 		ActiveGame,
-		PausedGame,
-		NoGame
+		PausedGame	
 	};
 
 	struct ThrottleSettings
@@ -22,8 +23,15 @@ namespace geng::columns
 		unsigned int nonDropThrottlePeriod;
 	};
 
+	struct NoGameState { };
+
+	struct ActiveGameState { };
+
+	struct PausedGameState { };
+
 	class ColumnsExecutive : public BaseGameComponent,
 		public IGameListener,
+		public SimStateDispatcher<NoGameState, ActiveGameState, PausedGameState, NoGameState>,
 		public std::enable_shared_from_this<ColumnsExecutive>
 	{
 	public:
@@ -44,6 +52,14 @@ namespace geng::columns
 		static const char* GetColumnsInputComponentName();
 		static const char* GetExecutiveName();
 
+		// State changes
+		void OnEnterState(NoGameState& ngs);
+		void OnExitState(NoGameState& ngs);
+		void OnEnterState(ActiveGameState& ags);
+		void OnExitState(ActiveGameState& ags);
+		void OnEnterState(PausedGameState& ags);
+		void OnExitState(PausedGameState& ags);
+
 		// Create all the other components and add them to the game
 		ColumnsExecutive();
 		bool AddToGame(const std::shared_ptr<IGame>& pGame);
@@ -52,8 +68,8 @@ namespace geng::columns
 			const SimContextState* pContextState) override;
 
 		bool IsInitialized() const { return m_initialized; }
-		bool IsPaused() const { return m_contextDesc == ContextDesc::PausedGame; }
-		bool IsInGame() const { return m_contextDesc != ContextDesc::NoGame; }
+		bool IsPaused() const { return m_contextState == ContextDesc::PausedGame; }
+		bool IsInGame() const { return m_contextState != ContextDesc::NoGame; }
 
 		// Only valid when the game is active
 
@@ -93,9 +109,9 @@ namespace geng::columns
 		std::shared_ptr<ColumnsSim> m_pSim;
 		geng::columns::ColumnsSimArgs m_simArgs;
 		ContextID m_simContextId;
-		ContextDesc m_contextDesc{ ContextDesc::NoGame };
+		ContextState m_contextState{ ContextState::NoGame };
+		ContextState m_prevContextState{ ContextState::NoGame };
 
-		
 		bool m_cheatsEnabled{ true };
 		std::vector<KeyState> m_alphaKeyStates;
 		std::vector<KeyState*> m_alphaKeyRefs;

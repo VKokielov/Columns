@@ -46,3 +46,10 @@ size_t geng::serial::FileWriteStream::Write(const void* pBuff, size_t byteCount)
 	SetValid(nWritten == byteCount);
 	return nWritten;
 }
+
+bool geng::serial::FileWriteStream::Flush()
+{
+	auto flushRet = fflush(GetFile());
+
+	return flushRet == 0;
+}

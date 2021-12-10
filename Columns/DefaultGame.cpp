@@ -387,6 +387,19 @@ bool geng::DefaultGame::SetFocus(ContextID contextId)
 	return true;
 }
 
+bool geng::DefaultGame::SetFrameIndex(ContextID contextId, unsigned long frameCount = 0)
+{
+	if (contextId == EXECUTIVE_CONTEXT
+		|| contextId >= m_contexts.size())
+	{
+		return false;
+	}
+
+	m_contexts[contextId].contextState.frameCount = frameCount;
+	m_contexts[contextId].contextState.simulatedTime = frameCount * m_gameArgs.msTimePerFrame;
+	return true;
+}
+
 void geng::DefaultGame::UpdateContextStateBefore()
 {
 	for (size_t i = 1; i < m_contexts.size(); ++i)

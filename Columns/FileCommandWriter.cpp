@@ -109,3 +109,8 @@ void geng::serial::FileCommandWriter::SaveFrame()
 		}
 	}
 }
+
+void geng::serial::FileCommandWriter::Flush()
+{
+	m_fileStream.Flush();
+}

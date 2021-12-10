@@ -1,6 +1,7 @@
 #pragma once
 
 #include <variant>
+#include <functional>
 
 namespace geng
 {
@@ -20,17 +21,21 @@ namespace geng
 			return m_varStates.index();
 		}
 
-		template<typename Obj, typename ... Args>
-		void Dispatch(Obj& obj, Args&&...args)
+		template<typename Callable, typename ... Args>
+		void DispatchInvoke(Callable&& callable, Args&& ..args)
 		{
-			// Generic lambda for a series of states
 			auto visitor = [&](auto& state)
 			{
-				obj.OnState(state, 
-					        std::forward<Args>(args)...);
+				std::invoke(callable, std::forward<Args>(args)...);
 			};
 
 			std::visit(visitor, m_varStates);
+		}
+
+		template<typename Obj, typename ... Args>
+		void Dispatch(Obj& obj, Args&&...args)
+		{
+			DispatchInvoke(&Obj::OnState, obj, std::forward<Args>(args)...);
 		}
 
 		template<typename TargetState, typename Obj, typename ... Args>

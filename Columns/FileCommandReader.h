@@ -8,6 +8,13 @@
 namespace geng::serial
 {
 
+	enum class FilePlaybackStatus
+	{
+		FileError,
+		FilePlaybackOpen,
+		FilePlaybackComplete // only upon receiving an ending packet and arriving at the corresponding frame
+	};
+
 	// This is not a random-seek set of streams
 	// If the Update() functions in this class submit a frame out of order, the 
 	// whole thing will fail
@@ -47,10 +54,11 @@ namespace geng::serial
 						  const std::vector<std::shared_ptr<ISerializableCommand> >&
 								commandList);
 
-		const std::shared_ptr<ICommandStream>& GetCommandStream(const char* pCommandKey);
+		std::shared_ptr<ICommandStream> GetCommandStream(const char* pCommandKey);
 
 		bool IsValid() const { return m_valid; }
 		const std::string& GetError() const { return m_error; }
+
 	private:
 		unsigned long CurrentFrame() const { return m_currentFrame; }
 		// Set the frame and load the deltas
@@ -60,7 +68,7 @@ namespace geng::serial
 
 		FileReadStream m_fileStream;
 		bool  m_valid{ false };
-		bool  m_fileComplete{ false };
+		FilePlaybackStatus  m_filePBStatus{ FilePlaybackStatus::FileError };
 		std::string m_error;
 
 		// Map of command keys to command vector entries

@@ -11,7 +11,44 @@ namespace geng
 	// The idea is to get this same value during playback from the file
 	
 	template<typename T>
-	using SharedValueCommand = TypedCommand<T, T>;
+	struct OptionalValue
+	{
+		bool hasVal{ false };
+		T val;
+	};
+
+	template<typename T>
+	using SharedValueCommand = TypedCommand<OptionalValue<T>, OptionalValue<T> >;
+
+	// Need custom encoder and decoder for the optional
+	template<typename T>
+	bool EncodeData(serial::IWriteStream* pWriteStream, const OptionalValue<T>& data)
+	{
+		if (data.hasVal)
+		{
+			if (!EncodeData<bool>(pWriteStream, true))
+			{
+				return false;
+			}
+			return EncodeData<T>(pWriteStream, data.val);
+		}
+		
+		return EncodeData<bool>(pWriteStream, true);
+	}
+
+	template<typename T>
+	bool DecodeData(serial::IReadStream* pReadStream, OptionalValue<T>& data)
+	{
+		return pReadStream->Read(&data, sizeof(Data)) == sizeof(Data);
+	}
+
+	template<typename T>
+	struct SharedValue
+	{
+		// For what frame should this value exist?
+		unsigned int targetFrame{ 0 };
+		T val;
+	};
 
 	template<typename T>
 	class SharedValueCommandStream : public ICommandStream
@@ -19,27 +56,31 @@ namespace geng
 	public:
 
 		SharedValueCommandStream(const std::shared_ptr<SharedValueCommand<T> >& pCommand,
-								const std::shared_ptr<const T>& pValue)
+								const std::shared_ptr<const SharedValue<T> >& pValue)
 			:m_pCommand(pCommand),
-			m_pValue(pValue),
-			m_firstFrame(true)
+			m_pValue(pValue)
 		{ }
 
 		bool UpdateOnFrame(unsigned long frameIndex) override
 		{
-			// Update the command
-			const auto& rValue = *m_pValue;
-			if (m_firstFrame || m_pCommand->GetState() != rValue)
+			OptionalValue<T> cmdState;
+
+			if (frameIndex == m_pValue->targetFrame)
 			{
-				m_pCommand->SetState(rValue);
-				m_firstFrame = false;
+				cmdState.hasVal = true;
+				cmdState.val = m_pValue->val;
+				m_pCommand->SetState(cmdState);
+			}
+			else
+			{
+				cmdState.hasVal = false;
+				m_pCommand->SetState(cmdState);
 			}
 			return true;
 		}
 	private:
 		std::shared_ptr< SharedValueCommand<T> > m_pCommand;
-		std::shared_ptr<const T> m_pValue;
-		bool m_firstFrame;
+		std::shared_ptr<const SharedValue<T> > m_pValue;
 	};
 
 }

@@ -19,6 +19,7 @@ namespace geng::serial
 		virtual ~IWriteStream() = default;
 		virtual bool CanWrite(size_t byteCount) = 0;
 		virtual size_t Write(const void* pBuff, size_t byteCount) = 0;
+		virtual bool Flush() = 0;
 	};
 
 
