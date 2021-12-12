@@ -732,13 +732,9 @@ void geng::columns::ColumnsSim::LoadArgs(const ColumnsSimArgs& args)
 	m_paramsInit = true;
 }
 
-void geng::columns::ColumnsSim::ResetGame(const ColumnsSimArgs& args)
+void geng::columns::ColumnsSim::OnStartGame(const ColumnsSimArgs& args)
 {
 	LoadArgs(args);
-
-	// Seed the generator
-	std::random_device device;
-	m_generator.seed(device());
 
 	// Clear the grid
 	GridSquare defaultSquare{ EMPTY, true };
@@ -763,7 +759,16 @@ void geng::columns::ColumnsSim::ResetGame(const ColumnsSimArgs& args)
 
 	StateArgs stateArgs;
 	stateArgs.simTime = 0;
+	// This will transition out of game over state
 	m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
+}
+
+void geng::columns::ColumnsSim::OnPauseGame(bool pauseState)
+{
+
+}
+void geng::columns::ColumnsSim::OnEndGame()
+{
 
 }
 
@@ -977,6 +982,14 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 void geng::columns::ColumnsSim::GameState::OnEnterState(GameOverState& state, const StateArgs& args)
 {
 	m_owner.m_gameOver = true;
+	// Tell the executive to end the game
+	auto pExecutive = m_owner.m_pExecutive.lock();
+
+	if (pExecutive)
+	{
+		pExecutive->EndGame();
+	}
+
 }
 
 void geng::columns::ColumnsSim::GameState::OnExitState(GameOverState& state, const StateArgs& args)

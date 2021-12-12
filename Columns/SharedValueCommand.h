@@ -39,7 +39,20 @@ namespace geng
 	template<typename T>
 	bool DecodeData(serial::IReadStream* pReadStream, OptionalValue<T>& data)
 	{
-		return pReadStream->Read(&data, sizeof(Data)) == sizeof(Data);
+		if (!DecodeData<bool>(pReadStream, data.hasVal))
+		{
+			return false;
+		}
+
+		if (data.hasVal)
+		{
+			if (!DecodeData<T>(pReadStream, data.val))
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	template<typename T>

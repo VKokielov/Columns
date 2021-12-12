@@ -387,7 +387,7 @@ bool geng::DefaultGame::SetFocus(ContextID contextId)
 	return true;
 }
 
-bool geng::DefaultGame::SetFrameIndex(ContextID contextId, unsigned long frameCount = 0)
+bool geng::DefaultGame::SetFrameIndex(ContextID contextId, unsigned long frameCount)
 {
 	if (contextId == EXECUTIVE_CONTEXT
 		|| contextId >= m_contexts.size())

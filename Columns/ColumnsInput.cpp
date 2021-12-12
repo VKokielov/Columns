@@ -10,7 +10,7 @@ geng::columns::ColumnsInput::ColumnsInput(const std::vector<ActionDesc>& vAction
 	:BaseGameComponent(ColumnsExecutive::GetColumnsInputComponentName()),
 	m_actionTranslator(new ActionTranslator()),
 	m_seedCommand(new SharedValueCommand<RandomSeedType>("random_seed_shared_value")),
-	m_seedValue(new RandomSeedType()),
+	m_seedValue(new SharedValue<RandomSeedType>()),
 	m_msPerFrame(msPerFrame)
 {
 	std::unordered_set<std::string>  actionNames;
@@ -83,8 +83,6 @@ bool geng::columns::ColumnsInput::Initialize(const std::shared_ptr<IGame>& pGame
 
 void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
 {
-
-
 	std::vector<CommandDesc>  commandDescriptions;
 
 	FactorySharedPtr<ICommandStream> pSeedFactory 

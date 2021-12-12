@@ -255,7 +255,9 @@ namespace geng::columns
 		ColumnsSim();
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void ResetGame(const ColumnsSimArgs& args);
+		void OnStartGame(const ColumnsSimArgs& args);
+		void OnPauseGame(bool pauseState);
+		void OnEndGame();
 
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
@@ -488,12 +490,6 @@ namespace geng::columns
 		bool m_cheatHappened{ false };
 
 		std::vector<GridContents> m_colorsToClear;
-
-		// Random numbers
-		// The seed is stored and "pulled in" via the command
-		// This means it will be sent and received correctly via multiplayer
-		std::shared_ptr<RandomSeedType>  m_pSeed{ new RandomSeedType() };
-		std::mt19937_64  m_generator;
 
 	};
 }

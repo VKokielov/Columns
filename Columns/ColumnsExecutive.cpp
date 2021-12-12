@@ -19,6 +19,13 @@ geng::columns::ColumnsExecutive::ColumnsExecutive()
 	m_pGame()
 {
 	m_initialized = true;
+
+	/*
+				InputArgs inputArgs;
+			inputArgs.pbMode = PlaybackMode::Record;
+			inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
+
+	*/
 }
 
 bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pGame)
@@ -133,12 +140,54 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	return true;
 }
 
+void geng::columns::ColumnsExecutive::StartGame()
+{
+	if (m_contextState == ContextState::NoGame)
+	{
+		Transition<ActiveGameState>(*this);
+	}
+}
+void geng::columns::ColumnsExecutive::EndGame()
+{
+	if (IsInGame(m_contextState))
+	{
+		Transition<NoGameState>(*this);
+	}
+}
+void geng::columns::ColumnsExecutive::PauseGame(bool pauseState)
+{
+	if (pauseState)
+	{
+		if (m_contextState == ContextState::ActiveGame)
+		{
+			Transition<PausedGameState>(*this);
+		}
+	}
+	else
+	{
+		if (m_contextState == ContextState::PausedGame)
+		{
+			Transition<ActiveGameState>(*this);
+		}
+	}
+}
+
 // Overall state
 void geng::columns::ColumnsExecutive::OnEnterState(NoGameState& ngs)
 {
 	m_prevContextState = m_contextState;
 	m_contextState = ContextState::NoGame;
+
+	if (IsInGame(m_prevContextState))
+	{
+		m_pSim->OnEndGame();
+		m_pColumnsInput->OnEndGame();
+
+		// Suspend execution
+		m_pGame->SetRunState(m_simContextId, false);
+	}
 }
+
 void geng::columns::ColumnsExecutive::OnExitState(NoGameState& ngs)
 {
 
@@ -148,93 +197,102 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 	m_prevContextState = m_contextState;
 	m_contextState = ContextState::ActiveGame;
 
+	if (!IsInGame(m_prevContextState))
+	{
+		// Reset the counter
+		m_pGame->SetFrameIndex(m_simContextId, 0);
+		m_pColumnsInput->OnStartGame(m_inputArgs);
+		m_pSim->OnStartGame(m_simArgs);
+		// Begin execution
+		m_pGame->SetRunState(m_simContextId, true);
+	}
+	else if (IsPaused(m_prevContextState))
+	{
+		// Suspend execution
+		m_pGame->SetRunState(m_simContextId, false);
+		m_pColumnsInput->OnPauseGame(false);
+		m_pSim->OnPauseGame(false);
+	}
 	
 }
-void geng::columns::ColumnsExecutive::OnExitState(ActiveGameState& ags)
-{
-
-}
+void geng::columns::ColumnsExecutive::OnExitState(ActiveGameState& ags) { }
 void geng::columns::ColumnsExecutive::OnEnterState(PausedGameState& pgs)
 {
 	m_prevContextState = m_contextState;
 	m_contextState = ContextState::PausedGame;
-}
-void geng::columns::ColumnsExecutive::OnExitState(PausedGameState& pgs)
-{
 
+	// Suspend execution
+	m_pGame->SetRunState(m_simContextId, false);
+
+	// Notify
+	m_pColumnsInput->OnPauseGame(true);
+	m_pSim->OnPauseGame(true);
+}
+
+void geng::columns::ColumnsExecutive::OnExitState(PausedGameState& pgs) { }
+
+void geng::columns::ColumnsExecutive::OnFrame(NoGameState&, const SimState& rSimState)
+{
+	KeyState ksSpace;
+	ksSpace.keyCode = SDLK_SPACE;
+	std::array pksArray{ &ksSpace };
+	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
+
+	if (IsKeyPressedOnce(ksSpace))
+	{
+		KeyState resetKey{ 0, 0, KeySignal::KeyUp };
+		resetKey.keyCode = SDLK_SPACE;
+		m_pInput->ForceState(resetKey);	
+		StartGame();
+	}
+
+}
+void geng::columns::ColumnsExecutive::OnFrame(ActiveGameState&, const SimState& rState)
+{
+	if (m_cheatsEnabled)
+	{
+		UpdateCheatState(rState.execSimulatedTime);
+	}
+
+	KeyState ksPause;
+	ksPause.keyCode = SDLK_p;
+	std::array pksArray{ &ksPause};
+	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
+
+	// Pause handling
+	if (IsKeyPressedOnce(ksPause))
+	{
+		KeyState resetKey{ 0, 0, KeySignal::KeyUp };
+		resetKey.keyCode = SDLK_p;
+		m_pInput->ForceState(resetKey);
+		PauseGame(true);
+	}
+
+}
+void geng::columns::ColumnsExecutive::OnFrame(PausedGameState&, const SimState& rState)
+{
+	KeyState ksPause;
+	ksPause.keyCode = SDLK_p;
+	std::array pksArray{ &ksPause };
+	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
+
+	// Pause handling
+	if (IsKeyPressedOnce(ksPause))
+	{
+		KeyState resetKey{ 0, 0, KeySignal::KeyUp };
+		resetKey.keyCode = SDLK_p;
+		m_pInput->ForceState(resetKey);
+		PauseGame(false);
+	}
 }
 
 void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
+	InvokeHelper<OnFrameSelector, ColumnsExecutive>
+		invokeHelperOnFrame(*this);
 
-	KeyState ksPause;
-	ksPause.keyCode = SDLK_p;
-	KeyState ksSpace;
-	ksSpace.keyCode = SDLK_SPACE;
-
-	std::array pksArray{ &ksPause, &ksSpace };
-	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
-
-	if (m_cheatsEnabled && m_contextDesc == ContextDesc::ActiveGame)
-	{
-		UpdateCheatState(rSimState.execSimulatedTime);
-	}
-
-	// Special key handling
-	KeyState resetKey{ 0, 0, KeySignal::KeyUp};
-	if (IsInGame())
-	{
-		// First check if I should switch out of game
-		if (m_pSim->IsGameOver())
-		{
-			m_pGame->SetRunState(m_simContextId, false);
-			m_contextDesc = ContextDesc::NoGame;
-		}
-		else  // Pause handling
-		{
-			bool pausePressed = IsKeyPressedOnce(ksPause);
-
-			// "p" for pause
-			if (pausePressed)
-			{
-				resetKey.keyCode = SDLK_p;
-				m_pInput->ForceState(resetKey);
-
-				if (m_contextDesc == ContextDesc::ActiveGame)
-				{
-					m_pGame->SetRunState(m_simContextId, false);
-					m_contextDesc = ContextDesc::PausedGame;
-				}
-				else
-				{
-					m_pGame->SetRunState(m_simContextId, true);
-					m_contextDesc = ContextDesc::ActiveGame;
-				}
-			}
-		}
-	}
-	else
-	{
-		bool spacePressed = IsKeyPressedOnce(ksSpace);
-		if (spacePressed)
-		{
-			// This prevents the simulation from reading off the key after it was handled here
-			resetKey.keyCode = SDLK_SPACE;
-			m_pInput->ForceState(resetKey);
-
-			m_pGame->SetRunState(m_simContextId, true);
-			// The sim input function should be called before the sim function
-			InputArgs inputArgs;
-			inputArgs.pbMode = PlaybackMode::Record;
-			inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
-
-			m_pColumnsInput->ResetGame(inputArgs);
-			m_pSim->ResetGame(m_simArgs);
-			m_contextDesc = ContextDesc::ActiveGame;
-		}
-	}
-
+	DispatchInvoke(invokeHelperOnFrame, rSimState);
 }
 
 void geng::columns::ColumnsExecutive::UpdateCheatState(unsigned long execTime)

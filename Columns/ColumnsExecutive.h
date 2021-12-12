@@ -4,6 +4,7 @@
 #include "ActionMapper.h"
 #include "SDLInput.h"
 #include "ColumnsSim.h"
+#include "ColumnsInput.h"
 #include "CheatTrie.h"
 #include "SimStateDispatcher.h"
 #include <memory>
@@ -31,7 +32,7 @@ namespace geng::columns
 
 	class ColumnsExecutive : public BaseGameComponent,
 		public IGameListener,
-		public SimStateDispatcher<NoGameState, ActiveGameState, PausedGameState, NoGameState>,
+		public SimStateDispatcher<ColumnsExecutive, NoGameState, NoGameState, ActiveGameState, PausedGameState>,
 		public std::enable_shared_from_this<ColumnsExecutive>
 	{
 	public:
@@ -53,23 +54,44 @@ namespace geng::columns
 		static const char* GetExecutiveName();
 
 		// State changes
+		template<typename ... Args>
+		struct OnFrameSelector
+		{
+			static auto Select() 
+				{ return static_cast<void (ColumnsExecutive::*)(Args...)>(&ColumnsExecutive::OnFrame); }
+		};
+
+		ColumnsExecutive();
+		bool AddToGame(const std::shared_ptr<IGame>& pGame);
+
+		void StartGame();
+		void EndGame();
+		void PauseGame(bool pauseState);
+
 		void OnEnterState(NoGameState& ngs);
 		void OnExitState(NoGameState& ngs);
 		void OnEnterState(ActiveGameState& ags);
 		void OnExitState(ActiveGameState& ags);
 		void OnEnterState(PausedGameState& ags);
 		void OnExitState(PausedGameState& ags);
-
-		// Create all the other components and add them to the game
-		ColumnsExecutive();
-		bool AddToGame(const std::shared_ptr<IGame>& pGame);
+		
+		void OnFrame(NoGameState&, const SimState& rSimState);
+		void OnFrame(ActiveGameState&, const SimState& rState);
+		void OnFrame(PausedGameState&, const SimState& rState);
 
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
 
 		bool IsInitialized() const { return m_initialized; }
-		bool IsPaused() const { return m_contextState == ContextDesc::PausedGame; }
-		bool IsInGame() const { return m_contextState != ContextDesc::NoGame; }
+		static bool IsPaused(ContextState state) 
+		{ 
+			return state == ContextState::PausedGame; 
+		}
+
+		static bool IsInGame(ContextState state)
+		{ 
+			return state != ContextState::NoGame; 
+		}
 
 		// Only valid when the game is active
 
@@ -101,16 +123,20 @@ namespace geng::columns
 
 		void SetupCheats(IInput* pInput);
 
-		bool m_initialized;
+		bool m_initialized{ false };
 
 		std::shared_ptr<IGame> m_pGame;
 		std::shared_ptr<sdl::Input>  m_pInput;
 		std::shared_ptr<ColumnsInput>  m_pColumnsInput;
 		std::shared_ptr<ColumnsSim> m_pSim;
+		
+		geng::columns::InputArgs m_inputArgs;
 		geng::columns::ColumnsSimArgs m_simArgs;
+
 		ContextID m_simContextId;
 		ContextState m_contextState{ ContextState::NoGame };
 		ContextState m_prevContextState{ ContextState::NoGame };
+
 
 		bool m_cheatsEnabled{ true };
 		std::vector<KeyState> m_alphaKeyStates;
