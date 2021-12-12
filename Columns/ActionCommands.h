@@ -49,6 +49,7 @@ namespace geng
 				m_prevState != curCommandState)
 			{
 				// This will also invoke relevant listeners
+				fprintf(stderr, "Setting command stream %p to %d\n", this, curCommandState);
 				m_args.m_pCommand->SetState(curCommandState);
 			}
 			m_prevState = curCommandState;
@@ -87,14 +88,20 @@ namespace geng
 		bool GetCommandState(unsigned long simTime,
 			ActionState actionState) override
 		{
-			if (m_prevActionState == ActionState::Off
-				|| simTime >= m_nextOnTime)
+			bool rv{ false };
+			if (actionState == ActionState::On)
 			{
-				m_nextOnTime = simTime + m_msThrottlePeriod;
-				return true;
+				if (m_prevActionState == ActionState::Off
+					|| simTime >= m_nextOnTime)
+				{
+					m_nextOnTime = simTime + m_msThrottlePeriod;
+					rv = true;
+				}
 			}
 
-			return false;
+			m_prevActionState = actionState;
+
+			return rv;
 		}
 
 	private:

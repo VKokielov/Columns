@@ -149,6 +149,7 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	// Seed the random number generator with the value read from the command
 	if (m_seedCommand->GetState().hasVal)
 	{
+		fprintf(stderr, "SEEDING\n");
 		m_generator.seed(m_seedCommand->GetState().val);
 	}
 

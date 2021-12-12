@@ -518,9 +518,11 @@ void geng::DefaultGame::RunGameLoop()
 				m_simState.catchingUp = true;
 				m_executiveListeners.OnFrame(m_simState, nullptr);
 
+				UpdateContextStateBefore();
 				ContextInputCallbacks();
 				ContextSimCallbacks(); 
-				
+				UpdateContextStateAfter();
+
 				// NO rendering
 
 				if (!m_isActive)

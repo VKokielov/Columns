@@ -21,6 +21,7 @@ geng::columns::ColumnsExecutive::ColumnsExecutive()
 	m_initialized = true;
 	m_inputArgs.pbMode = PlaybackMode::Record;
 	m_inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
+	m_inputArgs.userPlayer = 0;
 }
 
 bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pGame)
@@ -209,6 +210,7 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 
 		if (pGame)
 		{
+			fprintf(stderr, "Resetting frame index\n");
 			pGame->SetFrameIndex(m_simContextId, 0);
 		}
 

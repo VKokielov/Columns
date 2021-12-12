@@ -83,7 +83,7 @@ namespace geng
 		static bool UserControl(PlaybackMode mode)
 		{
 			return mode == PlaybackMode::None
-				|| mode == PlaybackMode::Playback;
+				|| mode == PlaybackMode::Record;
 		}
 
 		bool m_valid{ false };
