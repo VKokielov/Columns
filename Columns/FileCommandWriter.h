@@ -39,6 +39,8 @@ namespace geng::serial
 			const ICommand& cmd) override;
 		// Must be called after the commands are updated
 		void EndFrame();
+		// Called at the end of the game
+		void EndSession();
 
 		bool IsValid() const {
 			return m_valid;
@@ -51,7 +53,7 @@ namespace geng::serial
 		void Flush();
 
 	private:
-		void SaveFrame();
+		void SaveFrame(bool lastFrame);
 
 		FileWriteStream m_fileStream;
 		std::vector<Command_>   m_commands;

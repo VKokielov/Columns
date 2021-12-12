@@ -15,6 +15,12 @@ namespace geng
 	{
 		bool hasVal{ false };
 		T val;
+
+		bool operator==(const OptionalValue<T>& other) const
+		{
+			return other.hasVal == hasVal
+				&& other.val == val;
+		}
 	};
 
 	template<typename T>

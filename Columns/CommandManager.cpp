@@ -76,6 +76,12 @@ geng::CommandManager::~CommandManager()
 	}
 }
 
+bool geng::CommandManager::IsEndOfPlayback() const
+{
+	return m_playbackMode == PlaybackMode::Playback
+		&& m_pReader->IsWrappedUp();
+}
+
 void geng::CommandManager::OnFrame(unsigned long frameIndex)
 {
 	if (m_playbackMode == PlaybackMode::Record)
@@ -93,13 +99,19 @@ void geng::CommandManager::OnFrame(unsigned long frameIndex)
 
 void geng::CommandManager::EndFrame()
 {
-	// This function is called at the end of all frame updates, to register "on-demand"
-	// states correctly
-
 	if (m_playbackMode == PlaybackMode::Record)
 	{
 		m_pWriter->EndFrame();
 	}
+}
+
+void geng::CommandManager::EndSession()
+{
+	if (m_playbackMode == PlaybackMode::Record)
+	{
+		m_pWriter->EndSession();
+	}
+	m_playbackMode = PlaybackMode::Ended;
 }
 
 bool geng::CommandManager::OpenFile(const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList)

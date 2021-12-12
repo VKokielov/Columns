@@ -13,6 +13,7 @@
 
 namespace geng::columns
 {
+	class ColumnsExecutive;
 
 	using RandomSeedType = unsigned long long;
 
@@ -101,6 +102,7 @@ namespace geng::columns
 		std::shared_ptr<ActionMapper>  m_actionMapper;
 		std::shared_ptr<ActionTranslator> m_actionTranslator;
 		std::shared_ptr<IInput>  m_pInput;
+		std::weak_ptr<ColumnsExecutive>  m_pExecutive;
 
 		// Random seed
 		std::shared_ptr<SharedValue<RandomSeedType> >   m_seedValue;
@@ -111,6 +113,7 @@ namespace geng::columns
 
 		// Command manager
 		std::shared_ptr<CommandManager>   m_pCommandManager;
+
 
 		bool m_valid{ false };
 		std::string m_error;

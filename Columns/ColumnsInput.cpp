@@ -78,6 +78,9 @@ bool geng::columns::ColumnsInput::Initialize(const std::shared_ptr<IGame>& pGame
 		return false;
 	}
 
+	auto pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), ColumnsExecutive::GetExecutiveName());
+	m_pExecutive = pExecutive;
+
 	return true;
 }
 
@@ -139,7 +142,6 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	// Calling Update on the command manager will pull in the values from each stream
 	m_pCommandManager->OnFrame(pContextState->frameCount);
 
-	// Wrap up
 	// TODO:  EndFrame should be called from somewhere else if commands can come from the
 	// sim
 	m_pCommandManager->EndFrame();
@@ -149,11 +151,21 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	{
 		m_generator.seed(m_seedCommand->GetState().val);
 	}
+
+	// End the game if in playback mode and the file is done
+	if (m_pCommandManager->IsEndOfPlayback())
+	{
+		auto pExecutive = m_pExecutive.lock();
+		if (pExecutive)
+		{
+			pExecutive->EndGame();
+		}
+	}
 }
 
 void geng::columns::ColumnsInput::OnEndGame()
 {
-
+	m_pCommandManager->EndSession();
 }
 
 geng::columns::ActionCommandID geng::columns::ColumnsInput::GetIDFor(const char* pActionName,

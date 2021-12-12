@@ -84,19 +84,30 @@ void geng::serial::FileCommandWriter::EndFrame()
 {
 	if (m_frameChanges > 0)
 	{
-		SaveFrame();
+		SaveFrame(false);
 	}
 }
 
-void geng::serial::FileCommandWriter::SaveFrame()
+void geng::serial::FileCommandWriter::EndSession()
+{
+	SaveFrame(true);
+	Flush();
+}
+
+void geng::serial::FileCommandWriter::SaveFrame(bool lastFrame)
 {
 	// 1. Frame number
 	uint32_t frameNumber = (uint32_t)(m_currentFrame);
 	m_fileStream.Write(&frameNumber, sizeof(frameNumber));
 
 	// Number of deltas (== number of changes)
-	uint32_t changeCount = (uint32_t)(m_frameChanges);
+	uint32_t changeCount = !lastFrame ? (uint32_t)(m_frameChanges) : 0;
 	m_fileStream.Write(&changeCount, sizeof(changeCount));
+
+	if (lastFrame)
+	{
+		return;
+	}
 
 	// Write any deltas
 	for (size_t cmdId = 0; cmdId < m_commands.size(); ++cmdId)
@@ -108,6 +119,8 @@ void geng::serial::FileCommandWriter::SaveFrame()
 			m_commands[cmdId].pDelta->Write(&m_fileStream);
 		}
 	}
+
+
 }
 
 void geng::serial::FileCommandWriter::Flush()

@@ -266,94 +266,99 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 
 	SDL_SetRenderDrawColor(m_pRenderer.get(), 17, 23, 64, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(m_pRenderer.get());
-
-	// Draw the board as a black rectangle
-	SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRect(m_pRenderer.get(), &m_boardArea);
-
 	bool isPaused = m_pExecutive->IsPaused();
 
-	// Update the fade to dark animation
-	if (isPaused)
+	// Only draw if initialized
+	// TODO:  Make this dependent on the executive instead of the sim
+	if (m_pSim->IsGameInitialized())
 	{
-		// -> dark
-		if (!m_screenFadeAnimation.IsAtEnd())
+		// Draw the board as a black rectangle
+		SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, SDL_ALPHA_OPAQUE);
+		SDL_RenderFillRect(m_pRenderer.get(), &m_boardArea);
+
+
+		// Update the fade to dark animation
+		if (isPaused)
 		{
-	//		fprintf(stderr, "\nCurrent ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
-			m_screenFadeAnimation.Step(true, false);
-	//		fprintf(stderr, "\nNew ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			// -> dark
+			if (!m_screenFadeAnimation.IsAtEnd())
+			{
+				//		fprintf(stderr, "\nCurrent ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+				m_screenFadeAnimation.Step(true, false);
+				//		fprintf(stderr, "\nNew ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			}
 		}
-	}
-	else
-	{
-		// -> light
-		if (!m_screenFadeAnimation.IsAtStart())
+		else
 		{
-	//		fprintf(stderr, "\nCurrent ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
-			m_screenFadeAnimation.Step(false, false);
-	//		fprintf(stderr, "\nNew ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			// -> light
+			if (!m_screenFadeAnimation.IsAtStart())
+			{
+				//		fprintf(stderr, "\nCurrent ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+				m_screenFadeAnimation.Step(false, false);
+				//		fprintf(stderr, "\nNew ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			}
 		}
-	}
 
-	// Draw the predicting gems next to the board
-	const std::vector<GridContents>& nextGems = m_pSim->GetNextColors();
+		// Draw the predicting gems next to the board
+		const std::vector<GridContents>& nextGems = m_pSim->GetNextColors();
 
-	int xRect = m_predictorX;
-	int yRect = m_predictorY;
-	if (!isPaused)
-	{
-		for (GridContents gem : nextGems)
+		int xRect = m_predictorX;
+		int yRect = m_predictorY;
+		if (!isPaused)
 		{
-			RenderContentsAt(xRect, yRect, gem);
-			yRect += m_squareSize;
+			for (GridContents gem : nextGems)
+			{
+				RenderContentsAt(xRect, yRect, gem);
+				yRect += m_squareSize;
+			}
 		}
-	}
-	else
-	{
-		yRect += m_squareSize * (int)nextGems.size();
-	}
+		else
+		{
+			yRect += m_squareSize * (int)nextGems.size();
+		}
 
-	// Set the texts
-	constexpr size_t RENDERED_NUMBER_LENGTH = 25;
+		// Set the texts
+		constexpr size_t RENDERED_NUMBER_LENGTH = 25;
 
-	char txtScore[RENDERED_NUMBER_LENGTH];
-	snprintf(txtScore, sizeof(txtScore), "%u", m_pSim->GetGems());
-	m_score.SetText(txtScore, m_pRenderer.get());
+		char txtScore[RENDERED_NUMBER_LENGTH];
+		snprintf(txtScore, sizeof(txtScore), "%u", m_pSim->GetGems());
+		m_score.SetText(txtScore, m_pRenderer.get());
 
-	char txtLevel[RENDERED_NUMBER_LENGTH];
-	snprintf(txtLevel, sizeof(txtLevel), "%u", m_pSim->GetLevel());
-	m_level.SetText(txtLevel, m_pRenderer.get());
+		char txtLevel[RENDERED_NUMBER_LENGTH];
+		snprintf(txtLevel, sizeof(txtLevel), "%u", m_pSim->GetLevel());
+		m_level.SetText(txtLevel, m_pRenderer.get());
 
-	// Draw the score label
-	int textX = m_boardArea.x - m_squareSize;
-	int textY = yRect + m_squareSize;
+		// Draw the score label
+		int textX = m_boardArea.x - m_squareSize;
+		int textY = yRect + m_squareSize;
 
-	constexpr int TEXT_COLUMN_GAP = 10;
-	
-	m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-	textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;
-	m_score.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-	textY += m_score.GetHeight() + TEXT_COLUMN_GAP;
-	m_levelLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-	textY += m_levelLabel.GetHeight() + TEXT_COLUMN_GAP;
-	m_level.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		constexpr int TEXT_COLUMN_GAP = 10;
 
-	// Draw the board
-	Point xOrigin{ 0, m_boardYOffset };
+		m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;
+		m_score.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		textY += m_score.GetHeight() + TEXT_COLUMN_GAP;
+		m_levelLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		textY += m_levelLabel.GetHeight() + TEXT_COLUMN_GAP;
+		m_level.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
 
-	auto gridRender = [this](const Point& pt, const GridSquare& gsquare)
-	{
-		// Get the coordinates
-		int xSquare = m_boardArea.x + m_squareSize * pt.x;
-		int ySquare = m_boardArea.y + m_squareSize * (pt.y - m_boardYOffset);
+		// Draw the board
+		Point xOrigin{ 0, m_boardYOffset };
 
-		GridContents toDraw = gsquare.isVisible ? gsquare.contents : EMPTY;
-		RenderContentsAt(xSquare, ySquare, toDraw);
-	};
+		auto gridRender = [this](const Point& pt, const GridSquare& gsquare)
+		{
+			// Get the coordinates
+			int xSquare = m_boardArea.x + m_squareSize * pt.x;
+			int ySquare = m_boardArea.y + m_squareSize * (pt.y - m_boardYOffset);
 
-	if (!isPaused)
-	{
-		m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
+			GridContents toDraw = gsquare.isVisible ? gsquare.contents : EMPTY;
+			RenderContentsAt(xSquare, ySquare, toDraw);
+		};
+
+		if (!isPaused)
+		{
+			m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
+		}
 	}
 
 	// Banner
@@ -399,7 +404,6 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	{
 		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
 	}
-
 
 	SDL_RenderPresent(m_pRenderer.get());
 }

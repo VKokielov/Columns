@@ -763,14 +763,8 @@ void geng::columns::ColumnsSim::OnStartGame(const ColumnsSimArgs& args)
 	m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
 }
 
-void geng::columns::ColumnsSim::OnPauseGame(bool pauseState)
-{
-
-}
-void geng::columns::ColumnsSim::OnEndGame()
-{
-
-}
+void geng::columns::ColumnsSim::OnPauseGame(bool pauseState) { }
+void geng::columns::ColumnsSim::OnEndGame() { }
 
 void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)

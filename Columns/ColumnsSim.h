@@ -289,6 +289,7 @@ namespace geng::columns
 		const unsigned int GetLevel() const { return m_level; }
 		const unsigned int GetGems() const { return m_clearedGems; }
 
+		bool IsGameInitialized() const { return m_paramsInit; }
 		bool IsGameOver() const { return m_gameOver; }
 		bool CheatHappened() const {
 			return m_cheatHappened;

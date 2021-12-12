@@ -83,15 +83,19 @@ namespace geng::columns
 			const SimContextState* pContextState) override;
 
 		bool IsInitialized() const { return m_initialized; }
-		static bool IsPaused(ContextState state) 
+		static bool IsPausedState(ContextState state) 
 		{ 
 			return state == ContextState::PausedGame; 
 		}
 
-		static bool IsInGame(ContextState state)
+		bool IsPaused() const { return IsPausedState(m_contextState); }
+
+		static bool IsInGameState(ContextState state)
 		{ 
 			return state != ContextState::NoGame; 
 		}
+
+		bool IsInGame() const { return IsInGameState(m_contextState); }
 
 		// Only valid when the game is active
 
@@ -121,6 +125,10 @@ namespace geng::columns
 				|| (keyState.finalState == KeySignal::KeyUp && keyState.numChanges > 1);
 		}
 
+		// Add a key state for a per-frame subscription
+		void AddKeySub(KeyState* pkeyState);
+		void ResetKey(KeyState* pKeyState);
+
 		void SetupCheats(IInput* pInput);
 
 		bool m_initialized{ false };
@@ -137,6 +145,8 @@ namespace geng::columns
 		ContextState m_contextState{ ContextState::NoGame };
 		ContextState m_prevContextState{ ContextState::NoGame };
 
+		// Keyboard states
+		std::vector<KeyState*> m_keySubs;
 
 		bool m_cheatsEnabled{ true };
 		std::vector<KeyState> m_alphaKeyStates;
@@ -147,6 +157,12 @@ namespace geng::columns
 		TrieIndex m_cheatState{ CHEAT_TRIE_ROOT };
 		unsigned long m_lastCheatInputTime;
 		std::optional<CheatKey> m_cheatKey;
+
+		// Keys: start, pause, escape
+		// NOTE:  The "escape" key will someday designate "open the menu"
+		KeyState m_spaceKey;
+		KeyState m_pauseKey;
+		KeyState m_escKey;
 	};
 
 	// Helper function for getting cheats

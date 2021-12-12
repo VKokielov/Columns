@@ -59,6 +59,10 @@ namespace geng::serial
 		bool IsValid() const { return m_valid; }
 		const std::string& GetError() const { return m_error; }
 
+		bool IsWrappedUp() const {
+			return m_filePBStatus == FilePlaybackStatus::FilePlaybackComplete;
+		}
+
 	private:
 		unsigned long CurrentFrame() const { return m_currentFrame; }
 		// Set the frame and load the deltas
@@ -68,6 +72,13 @@ namespace geng::serial
 
 		FileReadStream m_fileStream;
 		bool  m_valid{ false };
+
+		// There are two ways this variable is set to "complete"
+		// One is the LoadNextFrame() function, which sets it if it encounters an "end" signal
+		// for the same frame.
+		// Another is the calling SetFrame() function, which sets it when it reaches a frame 
+		// with an explicitly zero-set of deltas
+
 		FilePlaybackStatus  m_filePBStatus{ FilePlaybackStatus::FileError };
 		std::string m_error;
 

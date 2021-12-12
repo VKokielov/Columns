@@ -156,7 +156,7 @@ namespace geng
 
 		void SetState(const State& newState)
 		{
-			if (newState != m_commandState)
+			if (!(newState == m_commandState))
 			{
 				m_commandState = newState;
 

@@ -20,7 +20,8 @@ namespace geng
 	{
 		None,
 		Record,
-		Playback
+		Playback,
+		Ended
 	};
 
 	class CommandDesc
@@ -64,9 +65,11 @@ namespace geng
 
 		void OnFrame(unsigned long frameIndex);
 		void EndFrame();
+		void EndSession();
 
 		PlaybackMode GetPBMode() const { return m_playbackMode; }
 
+		bool IsEndOfPlayback() const;
 	private:
 		// Open the playback file and create an object to represent it
 		bool OpenFile(const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList);

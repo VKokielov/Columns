@@ -161,12 +161,23 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 	uint32_t frameNumber;
 	if (m_fileStream.Read(&frameNumber, sizeof(frameNumber)) < sizeof(frameNumber))
 	{
+		m_filePBStatus = FilePlaybackStatus::FileError;
 		return false;
 	}
 
 	if (m_nextFrame != 0 
 		&& frameNumber <= m_nextFrame)
 	{
+		if (frameNumber == m_nextFrame)
+		{
+			// This means that the current frame was the last one
+			m_filePBStatus = FilePlaybackStatus::FilePlaybackComplete;
+		}
+		else
+		{
+			m_filePBStatus = FilePlaybackStatus::FileError;
+		}
+
 		return false;
 	}
 
@@ -176,6 +187,7 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 	uint32_t deltaCount;
 	if (m_fileStream.Read(&deltaCount, sizeof(deltaCount)) < sizeof(deltaCount))
 	{
+		m_filePBStatus = FilePlaybackStatus::FileError;
 		return false;
 	}
 
@@ -183,7 +195,7 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 	m_nextDeltas.clear();
 
 	// Deal with the end packet case -- no more data
-	// We will wait for the frame in question before marking complete
+	// We will wait for the frame in question before marking complete in this case
 	if (deltaCount == 0)
 	{
 		return true;
@@ -194,11 +206,13 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 		uint32_t commandIndex;
 		if (m_fileStream.Read(&commandIndex, sizeof(commandIndex)) < sizeof(commandIndex))
 		{
+			m_filePBStatus = FilePlaybackStatus::FileError;
 			return false;
 		}
 
 		if (!m_commandStreams[commandIndex].cmdStream->ReadDelta(m_fileStream))
 		{
+			m_filePBStatus = FilePlaybackStatus::FileError;
 			return false;
 		}
 		m_nextDeltas.emplace_back(commandIndex);
@@ -209,6 +223,11 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 
 bool geng::serial::FileCommandReader::SetFrame(unsigned long curFrame)
 {
+	if (m_filePBStatus != FilePlaybackStatus::FilePlaybackOpen)
+	{
+		return false;
+	}
+
 	if (m_nextFrame < curFrame)
 	{
 		m_currentFrame = curFrame;
@@ -235,7 +254,6 @@ bool geng::serial::FileCommandReader::SetFrame(unsigned long curFrame)
 	// This will update the next frame
 	if (!LoadNextFrame())
 	{
-		m_filePBStatus = FilePlaybackStatus::FileError;
 		return false;
 	}
 

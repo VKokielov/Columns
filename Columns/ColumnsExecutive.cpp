@@ -19,13 +19,8 @@ geng::columns::ColumnsExecutive::ColumnsExecutive()
 	m_pGame()
 {
 	m_initialized = true;
-
-	/*
-				InputArgs inputArgs;
-			inputArgs.pbMode = PlaybackMode::Record;
-			inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
-
-	*/
+	m_inputArgs.pbMode = PlaybackMode::Record;
+	m_inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
 }
 
 bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pGame)
@@ -39,8 +34,16 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 		(setup::InitializeSDLPoller(pGame.get()));
 
 	m_pInput = std::static_pointer_cast<sdl::Input>(setup::InitializeSDLInput(pGame.get()));
-	m_pInput->AddCode(SDLK_p); // pause
-	m_pInput->AddCode(SDLK_SPACE); // space
+	m_spaceKey.keyCode = SDLK_SPACE;
+	AddKeySub(&m_spaceKey);
+
+	m_pauseKey.keyCode = SDLK_p;
+	AddKeySub(&m_pauseKey);
+
+	m_escKey.keyCode = SDLK_ESCAPE;
+	AddKeySub(&m_escKey);
+	
+
 
 	ThrottleSettings throttleSettings;
 	throttleSettings.dropThrottlePeriod = 100;
@@ -149,7 +152,7 @@ void geng::columns::ColumnsExecutive::StartGame()
 }
 void geng::columns::ColumnsExecutive::EndGame()
 {
-	if (IsInGame(m_contextState))
+	if (IsInGameState(m_contextState))
 	{
 		Transition<NoGameState>(*this);
 	}
@@ -178,7 +181,7 @@ void geng::columns::ColumnsExecutive::OnEnterState(NoGameState& ngs)
 	m_prevContextState = m_contextState;
 	m_contextState = ContextState::NoGame;
 
-	if (IsInGame(m_prevContextState))
+	if (IsInGameState(m_prevContextState))
 	{
 		m_pSim->OnEndGame();
 		m_pColumnsInput->OnEndGame();
@@ -188,16 +191,13 @@ void geng::columns::ColumnsExecutive::OnEnterState(NoGameState& ngs)
 	}
 }
 
-void geng::columns::ColumnsExecutive::OnExitState(NoGameState& ngs)
-{
-
-}
+void geng::columns::ColumnsExecutive::OnExitState(NoGameState& ngs) {}
 void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 {
 	m_prevContextState = m_contextState;
 	m_contextState = ContextState::ActiveGame;
 
-	if (!IsInGame(m_prevContextState))
+	if (!IsInGameState(m_prevContextState))
 	{
 		// Reset the counter
 		m_pGame->SetFrameIndex(m_simContextId, 0);
@@ -206,7 +206,7 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 		// Begin execution
 		m_pGame->SetRunState(m_simContextId, true);
 	}
-	else if (IsPaused(m_prevContextState))
+	else if (IsPausedState(m_prevContextState))
 	{
 		// Suspend execution
 		m_pGame->SetRunState(m_simContextId, false);
@@ -215,7 +215,7 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 	}
 	
 }
-void geng::columns::ColumnsExecutive::OnExitState(ActiveGameState& ags) { }
+void geng::columns::ColumnsExecutive::OnExitState(ActiveGameState& ags) {}
 void geng::columns::ColumnsExecutive::OnEnterState(PausedGameState& pgs)
 {
 	m_prevContextState = m_contextState;
@@ -229,20 +229,13 @@ void geng::columns::ColumnsExecutive::OnEnterState(PausedGameState& pgs)
 	m_pSim->OnPauseGame(true);
 }
 
-void geng::columns::ColumnsExecutive::OnExitState(PausedGameState& pgs) { }
+void geng::columns::ColumnsExecutive::OnExitState(PausedGameState& pgs) {}
 
 void geng::columns::ColumnsExecutive::OnFrame(NoGameState&, const SimState& rSimState)
 {
-	KeyState ksSpace;
-	ksSpace.keyCode = SDLK_SPACE;
-	std::array pksArray{ &ksSpace };
-	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
-
-	if (IsKeyPressedOnce(ksSpace))
+	if (IsKeyPressedOnce(m_spaceKey))
 	{
-		KeyState resetKey{ 0, 0, KeySignal::KeyUp };
-		resetKey.keyCode = SDLK_SPACE;
-		m_pInput->ForceState(resetKey);	
+		ResetKey(&m_spaceKey);
 		StartGame();
 	}
 
@@ -254,41 +247,45 @@ void geng::columns::ColumnsExecutive::OnFrame(ActiveGameState&, const SimState& 
 		UpdateCheatState(rState.execSimulatedTime);
 	}
 
-	KeyState ksPause;
-	ksPause.keyCode = SDLK_p;
-	std::array pksArray{ &ksPause};
-	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
-
 	// Pause handling
-	if (IsKeyPressedOnce(ksPause))
+	if (IsKeyPressedOnce(m_pauseKey))
 	{
-		KeyState resetKey{ 0, 0, KeySignal::KeyUp };
-		resetKey.keyCode = SDLK_p;
-		m_pInput->ForceState(resetKey);
+		ResetKey(&m_pauseKey);
 		PauseGame(true);
 	}
 
 }
 void geng::columns::ColumnsExecutive::OnFrame(PausedGameState&, const SimState& rState)
 {
-	KeyState ksPause;
-	ksPause.keyCode = SDLK_p;
-	std::array pksArray{ &ksPause };
-	m_pInput->QueryInput(nullptr, nullptr, pksArray.data(), pksArray.size());
 
 	// Pause handling
-	if (IsKeyPressedOnce(ksPause))
+	if (IsKeyPressedOnce(m_pauseKey))
 	{
-		KeyState resetKey{ 0, 0, KeySignal::KeyUp };
-		resetKey.keyCode = SDLK_p;
-		m_pInput->ForceState(resetKey);
+		ResetKey(&m_pauseKey);
 		PauseGame(false);
 	}
+}
+
+void geng::columns::ColumnsExecutive::AddKeySub(KeyState* pkeyState)
+{
+	// Add each key once.  Adding one twice is not harmful but a waste of time
+	m_pInput->AddCode(pkeyState->keyCode);
+	m_keySubs.push_back(pkeyState);
+}
+void geng::columns::ColumnsExecutive::ResetKey(KeyState* pKeyState)
+{
+	KeyState resetKey{ pKeyState->keyCode};
+	resetKey.finalState = KeySignal::KeyUp;
+	resetKey.numChanges = 0;
+	m_pInput->ForceState(resetKey);
 }
 
 void geng::columns::ColumnsExecutive::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
+	// Key states
+	m_pInput->QueryInput(nullptr, nullptr, m_keySubs.data(), m_keySubs.size());
+
 	InvokeHelper<OnFrameSelector, ColumnsExecutive>
 		invokeHelperOnFrame(*this);
 
@@ -359,8 +356,9 @@ void geng::columns::ColumnsExecutive::SetupCheats(IInput* pInput)
 		m_alphaKeyStates.resize(alphaKeys.size());
 		for (size_t i = 0; i < alphaKeys.size(); ++i)
 		{
-			KeyState kstate{ alphaKeys[i], 0, KeySignal::KeyUp };
-			m_alphaKeyStates[i] = kstate;
+			m_alphaKeyStates[i].keyCode = alphaKeys[i];
+			m_alphaKeyStates[i].numChanges = 0;
+			m_alphaKeyStates[i].finalState = KeySignal::KeyUp;
 			m_alphaKeyRefs.emplace_back(&m_alphaKeyStates[i]);
 		}
 	}
