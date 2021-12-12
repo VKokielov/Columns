@@ -11,6 +11,8 @@
 
 namespace geng::columns
 {
+	class ColumnsSDLRenderer;
+
 	enum class ContextState
 	{
 		NoGame,
@@ -133,10 +135,12 @@ namespace geng::columns
 
 		bool m_initialized{ false };
 
-		std::shared_ptr<IGame> m_pGame;
+		std::weak_ptr<IGame> m_pGame;
 		std::shared_ptr<sdl::Input>  m_pInput;
 		std::shared_ptr<ColumnsInput>  m_pColumnsInput;
 		std::shared_ptr<ColumnsSim> m_pSim;
+		// TODO:  Generalize the game start/end interfaces!
+		std::shared_ptr<ColumnsSDLRenderer> m_pSDLRenderer;
 		
 		geng::columns::InputArgs m_inputArgs;
 		geng::columns::ColumnsSimArgs m_simArgs;

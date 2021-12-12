@@ -26,8 +26,11 @@ namespace geng::columns
 		ColumnsSDLRenderer(const ColumnsRenderArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
+		void OnStartGame();
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
+		void OnEndGame();
+		void OnPauseGame(bool pauseState);
 
 	private:
 		template<typename T, T lower, T upper, typename U>
@@ -110,9 +113,6 @@ namespace geng::columns
 		// Sim
 		std::shared_ptr<ColumnsSim>  m_pSim;
 
-		// Executive
-		std::shared_ptr<ColumnsExecutive> m_pExecutive;
-
 		// Prerendered text
 		sdl::Text m_scoreLabel;
 		sdl::Text m_levelLabel;
@@ -127,12 +127,11 @@ namespace geng::columns
 		Animation m_magicAnimation;
 		Animation m_screenFadeAnimation;
 
-		/*
-		bool m_wasPaused{ false };
-		bool m_fadeToDark{ false };
-		*/
-
 		unsigned int m_timeHideCheatLabel{ 0 };
+
+		// Game state!
+		bool m_inGame{ false };
+		bool m_pausedGame{ false };
 
 		constexpr static unsigned long MAGIC_PHASE_COUNT = 3;
 		constexpr static unsigned long MAGIC_TOTAL_MS = 600;

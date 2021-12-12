@@ -25,8 +25,6 @@ geng::columns::ColumnsExecutive::ColumnsExecutive()
 
 bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pGame)
 {
-	m_pGame = pGame;
-
 	// Precreate certain components
 	setup::InitializeSDLRendering(pGame.get(), "Columns", 640 + 320, 480 + 240);
 	setup::InitializeResourceLoader(pGame.get());
@@ -43,8 +41,6 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	m_escKey.keyCode = SDLK_ESCAPE;
 	AddKeySub(&m_escKey);
 	
-
-
 	ThrottleSettings throttleSettings;
 	throttleSettings.dropThrottlePeriod = 100;
 	throttleSettings.nonDropThrottlePeriod = 250;
@@ -107,7 +103,8 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	renderArgs.renderShadow = 4;
 	auto pRenderer = std::make_shared<geng::columns::ColumnsSDLRenderer>(renderArgs);
 	pGame->AddComponent(pRenderer);
-
+	m_pSDLRenderer = pRenderer;
+	
 	// Add the three components (input, sim, renderer) to the context as listeners
 	if (!pGame->AddListener(ListenerType::Input, m_simContextId, pInputBridge))
 	{
@@ -139,6 +136,8 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	pGame->SetRunState(m_simContextId, false);
 
 	SetupCheats(m_pInput.get());
+
+	m_pGame = pGame;
 
 	return true;
 }
@@ -183,11 +182,17 @@ void geng::columns::ColumnsExecutive::OnEnterState(NoGameState& ngs)
 
 	if (IsInGameState(m_prevContextState))
 	{
+		m_pSDLRenderer->OnEndGame();
 		m_pSim->OnEndGame();
 		m_pColumnsInput->OnEndGame();
 
 		// Suspend execution
-		m_pGame->SetRunState(m_simContextId, false);
+		auto pGame = m_pGame.lock();
+
+		if (pGame)
+		{
+			pGame->SetRunState(m_simContextId, false);
+		}
 	}
 }
 
@@ -200,18 +205,35 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 	if (!IsInGameState(m_prevContextState))
 	{
 		// Reset the counter
-		m_pGame->SetFrameIndex(m_simContextId, 0);
+		auto pGame = m_pGame.lock();
+
+		if (pGame)
+		{
+			pGame->SetFrameIndex(m_simContextId, 0);
+		}
+
 		m_pColumnsInput->OnStartGame(m_inputArgs);
 		m_pSim->OnStartGame(m_simArgs);
+		m_pSDLRenderer->OnStartGame();
+
 		// Begin execution
-		m_pGame->SetRunState(m_simContextId, true);
+		if (pGame)
+		{
+			pGame->SetRunState(m_simContextId, true);
+		}
 	}
 	else if (IsPausedState(m_prevContextState))
 	{
 		// Suspend execution
-		m_pGame->SetRunState(m_simContextId, false);
+		auto pGame = m_pGame.lock();
+		if (pGame)
+		{
+			pGame->SetRunState(m_simContextId, false);
+		}
+
 		m_pColumnsInput->OnPauseGame(false);
 		m_pSim->OnPauseGame(false);
+		m_pSDLRenderer->OnPauseGame(false);
 	}
 	
 }
@@ -222,11 +244,16 @@ void geng::columns::ColumnsExecutive::OnEnterState(PausedGameState& pgs)
 	m_contextState = ContextState::PausedGame;
 
 	// Suspend execution
-	m_pGame->SetRunState(m_simContextId, false);
+	auto pGame = m_pGame.lock();
+	if (pGame)
+	{
+		pGame->SetRunState(m_simContextId, false);
+	}
 
 	// Notify
 	m_pColumnsInput->OnPauseGame(true);
 	m_pSim->OnPauseGame(true);
+	m_pSDLRenderer->OnPauseGame(true);
 }
 
 void geng::columns::ColumnsExecutive::OnExitState(PausedGameState& pgs) {}

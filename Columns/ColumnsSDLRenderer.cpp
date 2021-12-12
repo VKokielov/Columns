@@ -64,16 +64,6 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		return false;
 	}
 
-	m_pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), 
-		ColumnsExecutive::GetExecutiveName(), 
-		getResult);
-
-	if (!m_pExecutive)
-	{
-		pGame->LogError("ColumnsSDLRenderer: could not get ColumnsExecutive");
-		return false;
-	}
-
 	auto pRendering = GetComponentAs<sdl::SDLRendering>(pGame.get(), "SDLRendering", getResult);
 
 	if (!pRendering)
@@ -86,16 +76,6 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_pRenderer = pRendering->GetRenderer();
 	m_windowX = pRendering->GetWindowX();
 	m_windowY = pRendering->GetWindowY();
-
-	// Get board information
-	Point boardSize = m_pSim->GetBoardSize();
-	m_boardX = boardSize.x;
-	m_boardY = boardSize.y;
-
-	// Space for one column from above
-	m_boardYOffset = m_pSim->GetColumnSize();
-
-	Measure();
 
 	// Initialize the font and texts
 	// Get the resource loader
@@ -266,10 +246,9 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 
 	SDL_SetRenderDrawColor(m_pRenderer.get(), 17, 23, 64, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(m_pRenderer.get());
-	bool isPaused = m_pExecutive->IsPaused();
 
 	// Only draw if initialized
-	// TODO:  Make this dependent on the executive instead of the sim
+	// TODO:  Make this dependent on the executive instead of the sim?
 	if (m_pSim->IsGameInitialized())
 	{
 		// Draw the board as a black rectangle
@@ -278,7 +257,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 
 
 		// Update the fade to dark animation
-		if (isPaused)
+		if (m_pausedGame)
 		{
 			// -> dark
 			if (!m_screenFadeAnimation.IsAtEnd())
@@ -304,7 +283,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 
 		int xRect = m_predictorX;
 		int yRect = m_predictorY;
-		if (!isPaused)
+		if (!m_pausedGame)
 		{
 			for (GridContents gem : nextGems)
 			{
@@ -355,7 +334,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 			RenderContentsAt(xSquare, ySquare, toDraw);
 		};
 
-		if (!isPaused)
+		if (!m_pausedGame)
 		{
 			m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
 		}
@@ -371,7 +350,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	unsigned int bannerX = m_windowX / 2;
 	unsigned int bannerY = 30;
 
-	if (!isPaused && !m_pExecutive->IsInGame())
+	if (!m_pausedGame && !m_inGame)
 	{
 		if (m_pSim->IsGameOver())
 		{
@@ -400,12 +379,37 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 		SDL_SetRenderDrawBlendMode(m_pRenderer.get(), SDL_BLENDMODE_NONE);
 	}
 
-	if (isPaused)
+	if (m_pausedGame)
 	{
 		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
 	}
 
 	SDL_RenderPresent(m_pRenderer.get());
+}
+
+void geng::columns::ColumnsSDLRenderer::OnStartGame()
+{
+	// Get board information
+	Point boardSize = m_pSim->GetBoardSize();
+	m_boardX = boardSize.x;
+	m_boardY = boardSize.y;
+
+	// Space for one column from above
+	m_boardYOffset = m_pSim->GetColumnSize();
+
+	Measure();
+	
+	m_inGame = true;
+}
+
+void geng::columns::ColumnsSDLRenderer::OnEndGame() 
+{ 
+	m_inGame = false;
+}
+
+void geng::columns::ColumnsSDLRenderer::OnPauseGame(bool pauseState)
+{
+	m_pausedGame = pauseState;
 }
 
 void geng::columns::ColumnsSDLRenderer::Measure()
