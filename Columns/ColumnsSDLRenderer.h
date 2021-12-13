@@ -135,7 +135,7 @@ namespace geng::columns
 
 		constexpr static unsigned long MAGIC_PHASE_COUNT = 3;
 		constexpr static unsigned long MAGIC_TOTAL_MS = 600;
-		constexpr static unsigned long FADE_TOTAL_MS = 2000;
+		constexpr static unsigned long FADE_TOTAL_MS = 1000;
 
 		constexpr static unsigned int CHEAT_BANNER_MS = 1500;
 	};

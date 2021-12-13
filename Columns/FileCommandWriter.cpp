@@ -66,6 +66,7 @@ void geng::serial::FileCommandWriter::OnCommandChanged(SubID subId,
 {
 	Command_& cmdObject = m_commands[subId];
 
+	bool hadDelta{ false };
 	if (cmdObject.lastUpdatedFrame == INITIAL_FRAME_TAG ||
 		cmdObject.lastUpdatedFrame < m_currentFrame)
 	{
@@ -75,8 +76,12 @@ void geng::serial::FileCommandWriter::OnCommandChanged(SubID subId,
 		{
 			cmdObject.lastUpdatedFrame = m_currentFrame;
 			++m_frameChanges;
+			hadDelta = true;
 		}
 	}
+
+	fprintf(stderr, "OnCommandChanged frame %lu subid %llu delta %d\n", m_currentFrame, subId, hadDelta);
+
 }
 
 
@@ -90,6 +95,7 @@ void geng::serial::FileCommandWriter::EndFrame()
 
 void geng::serial::FileCommandWriter::EndSession()
 {
+	fprintf(stderr, "Session ending\n");
 	SaveFrame(true);
 	Flush();
 }
@@ -109,18 +115,18 @@ void geng::serial::FileCommandWriter::SaveFrame(bool lastFrame)
 		return;
 	}
 
+	fprintf(stderr, "Saving frame, number %lu change count %lu\n", frameNumber, changeCount);
 	// Write any deltas
 	for (size_t cmdId = 0; cmdId < m_commands.size(); ++cmdId)
 	{
 		if (m_commands[cmdId].lastUpdatedFrame == m_currentFrame)
 		{
 			uint32_t commandIndex = (uint32_t)cmdId;
+			fprintf(stderr, "Writing command %lu...\n", commandIndex);
 			m_fileStream.Write(&commandIndex, sizeof(commandIndex));
 			m_commands[cmdId].pDelta->Write(&m_fileStream);
 		}
 	}
-
-
 }
 
 void geng::serial::FileCommandWriter::Flush()

@@ -39,7 +39,7 @@ namespace geng
 			return EncodeData<T>(pWriteStream, data.val);
 		}
 		
-		return EncodeData<bool>(pWriteStream, true);
+		return EncodeData<bool>(pWriteStream, false);
 	}
 
 	template<typename T>

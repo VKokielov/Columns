@@ -24,7 +24,7 @@ namespace geng
 			:m_pCommand(pCommand),
 			m_pTranslator(pTranslator),
 			m_msPerFrame(msPerFrame),
-			m_actionId(m_actionId)
+			m_actionId(actionId)
 		{ }
 
 	private:
@@ -45,11 +45,18 @@ namespace geng
 
 			bool curCommandState = GetCommandState(frameIndex * m_args.m_msPerFrame, curActionState);
 
-			if (frameIndex == 0 || 
+			/*
+			if (curActionState == ActionState::On)
+			{
+				fprintf(stderr, "Curactionstate: command state %d\n", curCommandState);
+			}
+			*/
+
+			if (frameIndex == 1 || 
 				m_prevState != curCommandState)
 			{
 				// This will also invoke relevant listeners
-				fprintf(stderr, "Setting command stream %p to %d\n", this, curCommandState);
+			//	fprintf(stderr, "Setting command stream %lu to %d\n", m_args.m_actionId, curActionState);
 				m_args.m_pCommand->SetState(curCommandState);
 			}
 			m_prevState = curCommandState;
@@ -80,8 +87,10 @@ namespace geng
 	class ThrottledActionCommandStream : public ActionCommandStream
 	{
 	public:
-		ThrottledActionCommandStream(const ActionCommandStreamArgs& args)
-			:ActionCommandStream(args)
+		ThrottledActionCommandStream(const ActionCommandStreamArgs& args, 
+				unsigned long throttlePeriod)
+			:ActionCommandStream(args),
+			m_msThrottlePeriod(throttlePeriod)
 		{ }
 
 	protected:

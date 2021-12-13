@@ -78,6 +78,10 @@ bool geng::columns::ColumnsInput::Initialize(const std::shared_ptr<IGame>& pGame
 		return false;
 	}
 
+	m_actionTranslator->SetInput(m_pInput);
+	m_actionMapper->GetAllMappings(m_actionTranslator);
+	m_actionMapper->AddMappingListener(m_actionTranslator);
+
 	auto pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), ColumnsExecutive::GetExecutiveName());
 	m_pExecutive = pExecutive;
 
@@ -106,7 +110,7 @@ void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
 				m_msPerFrame,
 				m_actionMapper->GetAction(actionCommand.actionName.c_str()));
 			FactorySharedPtr<ICommandStream> pActionFactory
-			{ CreateFactoryWithArgs<ThrottledActionCommandStream, ICommandStream>(actionStreamArgs)
+			{ CreateFactoryWithArgs<ThrottledActionCommandStream, ICommandStream>(actionStreamArgs, actionCommand.throttlePeriod)
 			};
 
 			commandDescriptions.emplace_back(actionCommand.pCommand, pActionFactory);
@@ -122,7 +126,7 @@ void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
 	if (args.pbMode != PlaybackMode::Playback)
 	{
 		std::random_device randomDevice;
-		m_seedValue->targetFrame = 0;
+		m_seedValue->targetFrame = 1;
 		m_seedValue->val = randomDevice();
 	}
 }
@@ -149,7 +153,7 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	// Seed the random number generator with the value read from the command
 	if (m_seedCommand->GetState().hasVal)
 	{
-		fprintf(stderr, "SEEDING\n");
+		fprintf(stderr, "SEEDING with %llu\n", m_seedCommand->GetState().val);
 		m_generator.seed(m_seedCommand->GetState().val);
 	}
 

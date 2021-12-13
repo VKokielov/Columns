@@ -8,7 +8,8 @@ namespace geng
 {
 	// Default encode, decode, compute and apply functions
 	template<typename State>
-	bool ComputeCommandDiff(const State& prevState, const State& curState,
+	bool ComputeCommandDiff(const State& curState,
+		const State& prevState,
 		State& outDelta)
 	{
 		if (prevState == curState)
@@ -28,7 +29,7 @@ namespace geng
 	}
 
 	template<typename Data>
-	bool EncodeData(serial::IWriteStream* pWriteStream, Data&& data)
+	bool EncodeData(serial::IWriteStream* pWriteStream, const Data& data)
 	{
 		return pWriteStream->Write(&data, sizeof(Data)) == sizeof(Data);
 	}

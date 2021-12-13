@@ -334,7 +334,7 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 			RenderContentsAt(xSquare, ySquare, toDraw);
 		};
 
-		if (!m_pausedGame)
+		if (!m_pausedGame && m_inGame)
 		{
 			m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
 		}

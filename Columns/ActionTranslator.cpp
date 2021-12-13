@@ -120,7 +120,7 @@ void geng::ActionTranslator::UpdateOnFrame(unsigned long frameId)
 			fprintf(stderr, "Flipping action %d to state %d\n", rActionState.first, (int)nextState);
 		}
 		*/
-		
+	
 		rActionState.second.actState = nextState;
 	}
 }

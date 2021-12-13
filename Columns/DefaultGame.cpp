@@ -402,14 +402,7 @@ bool geng::DefaultGame::SetFrameIndex(ContextID contextId, unsigned long frameCo
 
 void geng::DefaultGame::UpdateContextStateBefore()
 {
-	for (size_t i = 1; i < m_contexts.size(); ++i)
-	{
-		if (m_contexts[i].contextState.runstate.curValue)
-		{
-			++m_contexts[i].contextState.frameCount;
-			m_contexts[i].contextState.simulatedTime += m_gameArgs.msTimePerFrame;
-		}
-	}
+
 }
 
 void geng::DefaultGame::ContextInputCallbacks()
@@ -466,6 +459,12 @@ void geng::DefaultGame::UpdateContextStateAfter()
 
 		m_contexts[i].contextState.visibility.prevValue = m_contexts[i].contextState.visibility.curValue;
 		m_contexts[i].contextState.visibility.curValue = m_contexts[i].m_nextVisible;
+
+		if (m_contexts[i].contextState.runstate.curValue)
+		{
+			++m_contexts[i].contextState.frameCount;
+			m_contexts[i].contextState.simulatedTime += m_gameArgs.msTimePerFrame;
+		}
 	}
 }
 
@@ -480,7 +479,7 @@ void geng::DefaultGame::RunGameLoop()
 		// Executive listeners
 		m_executiveListeners.OnFrame(m_simState, nullptr);
 
-		UpdateContextStateBefore();
+		//UpdateContextStateBefore();
 		ContextInputCallbacks();
 		ContextSimCallbacks();
 		ContextRenderCallbacks();
@@ -518,7 +517,7 @@ void geng::DefaultGame::RunGameLoop()
 				m_simState.catchingUp = true;
 				m_executiveListeners.OnFrame(m_simState, nullptr);
 
-				UpdateContextStateBefore();
+				//UpdateContextStateBefore();
 				ContextInputCallbacks();
 				ContextSimCallbacks(); 
 				UpdateContextStateAfter();

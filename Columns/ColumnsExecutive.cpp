@@ -19,8 +19,8 @@ geng::columns::ColumnsExecutive::ColumnsExecutive()
 	m_pGame()
 {
 	m_initialized = true;
-	m_inputArgs.pbMode = PlaybackMode::Record;
-	m_inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo";
+	m_inputArgs.pbMode = PlaybackMode::Playback;
+	m_inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo2";
 	m_inputArgs.userPlayer = 0;
 }
 
@@ -210,7 +210,6 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 
 		if (pGame)
 		{
-			fprintf(stderr, "Resetting frame index\n");
 			pGame->SetFrameIndex(m_simContextId, 0);
 		}
 
@@ -230,7 +229,7 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 		auto pGame = m_pGame.lock();
 		if (pGame)
 		{
-			pGame->SetRunState(m_simContextId, false);
+			pGame->SetRunState(m_simContextId, true);
 		}
 
 		m_pColumnsInput->OnPauseGame(false);
@@ -281,6 +280,13 @@ void geng::columns::ColumnsExecutive::OnFrame(ActiveGameState&, const SimState& 
 	{
 		ResetKey(&m_pauseKey);
 		PauseGame(true);
+	}
+
+	if (IsKeyPressedOnce(m_escKey))
+	{
+		// End
+		ResetKey(&m_escKey);
+		EndGame();
 	}
 
 }
