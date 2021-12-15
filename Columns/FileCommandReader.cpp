@@ -165,7 +165,7 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 		return false;
 	}
 
-	fprintf(stderr, "Frame number %lu\n", frameNumber);
+//	fprintf(stderr, "Frame number %lu\n", frameNumber);
 
 	if (m_nextFrame != 0 
 		&& frameNumber <= m_nextFrame)
@@ -200,7 +200,7 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 		return false;
 	}
 
-	fprintf(stderr, "Loading frame %lu with delta count %lu\n", frameNumber, deltaCount);
+	//fprintf(stderr, "Loading frame %lu with delta count %lu\n", frameNumber, deltaCount);
 
 	// Read each delta into its command
 	m_nextDeltas.clear();
@@ -221,10 +221,10 @@ bool geng::serial::FileCommandReader::LoadNextFrame()
 			return false;
 		}
 
-		fprintf(stderr, "For command %lu\n", commandIndex);
+		//fprintf(stderr, "For command %lu\n", commandIndex);
 		if (!m_commandStreams[commandIndex].cmdStream->ReadDelta(m_fileStream))
 		{
-			fprintf(stderr, "could not read delta!\n");
+			//fprintf(stderr, "could not read delta!\n");
 			m_filePBStatus = FilePlaybackStatus::FileError;
 			return false;
 		}
@@ -252,8 +252,8 @@ bool geng::serial::FileCommandReader::SetFrame(unsigned long curFrame)
 		return false;
 	}
 
-	fprintf(stderr, "SetFrame, playback state %u cur %lu target %lu next %lu\n",
-		(unsigned int)m_filePBStatus, m_currentFrame, curFrame, m_nextFrame);
+	//fprintf(stderr, "SetFrame, playback state %u cur %lu target %lu next %lu\n",
+//		(unsigned int)m_filePBStatus, m_currentFrame, curFrame, m_nextFrame);
 
 	// If there are no deltas for this frame, we consider playback ended
 	if (m_nextDeltas.empty())

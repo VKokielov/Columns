@@ -13,14 +13,14 @@
 
 #include "InputBridge.h"
 
-geng::columns::ColumnsExecutive::ColumnsExecutive()
+geng::columns::ColumnsExecutive::ColumnsExecutive(const ExecutiveSettings& settings)
 	:BaseGameComponent(GetExecutiveName()),
 	m_initialized(false),
 	m_pGame()
 {
 	m_initialized = true;
-	m_inputArgs.pbMode = PlaybackMode::Playback;
-	m_inputArgs.pFileName = "C:\\Users\\vkoki\\source\\repos\\Columns\\x64\\Debug\\columnsDemo2";
+	m_inputArgs.pbMode = settings.pbMode;
+	m_inputArgs.fileName = settings.pbFileName;
 	m_inputArgs.userPlayer = 0;
 }
 

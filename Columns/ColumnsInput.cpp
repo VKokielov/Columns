@@ -118,7 +118,7 @@ void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
 	}
 
 	// Create a new command-manager
-	m_pCommandManager.reset(new CommandManager(args.pbMode, args.pFileName, commandDescriptions));
+	m_pCommandManager.reset(new CommandManager(args.pbMode, args.fileName.c_str(), commandDescriptions));
 
 	// Generate the seed for the random generator (when not playing back; when playing back the seed
 	// value will land in the command from the file)
@@ -153,7 +153,7 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	// Seed the random number generator with the value read from the command
 	if (m_seedCommand->GetState().hasVal)
 	{
-		fprintf(stderr, "SEEDING with %llu\n", m_seedCommand->GetState().val);
+	//	fprintf(stderr, "SEEDING with %llu\n", m_seedCommand->GetState().val);
 		m_generator.seed(m_seedCommand->GetState().val);
 	}
 

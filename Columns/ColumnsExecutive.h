@@ -13,6 +13,7 @@ namespace geng::columns
 {
 	class ColumnsSDLRenderer;
 
+
 	enum class ContextState
 	{
 		NoGame,
@@ -25,6 +26,13 @@ namespace geng::columns
 		unsigned int dropThrottlePeriod;
 		unsigned int nonDropThrottlePeriod;
 	};
+
+	struct ExecutiveSettings
+	{
+		PlaybackMode pbMode;
+		std::string pbFileName;
+	};
+
 
 	struct NoGameState { };
 
@@ -63,7 +71,7 @@ namespace geng::columns
 				{ return static_cast<void (ColumnsExecutive::*)(Args...)>(&ColumnsExecutive::OnFrame); }
 		};
 
-		ColumnsExecutive();
+		ColumnsExecutive(const ExecutiveSettings& executiveSettings);
 		bool AddToGame(const std::shared_ptr<IGame>& pGame);
 
 		void StartGame();

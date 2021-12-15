@@ -20,7 +20,7 @@ namespace geng::columns
 	struct InputArgs
 	{
 		PlaybackMode pbMode;
-		const char* pFileName;
+		std::string fileName;
 		unsigned int userPlayer;
 	};
 

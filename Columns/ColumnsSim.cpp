@@ -754,11 +754,13 @@ void geng::columns::ColumnsSim::OnStartGame(const ColumnsSimArgs& args)
 	// 10 times faster is good enough
 	m_minDropMiliseconds = m_dropMiliseconds / 10;
 
+	m_nextColors.clear();
 	m_needNewColumn = true;
 	m_colorsToClear.clear();
 
 	StateArgs stateArgs;
 	stateArgs.simTime = 0;
+
 	// This will transition out of game over state
 	m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
 }
@@ -824,6 +826,7 @@ void geng::columns::ColumnsSim::GameState
 
 	if (m_owner.m_needNewColumn)
 	{
+		//fprintf(stderr, "Generating new column\n");
 		m_owner.GenerateNewPlayerColumn();
 		m_owner.m_needNewColumn = false;
 	}
@@ -860,7 +863,6 @@ void geng::columns::ColumnsSim::GameState
 	{
 		if (!m_owner.ShiftPlayerColumn(true))
 		{
-			m_owner.m_errorText = "CAN'T MOVE";
 			return;
 		}
 	//	fprintf(stderr, "Shifting column left\n");
@@ -870,7 +872,6 @@ void geng::columns::ColumnsSim::GameState
 	{
 		if (!m_owner.ShiftPlayerColumn(false))
 		{
-			m_owner.m_errorText = "CAN'T MOVE";
 			return;
 		}
 	//	fprintf(stderr, "Shifting column right\n");
@@ -880,7 +881,6 @@ void geng::columns::ColumnsSim::GameState
 	{
 		if (!m_owner.RotatePlayerColumn(true))
 		{
-			m_owner.m_errorText  = "CAN'T ROTATE";
 			return;
 		}
 	}
