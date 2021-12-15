@@ -5,11 +5,16 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <unordered_map>
 
 #include "DefaultGame.h"
 #include "ColumnsExecutive.h"
+#include "CommandLine.h"
 
 using namespace std;
+
+const char* RecordArgumentName() { return "record"; };
+const char* PlaybackArgumentName() { return "playback"; }
 
 bool InitSDL()
 {
@@ -40,10 +45,34 @@ void DeinitSDL()
 	TTF_Quit();
 }
 
-bool InitializeGameComponents(const std::shared_ptr<geng::IGame>& pGame)
+bool InitializeGameComponents(const std::shared_ptr<geng::IGame>& pGame,
+	const std::unordered_map<std::string,geng::cmdline::ArgValues>& cmdLineMap)
 {
+	// Recording/playback
+	geng::columns::ExecutiveSettings execSettings;
+	execSettings.pbMode = geng::PlaybackMode::None;
+
+	if (cmdLineMap.count(RecordArgumentName()) > 0)
+	{
+		if (cmdLineMap.count(PlaybackArgumentName()) > 0)
+		{
+			pGame->LogError("Cannot specify both playback and record.");
+			return false;
+		}
+
+		execSettings.pbMode = geng::PlaybackMode::Record;
+		const auto& recordFileEntry = cmdLineMap.at(RecordArgumentName());
+		execSettings.pbFileName = recordFileEntry.vals.at(0);
+	}
+	else if (cmdLineMap.count(PlaybackArgumentName()) > 0)
+	{
+		execSettings.pbMode = geng::PlaybackMode::Playback;
+		const auto& playbackFileEntry = cmdLineMap.at(PlaybackArgumentName());
+		execSettings.pbFileName = playbackFileEntry.vals.at(0);
+	}
+
 	// The executive initializes all other components
-	auto pExecutive = std::make_shared<geng::columns::ColumnsExecutive>();
+	auto pExecutive = std::make_shared<geng::columns::ColumnsExecutive>(execSettings);
 
 	if (!pExecutive->AddToGame(pGame))
 	{
@@ -56,7 +85,7 @@ bool InitializeGameComponents(const std::shared_ptr<geng::IGame>& pGame)
 	return true;
 }
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
 	if (!InitSDL())
 	{
@@ -67,8 +96,26 @@ int main(int, char**)
 	gameArgs.msBreather = 1;
 	gameArgs.msTimePerFrame = 20;
 	auto pGame = geng::DefaultGame::CreateGame(gameArgs);
-	
-	if (!InitializeGameComponents(pGame))
+
+	std::vector<geng::cmdline::ArgDesc>
+		cmdArgDescs{ geng::cmdline::ArgDesc(RecordArgumentName(), "r", true, 1,1),
+				geng::cmdline::ArgDesc(PlaybackArgumentName(), "p", true, 1, 1) };
+	std::unordered_map<std::string, geng::cmdline::ArgValues> argMap;
+	std::string cmdLineError;
+	if (!geng::cmdline::ProcessArgs(cmdArgDescs,
+		argc,
+		argv,
+		argMap,
+		cmdLineError))
+	{
+		pGame->LogError("Error on the command line:");
+		pGame->LogError(cmdLineError.c_str());
+		std::string cmdlUsage = geng::cmdline::GetUsageString(cmdArgDescs);
+		pGame->LogError(cmdlUsage.c_str());
+		return -1;
+	}
+
+	if (!InitializeGameComponents(pGame,argMap))
 	{
 		std::cerr << "Could not initialize the game.\n";
 		return -1;
