@@ -230,6 +230,7 @@
     <ClInclude Include="InputBridge.h" />
     <ClInclude Include="KeyDebug.h" />
     <ClInclude Include="MessageStream.h" />
+    <ClInclude Include="Packet.h" />
     <ClInclude Include="SharedValueCommand.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceLoader.h" />

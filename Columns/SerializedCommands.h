@@ -1,13 +1,14 @@
 #pragma once
 #include "CommandInterface.h"
 #include "Bytestream.h"
+#include "Packet.h"
 
 #include <memory>
 #include <cinttypes>
 
 namespace geng::serial
 {
-	class ICommandDelta
+	class ICommandDelta : public IPacket
 	{
 	public:
 		virtual ~ICommandDelta() = default;
@@ -16,11 +17,7 @@ namespace geng::serial
 		virtual void OnCommand(const ICommand& nextCommand) = 0;
 
 		virtual bool HasDelta() const = 0;
-		// Write a delta to a buffer.
-		virtual bool Write(IWriteStream* pStream) = 0;
 
-		// Read a delta from a buffer
-		virtual bool Read(IReadStream* pStream) = 0;
 		// Apply a delta to a command
 		virtual void ApplyTo(ICommand& rCommand) const = 0;
 	};

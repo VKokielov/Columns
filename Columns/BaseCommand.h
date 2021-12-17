@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SerializedCommands.h"
+#include "Packet.h"
 #include <string>
 #include <vector>
 
@@ -28,17 +29,6 @@ namespace geng
 		curState = delta;
 	}
 
-	template<typename Data>
-	bool EncodeData(serial::IWriteStream* pWriteStream, const Data& data)
-	{
-		return pWriteStream->Write(&data, sizeof(Data)) == sizeof(Data);
-	}
-
-	template<typename Data>
-	bool DecodeData(serial::IReadStream* pReadStream, Data& data)
-	{
-		return pReadStream->Read(&data, sizeof(Data)) == sizeof(Data);
-	}
 
 
 	template<typename State, typename StateDelta = State>
