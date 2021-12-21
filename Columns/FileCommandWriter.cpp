@@ -8,13 +8,25 @@ geng::serial::FileCommandWriter::Command_::Command_(const std::shared_ptr<ISeria
 }
 
 geng::serial::FileCommandWriter::FileCommandWriter(FileUPtr&& pFile,
-	const std::vector<std::shared_ptr<ISerializableCommand> >&
-	commandList)
-	:m_fileStream(std::move(pFile))
+	const std::shared_ptr<IPacket>& pDescriptionPacket,
+	const std::vector<std::shared_ptr<ISerializableCommand> >& commandList,
+	const FileStreamHeader* pHeader)
+	:m_fileStream(std::move(pFile), pHeader),
+	m_hasChecksum(pHeader != nullptr && pHeader->hasChecksum)
 {
 	// Write out the header to the file and construct the vector of commands
 	// The header is a sequence of command keys terminated by a zero-length
 	// string
+
+	if (pHeader)
+	{
+		if (!m_fileStream.WriteHeader())
+		{
+			return;
+		}
+	}
+
+	pDescriptionPacket->Write(&m_fileStream);
 
 	for (auto& pCommand : commandList)
 	{
@@ -97,7 +109,15 @@ void geng::serial::FileCommandWriter::EndSession()
 {
 	//fprintf(stderr, "Session ending\n");
 	SaveFrame(true);
+
+	if (m_hasChecksum)
+	{
+		// May return "false" if no checksum
+		m_fileStream.WriteChecksum();
+	}
+	
 	Flush();
+	
 }
 
 void geng::serial::FileCommandWriter::SaveFrame(bool lastFrame)

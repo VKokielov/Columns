@@ -4,8 +4,8 @@
 #include "ActionCommands.h"
 #include "ActionMapper.h"
 #include "ActionTranslator.h"
-#include "SharedValueCommand.h"
 #include "CommandManager.h"
+#include "DataPacket.h"
 
 #include <vector>
 #include <memory>
@@ -17,11 +17,46 @@ namespace geng::columns
 
 	using RandomSeedType = unsigned long long;
 
+	// TODO:  Move these data structures all out into one common header
+	struct Point
+	{
+		unsigned int x;
+		unsigned int y;
+
+		bool operator ==(const Point& rhs) const
+		{
+			return x == rhs.x && y == rhs.y;
+		}
+
+		bool operator ==(const Point& rhs)
+		{
+			return x == rhs.x && y == rhs.y;
+		}
+	};
+
+	struct SimArgs
+	{
+		Point boardSize;
+		unsigned int columnSize;
+		unsigned int dropMilliseconds;
+		unsigned int flashMilliseconds;
+		unsigned int flashCount;
+		unsigned int actionThrottlePeriod;
+		unsigned int dropThrottlePeriod;
+		RandomSeedType randomSeed;
+	};
+
 	struct InputArgs
 	{
 		PlaybackMode pbMode;
 		std::string fileName;
 		unsigned int userPlayer;
+	};
+
+	struct ColumnsArgs
+	{
+		InputArgs inputArgs;
+		SimArgs simArgs;
 	};
 
 	struct ActionDesc
@@ -71,7 +106,7 @@ namespace geng::columns
 
 		bool Initialize(const std::shared_ptr<IGame>& pGame);
 
-		void OnStartGame(const InputArgs& args);
+		void OnStartGame(const ColumnsArgs& args);
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
 		void OnPauseGame(bool pauseState) { }
@@ -90,6 +125,29 @@ namespace geng::columns
 
 		unsigned long GetRandomNumber(unsigned long min, unsigned long upperBound);
 
+		const SimArgs* GetSimArgs() const
+		{
+			return &(m_pSimArgsPacket->Get());
+		}
+
+		bool IsPlaybackVersion(uint32_t formatVersion) const
+		{
+			return m_pCommandManager
+				&& m_pCommandManager->GetPBMode() == PlaybackMode::Playback
+				&& m_pCommandManager->GetFormatVersion() == formatVersion;
+		}
+
+		bool GetPlaybackVersion(uint32_t& formatVersion) const
+		{
+			if (m_pCommandManager && m_pCommandManager->GetPBMode() == PlaybackMode::Playback)
+			{
+				formatVersion = m_pCommandManager->GetFormatVersion();
+				return true;
+			}
+
+			return false;
+		}
+
 	private:
 		// Actions
 
@@ -99,21 +157,16 @@ namespace geng::columns
 		unsigned long m_msPerFrame;
 
 		// objects
+		std::shared_ptr<serial::DataPacket<SimArgs> > m_pSimArgsPacket;
 		std::shared_ptr<ActionMapper>  m_actionMapper;
 		std::shared_ptr<ActionTranslator> m_actionTranslator;
 		std::shared_ptr<IInput>  m_pInput;
 		std::weak_ptr<ColumnsExecutive>  m_pExecutive;
 
-		// Random seed
-		std::shared_ptr<SharedValue<RandomSeedType> >   m_seedValue;
 		std::mt19937_64  m_generator;
-
-		// Random seed command
-		std::shared_ptr<SharedValueCommand<RandomSeedType> >  m_seedCommand;
 
 		// Command manager
 		std::shared_ptr<CommandManager>   m_pCommandManager;
-
 
 		bool m_valid{ false };
 		std::string m_error;

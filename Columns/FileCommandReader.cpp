@@ -38,10 +38,47 @@ bool geng::serial::FileCommandReader::FileCommandStream::ApplyDelta()
 }
 
 geng::serial::FileCommandReader::FileCommandReader(FileUPtr&& pFile,
-	const std::vector<std::shared_ptr<ISerializableCommand> >& commandList)
-	:m_fileStream(std::move(pFile))
+	const std::shared_ptr<IPacket>& pDescriptionPacket,
+	const std::vector<std::shared_ptr<ISerializableCommand> >& commandList,
+	const FileStreamHeader* pHeader)
+	:m_fileStream(std::move(pFile), pHeader)
 {
-	// Read the header, which is a list of keys
+	// Check the file and checksum
+	auto validityCheckResult = m_fileStream.GetCheckResult();
+
+	if (validityCheckResult != FileValidityCheckResult::OK)
+	{
+		// The default value of FileChecksumStatus is "NoChecksum", which we expect
+		switch (validityCheckResult)
+		{
+			case FileValidityCheckResult::HeaderError:
+				m_error = "Generic file header is not correct";
+				return;
+			case FileValidityCheckResult::SignatureMismatch:
+				m_error = "Does not appear to be a playback file for this application";
+				return;
+			case FileValidityCheckResult::OK:
+				m_fileChecksumStatus = FileChecksumStatus::FileChecksumOK;
+				break;
+			case FileValidityCheckResult::ChecksumError:
+				m_fileChecksumStatus = FileChecksumStatus::FileChecksumInvalid;
+				break;
+		}
+	}
+
+	if (pHeader)
+	{
+		m_formatVersion = m_fileStream.GetFormatVersion();
+	}
+
+	// Read the game description from the input
+	if (!pDescriptionPacket->Read(&m_fileStream))
+	{
+		m_error = "Could not parse recording game header";
+		return;
+	}
+
+	// Read the data header, which is a list of keys
 	uint16_t keySize{ 0 };
 	constexpr size_t sizeOfSize = sizeof(decltype(keySize));
 

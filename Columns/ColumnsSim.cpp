@@ -698,7 +698,6 @@ geng::columns::ColumnsSim::ColumnsSim()
 {
 }
 
-
 bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 {
 	m_pColumnsInput = GetComponentAs<ColumnsInput>(pGame.get(), ColumnsExecutive::GetColumnsInputComponentName());
@@ -717,7 +716,7 @@ bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 	return true;
 }
 
-void geng::columns::ColumnsSim::LoadArgs(const ColumnsSimArgs& args)
+void geng::columns::ColumnsSim::LoadArgs(const SimArgs& args)
 {
 	m_size = args.boardSize;
 	m_columnSize = args.columnSize;
@@ -732,9 +731,16 @@ void geng::columns::ColumnsSim::LoadArgs(const ColumnsSimArgs& args)
 	m_paramsInit = true;
 }
 
-void geng::columns::ColumnsSim::OnStartGame(const ColumnsSimArgs& args)
+void geng::columns::ColumnsSim::OnStartGame()
 {
-	LoadArgs(args);
+	const SimArgs* pArgs = m_pColumnsInput->GetSimArgs();
+	if (!pArgs)
+	{
+		// This is a bug.  Input should have OnStartGame() called before sim
+		return;
+	}
+
+	LoadArgs(*pArgs);
 
 	// Clear the grid
 	GridSquare defaultSquare{ EMPTY, true };

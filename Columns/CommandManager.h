@@ -3,6 +3,7 @@
 #include "IFactory.h"
 #include "CommandInterface.h"
 #include "SerializedCommands.h"
+#include "Packet.h"
 
 #include <vector>
 #include <memory>
@@ -23,6 +24,10 @@ namespace geng
 		Playback,
 		Ended
 	};
+
+	// TODO: Should this be an argument?
+	constexpr unsigned long long
+		SEED_DEMO_CHECKSUM = 0x0102040509080a0f;
 
 	class CommandDesc
 	{
@@ -54,9 +59,13 @@ namespace geng
 			std::shared_ptr<ICommandStream>  pStream;
 		};
 	public:
-
 		CommandManager(PlaybackMode pbMode, 
 			const char* pPBFile,
+			const char* pGameName,
+			uint32_t formatVersion,
+			uint32_t minVersion,
+			bool allowUnsafePlayback,
+			const std::shared_ptr<serial::IPacket>& pDescriptionPacket,
 			const std::vector<CommandDesc>& cmdList);
 
 		// In read mode, unsubscribe the commands from the reader in order
@@ -67,12 +76,21 @@ namespace geng
 		void EndFrame();
 		void EndSession();
 
+		bool IsValid() const { return m_valid; }
+		const std::string& GetError() const { return m_error; }
 		PlaybackMode GetPBMode() const { return m_playbackMode; }
+		bool IsUnsafePlayback() const { return m_unsafePlayback; }
+		uint32_t GetFormatVersion() const { return m_playbackFormatVersion; }
 
 		bool IsEndOfPlayback() const;
 	private:
 		// Open the playback file and create an object to represent it
-		bool OpenFile(const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList);
+		bool OpenFile(const char* pGameName,
+					uint32_t formatVersion,
+					uint32_t minVersion,
+					bool allowUnsafePlayback,
+					const std::shared_ptr<serial::IPacket>& pDescriptionPacket,
+					const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList);
 		
 		static bool HasFile(PlaybackMode mode)
 		{
@@ -90,6 +108,9 @@ namespace geng
 		std::string m_error;
 
 		PlaybackMode m_playbackMode;
+		bool m_unsafePlayback{ false };
+		uint32_t m_playbackFormatVersion{ 0 };
+
 		std::string m_fileName;
 		std::shared_ptr<serial::FileCommandReader>  m_pReader;
 		std::shared_ptr<serial::FileCommandWriter>  m_pWriter;

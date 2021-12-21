@@ -5,13 +5,12 @@
 #include <unordered_set>
 #include <sstream>
 
-geng::columns::ColumnsInput::ColumnsInput(const std::vector<ActionDesc>& vActions, unsigned int playerCount, 
+geng::columns::ColumnsInput::ColumnsInput(const std::vector<ActionDesc>& vActions, unsigned int playerCount,
 	unsigned long msPerFrame)
 	:BaseGameComponent(ColumnsExecutive::GetColumnsInputComponentName()),
 	m_actionTranslator(new ActionTranslator()),
-	m_seedCommand(new SharedValueCommand<RandomSeedType>("random_seed_shared_value")),
-	m_seedValue(new SharedValue<RandomSeedType>()),
-	m_msPerFrame(msPerFrame)
+	m_msPerFrame(msPerFrame),
+	m_pSimArgsPacket(new serial::DataPacket<SimArgs>())
 {
 	std::unordered_set<std::string>  actionNames;
 
@@ -88,22 +87,15 @@ bool geng::columns::ColumnsInput::Initialize(const std::shared_ptr<IGame>& pGame
 	return true;
 }
 
-void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
+void geng::columns::ColumnsInput::OnStartGame(const ColumnsArgs& args)
 {
 	std::vector<CommandDesc>  commandDescriptions;
-
-	FactorySharedPtr<ICommandStream> pSeedFactory 
-		{ CreateFactoryWithArgs<SharedValueCommandStream<RandomSeedType>, 
-								ICommandStream>(m_seedCommand, m_seedValue) 
-		};
-	
-	commandDescriptions.emplace_back(m_seedCommand, pSeedFactory);
 
 	// Iterate through all the stored actions, and specify "throttled command streams" for the current player's
 	// actions.
 	for (const ActionCommand_& actionCommand : m_actionCommands)
 	{
-		if (actionCommand.playerId == args.userPlayer)
+		if (actionCommand.playerId == args.inputArgs.userPlayer)
 		{
 			ActionCommandStreamArgs actionStreamArgs(actionCommand.pCommand,
 				m_actionTranslator,
@@ -117,18 +109,41 @@ void geng::columns::ColumnsInput::OnStartGame(const InputArgs& args)
 		}
 	}
 
-	// Create a new command-manager
-	m_pCommandManager.reset(new CommandManager(args.pbMode, args.fileName.c_str(), commandDescriptions));
 
-	// Generate the seed for the random generator (when not playing back; when playing back the seed
-	// value will land in the command from the file)
+	const InputArgs& inputArgs = args.inputArgs;
+	const SimArgs& simArgs = args.simArgs;
 
-	if (args.pbMode != PlaybackMode::Playback)
+	// Create a new command-manager with a description packet
+	if (inputArgs.pbMode != PlaybackMode::Playback)
 	{
+		// Assign the sim args as given to the lvalue "data packet" which will potentially
+		// be passed along for recording
+		m_pSimArgsPacket->Get() = simArgs;
 		std::random_device randomDevice;
-		m_seedValue->targetFrame = 1;
-		m_seedValue->val = randomDevice();
+		m_pSimArgsPacket->Get().randomSeed = randomDevice();
 	}
+
+	m_pCommandManager.reset(new CommandManager(inputArgs.pbMode, 
+										      inputArgs.fileName.c_str(),
+											  ColumnsExecutive::GetGameName(),
+		                                      0,   // format version
+		                                      0,   // min format version,
+										      false, // unsafe playback
+											  m_pSimArgsPacket,
+										      commandDescriptions));
+
+	if (!m_pCommandManager->IsValid())
+	{
+		auto pExecutive = m_pExecutive.lock();
+		if (pExecutive)
+		{
+			pExecutive->StartGameError(m_pCommandManager->GetError().c_str());
+			return;
+		}
+	}
+
+	// Seed the random generator (the sim args will have a valid value now)
+	m_generator.seed(m_pSimArgsPacket->Get().randomSeed);
 }
 
 void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
@@ -149,13 +164,6 @@ void geng::columns::ColumnsInput::OnFrame(const SimState& rSimState,
 	// TODO:  EndFrame should be called from somewhere else if commands can come from the
 	// sim
 	m_pCommandManager->EndFrame();
-
-	// Seed the random number generator with the value read from the command
-	if (m_seedCommand->GetState().hasVal)
-	{
-	//	fprintf(stderr, "SEEDING with %llu\n", m_seedCommand->GetState().val);
-		m_generator.seed(m_seedCommand->GetState().val);
-	}
 
 	// End the game if in playback mode and the file is done
 	if (m_pCommandManager->IsEndOfPlayback())

@@ -10,7 +10,6 @@ namespace geng::serial
 {
 
 	// Files with header and checksum support
-	using TFormatVersion = uint32_t;
 	using TChecksumCoefficientGenerator = std::mt19937_64;
 	using TChecksumWord = uint64_t;
 
@@ -40,6 +39,11 @@ namespace geng::serial
 		{
 			return std::move(m_pFile);
 		}
+
+		TFormatVersion GetFormatVersion() const override
+		{
+			return m_version;
+		}
 	protected:
 		FileStreamBase(FileUPtr&& pFile, const FileStreamHeader* pHeader)
 			:m_pFile(std::move(pFile))
@@ -67,10 +71,17 @@ namespace geng::serial
 		{
 			return m_header.value();
 		}
+
+		void SetFormatVersion(TFormatVersion version)
+		{
+			m_version = version;
+		}
+		
 	private:
 		FileUPtr  m_pFile;
 		bool m_streamValid{ false };
 		std::optional<FileStreamHeader>  m_header;
+		TFormatVersion m_version{ 0 };
 	};
 
 	struct ChecksumRecord
@@ -96,7 +107,6 @@ namespace geng::serial
 	private:
 		bool ProcessHeader();
 
-		TFormatVersion m_version{ 0 };
 		FileValidityCheckResult m_checkResult{ FileValidityCheckResult::NoFile };
 	};
 

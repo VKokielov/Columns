@@ -25,8 +25,9 @@ namespace geng::serial
 		};
 	public:
 		FileCommandWriter(FileUPtr&& pFile,
-			const std::vector<std::shared_ptr<ISerializableCommand> >&
-			commandList);
+			const std::shared_ptr<IPacket>& pDescriptionPacket,
+			const std::vector<std::shared_ptr<ISerializableCommand> >& commandList,
+			const FileStreamHeader* pStreamHeader);
 
 		// This is done thus strangely to avoid declaring the class enable_shared_from_this
 		// simply for this one step
@@ -56,6 +57,8 @@ namespace geng::serial
 		void SaveFrame(bool lastFrame);
 
 		FileWriteStream m_fileStream;
+		bool m_hasChecksum{ false };
+
 		std::vector<Command_>   m_commands;
 		unsigned long m_currentFrame{ 0 };
 

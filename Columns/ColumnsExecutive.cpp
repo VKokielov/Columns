@@ -19,9 +19,9 @@ geng::columns::ColumnsExecutive::ColumnsExecutive(const ExecutiveSettings& setti
 	m_pGame()
 {
 	m_initialized = true;
-	m_inputArgs.pbMode = settings.pbMode;
-	m_inputArgs.fileName = settings.pbFileName;
-	m_inputArgs.userPlayer = 0;
+	m_columnsArgs.inputArgs.pbMode = settings.pbMode;
+	m_columnsArgs.inputArgs.fileName = settings.pbFileName;
+	m_columnsArgs.inputArgs.userPlayer = 0;
 }
 
 bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pGame)
@@ -88,13 +88,13 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 
 	// Preinitialize, but do not yet use, the columns sim arguments
 
-	m_simArgs.boardSize.x = 9;
-	m_simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
-	m_simArgs.columnSize = 3;
-	// NOTE:  This speed may change!
-	m_simArgs.dropMilliseconds = 600;
-	m_simArgs.flashMilliseconds = 300;
-	m_simArgs.flashCount = 3;
+	m_columnsArgs.simArgs.boardSize.x = 9;
+	m_columnsArgs.simArgs.boardSize.y = 24 + 3;  // 3 invisible squares on top
+	m_columnsArgs.simArgs.columnSize = 3;
+	//NOTE:  This speed may change!
+	m_columnsArgs.simArgs.dropMilliseconds = 600;
+	m_columnsArgs.simArgs.flashMilliseconds = 300;
+	m_columnsArgs.simArgs.flashCount = 3;
 
 	m_pSim = std::make_shared<geng::columns::ColumnsSim>();
 	pGame->AddComponent(m_pSim);
@@ -213,14 +213,17 @@ void geng::columns::ColumnsExecutive::OnEnterState(ActiveGameState& ags)
 			pGame->SetFrameIndex(m_simContextId, 0);
 		}
 
-		m_pColumnsInput->OnStartGame(m_inputArgs);
-		m_pSim->OnStartGame(m_simArgs);
+		m_pColumnsInput->OnStartGame(m_columnsArgs);
+		m_pSim->OnStartGame();
 		m_pSDLRenderer->OnStartGame();
 
-		// Begin execution
-		if (pGame)
+		if (!m_startGameError)
 		{
-			pGame->SetRunState(m_simContextId, true);
+			// Begin execution
+			if (pGame)
+			{
+				pGame->SetRunState(m_simContextId, true);
+			}
 		}
 	}
 	else if (IsPausedState(m_prevContextState))
@@ -270,6 +273,13 @@ void geng::columns::ColumnsExecutive::OnFrame(NoGameState&, const SimState& rSim
 }
 void geng::columns::ColumnsExecutive::OnFrame(ActiveGameState&, const SimState& rState)
 {
+	// Throw myself right back into no-game if start failed
+	if (m_startGameError)
+	{
+		m_startGameError = false;
+		Transition<NoGameState>(*this);
+	}
+
 	if (m_cheatsEnabled)
 	{
 		UpdateCheatState(rState.execSimulatedTime);
@@ -437,6 +447,20 @@ void geng::columns::ColumnsExecutive::AddCheat(const char* pText, CheatKey key)
 	m_cheatTrie.AddEntry(pText, key);
 }
 
+void geng::columns::ColumnsExecutive::StartGameError(const char* pError)
+{
+	if (pError)
+	{
+		auto pGame = m_pGame.lock();
+		if (pGame)
+		{
+			pGame->LogError(pError);
+		}
+	}
+
+	m_startGameError = true;
+}
+
 const char* geng::columns::ColumnsExecutive::GetDropActionName()
 {
 	return "DropColumnAction";
@@ -476,4 +500,8 @@ const char* geng::columns::ColumnsExecutive::GetColumnsInputComponentName()
 const char* geng::columns::ColumnsExecutive::GetExecutiveName()
 {
 	return "ColumnsExecutive";
+}
+const char* geng::columns::ColumnsExecutive::GetGameName()
+{
+	return "Columns";
 }

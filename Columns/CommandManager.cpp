@@ -2,8 +2,15 @@
 #include "FileCommandReader.h"
 #include "FileCommandWriter.h"
 
+#include <sstream>
+
 geng::CommandManager::CommandManager(PlaybackMode pbMode,
 	const char* pPBFile,
+	const char* pGameName,
+	uint32_t formatVersion,
+	uint32_t minVersion,
+	bool allowUnsafePlayback,
+	const std::shared_ptr<serial::IPacket>& pDescriptionPacket,
 	const std::vector<CommandDesc>& cmdList)
 	:m_playbackMode(pbMode),
 	m_fileName(pPBFile)
@@ -20,10 +27,7 @@ geng::CommandManager::CommandManager(PlaybackMode pbMode,
 		}
 
 		Command_ cmdInManager;
-
 		cmdInManager.pCommand = cmdDesc.m_pCommand;
-		
-
 		commandList.emplace_back(cmdInManager.pCommand);
 
 		if (UserControl(pbMode))
@@ -43,7 +47,12 @@ geng::CommandManager::CommandManager(PlaybackMode pbMode,
 	}
 
 	// Open the file if applicable.  For reading, create the playback streams
-	if (!OpenFile(commandList))
+	if (!OpenFile(pGameName, 
+		formatVersion, 
+		minVersion, 
+		allowUnsafePlayback, 
+		pDescriptionPacket, 
+		commandList))
 	{
 		return;
 	}
@@ -114,8 +123,22 @@ void geng::CommandManager::EndSession()
 	m_playbackMode = PlaybackMode::Ended;
 }
 
-bool geng::CommandManager::OpenFile(const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList)
+bool geng::CommandManager::OpenFile(
+	const char* pGameName,
+	uint32_t formatVersion,
+	uint32_t minVersion,
+	bool allowUnsafePlayback,
+	const std::shared_ptr<serial::IPacket>& pDescriptionPacket,
+	const std::vector<std::shared_ptr<serial::ISerializableCommand> >& commandList)
 {
+	serial::FileStreamHeader hdrDesc;
+	
+	hdrDesc.headerConstant = "DemoFile_";
+	hdrDesc.headerConstant += pGameName;
+	hdrDesc.versionNo = formatVersion;
+	hdrDesc.hasChecksum = true;
+	hdrDesc.checksumSeed = SEED_DEMO_CHECKSUM;
+
 	if (HasFile(m_playbackMode))
 	{
 		// Open the file
@@ -139,18 +162,42 @@ bool geng::CommandManager::OpenFile(const std::vector<std::shared_ptr<serial::IS
 		if (m_playbackMode == PlaybackMode::Playback)
 		{
 			m_pReader = std::make_shared<serial::FileCommandReader>
-								(std::move(filePtr), commandList);
+								(std::move(filePtr), pDescriptionPacket, commandList, &hdrDesc);
 
 			if (!m_pReader->IsValid())
 			{
 				m_error = m_pReader->GetError();
 				return false;
 			}
+
+			// Check the version
+			if (m_pReader->GetFormatVersion() < minVersion)
+			{
+				std::stringstream ssm;
+				ssm << "Minimum format version required for playback is " << minVersion << "; file version is "
+					<< m_pReader->GetFormatVersion();
+				m_error = ssm.str();
+				return false;
+			}
+
+			m_playbackFormatVersion = m_pReader->GetFormatVersion();
+
+			// Check the checksum status.
+			if (m_pReader->GetChecksumStatus() != serial::FileChecksumStatus::FileChecksumOK)
+			{
+				if (!allowUnsafePlayback)
+				{
+					m_error = "Cannot replay demo with no checksum/invalid checksum";
+					return false;
+				}
+				
+				m_unsafePlayback = true;
+			}
 		}
 		else
 		{
 			m_pWriter = std::make_shared<serial::FileCommandWriter>
-								(std::move(filePtr), commandList);
+								(std::move(filePtr), pDescriptionPacket, commandList, &hdrDesc);
 			if (!m_pWriter->IsValid())
 			{
 				m_error = m_pWriter->GetError();

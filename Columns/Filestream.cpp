@@ -14,6 +14,10 @@ geng::serial::FileReadStream::FileReadStream(FileUPtr&& pFile, const FileStreamH
 			return;
 		}
 	}
+	else
+	{
+		m_checkResult = FileValidityCheckResult::OK;
+	}
 
 	SetValid(true);
 }
@@ -58,12 +62,15 @@ bool geng::serial::FileReadStream::ProcessHeader()
 	}
 
 	// Read in the version (always present in the header)
-	if (fread(&m_version, sizeof(TFormatVersion), 1, GetFile())
+	TFormatVersion formatVersion;
+	if (fread(&formatVersion, sizeof(TFormatVersion), 1, GetFile())
 		< 1)
 	{
 		m_checkResult = FileValidityCheckResult::HeaderError;
 		return false;
 	}
+
+	FileStreamBase<IReadStream>::SetFormatVersion(formatVersion);
 
 	// Checksum
 	if (hdrSettings.hasChecksum)
@@ -146,6 +153,8 @@ geng::serial::FileWriteStream::FileWriteStream(FileUPtr&& pFile, const FileStrea
 	if (FileStreamBase<IWriteStream>::HasHeader())
 	{
 		const FileStreamHeader& hdrSettings = FileStreamBase<IWriteStream>::GetHeader();
+		FileStreamBase<IWriteStream>::SetFormatVersion(hdrSettings.versionNo);
+
 		if (hdrSettings.hasChecksum)
 		{
 			m_computeChecksum = true;

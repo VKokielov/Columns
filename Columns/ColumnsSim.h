@@ -46,22 +46,6 @@ namespace geng::columns
 		bool wasRemoved;
 		std::array<unsigned int, 4>   seqNumbers;
 	};
-
-	struct Point
-	{
-		unsigned int x;
-		unsigned int y;
-
-		bool operator ==(const Point& rhs) const
-		{
-			return x == rhs.x && y == rhs.y;
-		}
-
-		bool operator ==(const Point& rhs)
-		{
-			return x == rhs.x && y == rhs.y;
-		}
-	};
 	
 	struct PointDelta
 	{
@@ -129,16 +113,6 @@ namespace geng::columns
 		}
 	};
 
-	struct ColumnsSimArgs
-	{
-		Point boardSize;
-		unsigned int columnSize;
-		unsigned int dropMilliseconds;
-		unsigned int flashMilliseconds;
-		unsigned int flashCount;
-		unsigned int actionThrottlePeriod;
-		unsigned int dropThrottlePeriod;
-	};
 
 	class ColumnsSim : public IGameListener, 
 						public BaseGameComponent,
@@ -255,7 +229,7 @@ namespace geng::columns
 		ColumnsSim();
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
-		void OnStartGame(const ColumnsSimArgs& args);
+		void OnStartGame();
 		void OnPauseGame(bool pauseState);
 		void OnEndGame();
 
@@ -373,7 +347,7 @@ namespace geng::columns
 		}
 
 		// _Overall state_
-		void LoadArgs(const ColumnsSimArgs& args);
+		void LoadArgs(const SimArgs& args);
 
 		// _Grid operations_ 
 

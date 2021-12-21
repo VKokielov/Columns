@@ -62,6 +62,7 @@ namespace geng::columns
 		static const char* GetColumnsInputBridgeName();
 		static const char* GetColumnsInputComponentName();
 		static const char* GetExecutiveName();
+		static const char* GetGameName();
 
 		// State changes
 		template<typename ... Args>
@@ -124,6 +125,8 @@ namespace geng::columns
 			m_cheatKey.reset();
 			m_cheatState = CHEAT_TRIE_ROOT;
 		}
+
+		void StartGameError(const char* pError);
 	private:
 		static void MapActions(ActionMapper& rMapper,
 							std::vector<ActionDesc>& columnsActions,
@@ -142,6 +145,7 @@ namespace geng::columns
 		void SetupCheats(IInput* pInput);
 
 		bool m_initialized{ false };
+		bool m_startGameError{ false };
 
 		std::weak_ptr<IGame> m_pGame;
 		std::shared_ptr<sdl::Input>  m_pInput;
@@ -150,8 +154,11 @@ namespace geng::columns
 		// TODO:  Generalize the game start/end interfaces!
 		std::shared_ptr<ColumnsSDLRenderer> m_pSDLRenderer;
 		
+		/*
 		geng::columns::InputArgs m_inputArgs;
-		geng::columns::ColumnsSimArgs m_simArgs;
+		geng::columns::SimArgs m_simArgs;
+		*/
+		geng::columns::ColumnsArgs m_columnsArgs;
 
 		ContextID m_simContextId;
 		ContextState m_contextState{ ContextState::NoGame };

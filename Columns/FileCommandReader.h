@@ -15,6 +15,13 @@ namespace geng::serial
 		FilePlaybackComplete // only upon receiving an ending packet and arriving at the corresponding frame
 	};
 
+	enum class FileChecksumStatus
+	{
+		FileChecksumOK,
+		FileNoChecksum,
+		FileChecksumInvalid
+	};
+
 	// This is not a random-seek set of streams
 	// If the Update() functions in this class submit a frame out of order, the 
 	// whole thing will fail
@@ -51,8 +58,10 @@ namespace geng::serial
 		// have counterparts 
 
 		FileCommandReader(FileUPtr&& pFile,
+						  const std::shared_ptr<IPacket>& pDescriptionPacket,
 						  const std::vector<std::shared_ptr<ISerializableCommand> >&
-								commandList);
+								commandList,
+						  const FileStreamHeader* pStreamHeader);
 
 		std::shared_ptr<ICommandStream> GetCommandStream(const char* pCommandKey);
 
@@ -62,6 +71,13 @@ namespace geng::serial
 		bool IsWrappedUp() const {
 			return m_filePBStatus == FilePlaybackStatus::FilePlaybackComplete;
 		}
+
+		FileChecksumStatus GetChecksumStatus() const
+		{
+			return m_fileChecksumStatus;
+		}
+
+		uint32_t GetFormatVersion() const { return m_formatVersion; }
 
 	private:
 		unsigned long CurrentFrame() const { return m_currentFrame; }
@@ -80,6 +96,9 @@ namespace geng::serial
 		// with an explicitly zero-set of deltas
 
 		FilePlaybackStatus  m_filePBStatus{ FilePlaybackStatus::FileError };
+		FileChecksumStatus  m_fileChecksumStatus{ FileChecksumStatus::FileNoChecksum };
+		uint32_t m_formatVersion{ 0 };
+
 		std::string m_error;
 
 		// Map of command keys to command vector entries
