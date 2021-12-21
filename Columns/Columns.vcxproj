@@ -173,7 +173,9 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="BaseResource.cpp" />
     <ClCompile Include="CheatTrie.cpp" />
+    <ClCompile Include="ChecksumCalc.cpp" />
     <ClCompile Include="Columns.cpp" />
+    <ClCompile Include="ColumnsData.cpp" />
     <ClCompile Include="ColumnsExecutive.cpp" />
     <ClCompile Include="ColumnsInput.cpp" />
     <ClCompile Include="ColumnsSDLRenderer.cpp" />
@@ -206,6 +208,8 @@
     <ClInclude Include="BaseResource.h" />
     <ClInclude Include="Bytestream.h" />
     <ClInclude Include="CheatTrie.h" />
+    <ClInclude Include="ChecksumCalc.h" />
+    <ClInclude Include="ColumnsData.h" />
     <ClInclude Include="ColumnsExecutive.h" />
     <ClInclude Include="ColumnsInput.h" />
     <ClInclude Include="ColumnsSDLRenderer.h" />

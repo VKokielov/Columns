@@ -57,13 +57,17 @@ geng::serial::FileCommandReader::FileCommandReader(FileUPtr&& pFile,
 			case FileValidityCheckResult::SignatureMismatch:
 				m_error = "Does not appear to be a playback file for this application";
 				return;
-			case FileValidityCheckResult::OK:
-				m_fileChecksumStatus = FileChecksumStatus::FileChecksumOK;
+			case FileValidityCheckResult::NoChecksumWritten:
+				m_fileChecksumStatus = FileChecksumStatus::FileNoChecksum;
 				break;
 			case FileValidityCheckResult::ChecksumError:
 				m_fileChecksumStatus = FileChecksumStatus::FileChecksumInvalid;
 				break;
 		}
+	}
+	else
+	{
+		m_fileChecksumStatus = FileChecksumStatus::FileChecksumOK;
 	}
 
 	if (pHeader)

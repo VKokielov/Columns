@@ -6,6 +6,7 @@
 #include "ActionTranslator.h"
 #include "CommandManager.h"
 #include "DataPacket.h"
+#include "ColumnsData.h"
 
 #include <vector>
 #include <memory>
@@ -14,50 +15,6 @@
 namespace geng::columns
 {
 	class ColumnsExecutive;
-
-	using RandomSeedType = unsigned long long;
-
-	// TODO:  Move these data structures all out into one common header
-	struct Point
-	{
-		unsigned int x;
-		unsigned int y;
-
-		bool operator ==(const Point& rhs) const
-		{
-			return x == rhs.x && y == rhs.y;
-		}
-
-		bool operator ==(const Point& rhs)
-		{
-			return x == rhs.x && y == rhs.y;
-		}
-	};
-
-	struct SimArgs
-	{
-		Point boardSize;
-		unsigned int columnSize;
-		unsigned int dropMilliseconds;
-		unsigned int flashMilliseconds;
-		unsigned int flashCount;
-		unsigned int actionThrottlePeriod;
-		unsigned int dropThrottlePeriod;
-		RandomSeedType randomSeed;
-	};
-
-	struct InputArgs
-	{
-		PlaybackMode pbMode;
-		std::string fileName;
-		unsigned int userPlayer;
-	};
-
-	struct ColumnsArgs
-	{
-		InputArgs inputArgs;
-		SimArgs simArgs;
-	};
 
 	struct ActionDesc
 	{
@@ -70,7 +27,6 @@ namespace geng::columns
 		{ }
 	};
 
-	using ActionCommandID = size_t;
 
 	class ColumnsInput : public IGameListener,
 		public BaseGameComponent

@@ -17,14 +17,6 @@ namespace geng
 		class FileCommandWriter;
 	}
 
-	enum class PlaybackMode
-	{
-		None,
-		Record,
-		Playback,
-		Ended
-	};
-
 	// TODO: Should this be an argument?
 	constexpr unsigned long long
 		SEED_DEMO_CHECKSUM = 0x0102040509080a0f;

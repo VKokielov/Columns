@@ -163,6 +163,18 @@ bool geng::CommandManager::OpenFile(
 		{
 			m_pReader = std::make_shared<serial::FileCommandReader>
 								(std::move(filePtr), pDescriptionPacket, commandList, &hdrDesc);
+			
+			// Check the checksum status before anything else
+			if (m_pReader->GetChecksumStatus() != serial::FileChecksumStatus::FileChecksumOK)
+			{
+				if (!allowUnsafePlayback)
+				{
+					m_error = "Cannot replay demo with no checksum/invalid checksum";
+					return false;
+				}
+
+				m_unsafePlayback = true;
+			}
 
 			if (!m_pReader->IsValid())
 			{
@@ -181,18 +193,6 @@ bool geng::CommandManager::OpenFile(
 			}
 
 			m_playbackFormatVersion = m_pReader->GetFormatVersion();
-
-			// Check the checksum status.
-			if (m_pReader->GetChecksumStatus() != serial::FileChecksumStatus::FileChecksumOK)
-			{
-				if (!allowUnsafePlayback)
-				{
-					m_error = "Cannot replay demo with no checksum/invalid checksum";
-					return false;
-				}
-				
-				m_unsafePlayback = true;
-			}
 		}
 		else
 		{

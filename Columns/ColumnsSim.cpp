@@ -725,8 +725,6 @@ void geng::columns::ColumnsSim::LoadArgs(const SimArgs& args)
 	m_flashCount = args.flashCount;
 	m_gameGrid.reset(new GridSquare[args.boardSize.x * args.boardSize.y]);
 	m_gameGridSize = args.boardSize.x * args.boardSize.y;
-	m_throttlePeriod = args.actionThrottlePeriod;
-	m_dropThrottlePeriod = args.dropThrottlePeriod;
 
 	m_paramsInit = true;
 }

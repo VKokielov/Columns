@@ -7,7 +7,7 @@
 #include "CommandManager.h"
 #include "SharedValueCommand.h"
 #include "ActionCommands.h"
-#include "ColumnsInput.h"
+#include "ColumnsData.h"
 
 #include <memory>
 #include <array>
@@ -18,6 +18,8 @@ namespace geng::columns
 {
 	// Forward declaration for the pointer
 	class ColumnsExecutive;
+
+	class ColumnsInput;
 
 	using GridContents = int;
 

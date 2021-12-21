@@ -4,7 +4,6 @@
 
 namespace geng::serial
 {
-
 	// An implementation of IPacket representing a single piece of data for which EncodeData<>
 	// has been defined and works correctly
 
@@ -29,12 +28,12 @@ namespace geng::serial
 
 		bool Write(IWriteStream* pStream) override
 		{
-			return EncodeData<T>(pStream, m_val);
+			return EncodeData(pStream, m_val);
 		}
 		
 		bool Read(IReadStream* pStream) override
 		{
-			return DecodeData<T>(pStream, m_val);
+			return DecodeData(pStream, m_val);
 		}
 
 	private:

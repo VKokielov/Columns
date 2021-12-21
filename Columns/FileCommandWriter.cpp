@@ -76,6 +76,7 @@ void geng::serial::FileCommandWriter::BeginFrame(unsigned long currentFrame)
 void geng::serial::FileCommandWriter::OnCommandChanged(SubID subId,
 	const ICommand& cmd)
 {
+//	fprintf(stderr, "cmdwriter %p subid %llu commands size %llu\n", this, subId, m_commands.size());
 	Command_& cmdObject = m_commands[subId];
 
 	bool hadDelta{ false };

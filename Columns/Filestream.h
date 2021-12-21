@@ -2,6 +2,7 @@
 
 #include "FileUtils.h"
 #include "Bytestream.h"
+#include "ChecksumCalc.h"
 #include <optional>
 #include <string>
 #include <random>
@@ -9,9 +10,6 @@
 namespace geng::serial
 {
 
-	// Files with header and checksum support
-	using TChecksumCoefficientGenerator = std::mt19937_64;
-	using TChecksumWord = uint64_t;
 
 	struct FileStreamHeader
 	{
@@ -125,17 +123,10 @@ namespace geng::serial
 		bool Flush() override;
 
 	private:
-		bool m_computeChecksum{ false };
 		bool m_headerWritten{ false };
 		long int m_checksumPos{ 0 };
 
-		bool UpdateChecksum(const void* pBuff, size_t byteCount);
-		void AddToChecksum(TChecksumWord qword);
-
-		TChecksumWord m_oddData;
-		size_t m_leftoverCount;
-		TChecksumWord m_runningChecksum{ 0 };
-		std::optional<TChecksumCoefficientGenerator>  m_generator;
+		std::optional<ChecksumCalculator> m_checksumCalc;
 	};
 
 }

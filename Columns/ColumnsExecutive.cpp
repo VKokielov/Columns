@@ -44,7 +44,7 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 	
 	ThrottleSettings throttleSettings;
 	throttleSettings.dropThrottlePeriod = 100;
-	throttleSettings.nonDropThrottlePeriod = 250;
+	throttleSettings.nonDropThrottlePeriod = 300;
 
 	auto pActionMapper = std::static_pointer_cast<ActionMapper>(setup::InitializeActionMapper(pGame.get(), GetActionMapperName()));
 	std::vector<ActionDesc>  actionDescriptions;

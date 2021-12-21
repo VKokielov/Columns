@@ -13,8 +13,11 @@
 
 using namespace std;
 
-const char* RecordArgumentName() { return "record"; };
-const char* PlaybackArgumentName() { return "playback"; }
+namespace
+{
+	const char* RecordArgumentName() { return "record"; };
+	const char* PlaybackArgumentName() { return "playback"; }
+}
 
 bool InitSDL()
 {

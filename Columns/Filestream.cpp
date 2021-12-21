@@ -1,5 +1,9 @@
 #include "Filestream.h"
 #include "Packet.h"
+#include "ChecksumCalc.h"
+#include <cstring>
+
+#include <cassert>
 
 // FileReadStream
 geng::serial::FileReadStream::FileReadStream(FileUPtr&& pFile, const FileStreamHeader* pHeader)
@@ -79,7 +83,7 @@ bool geng::serial::FileReadStream::ProcessHeader()
 		// if it's here -- and verify
 		ChecksumRecord  csRecord{ false, 0 };
 
-		if (fread(&csRecord, sizeof(csRecord), 1, GetFile()) != sizeof(csRecord))
+		if (fread(&csRecord, sizeof(csRecord), 1, GetFile()) != 1)
 		{
 			m_checkResult = FileValidityCheckResult::HeaderError;
 			return false;
@@ -92,31 +96,31 @@ bool geng::serial::FileReadStream::ProcessHeader()
 		}
 
 		// Compute the complete checksum and verify it
-		TChecksumCoefficientGenerator coeffGenerator;
+		ChecksumCalculator checksumCalc;
+		
+		checksumCalc.Seed(hdrSettings.checksumSeed);
+
 		long curPos = ftell(GetFile());
 		bool hasData{ true };
-
-		coeffGenerator.seed(hdrSettings.checksumSeed);
-
-		TChecksumWord runningChecksum{ 0 };
+		
+		std::array<uint8_t, sizeof(TChecksumWord)>  csBite;
 		while (hasData)
 		{
-			TChecksumWord curWord{ 0 };
-			size_t readBytes = fread(&curWord, sizeof(uint8_t), sizeof(TChecksumWord),
+			size_t readBytes = fread(&csBite, sizeof(uint8_t), sizeof(TChecksumWord),
 				GetFile());
 
 			hasData = readBytes == sizeof(TChecksumWord);
 
-			if (readBytes > 0)
-			{
-				runningChecksum += coeffGenerator() * curWord;
-			}
+			checksumCalc.UpdateChecksum(csBite.data(), readBytes);
 		}
 
-		if (runningChecksum != csRecord.checksumVal)
+		TChecksumWord resultChecksum = checksumCalc.FinalizeChecksum();
+		if (resultChecksum != csRecord.checksumVal)
 		{
 			m_checkResult = FileValidityCheckResult::ChecksumError;
 		}
+
+		fseek(GetFile(), curPos, SEEK_SET);
 	}
 
 	return true;
@@ -157,9 +161,8 @@ geng::serial::FileWriteStream::FileWriteStream(FileUPtr&& pFile, const FileStrea
 
 		if (hdrSettings.hasChecksum)
 		{
-			m_computeChecksum = true;
-			m_generator.emplace();
-			m_generator->seed(hdrSettings.checksumSeed);
+			m_checksumCalc.emplace();
+			m_checksumCalc->Seed(hdrSettings.checksumSeed);
 		}
 	}
 
@@ -176,7 +179,6 @@ bool geng::serial::FileWriteStream::CanWrite(size_t byteCount)
 	return true;
 }
 
-
 size_t geng::serial::FileWriteStream::Write(const void* pBuff, size_t byteCount)
 {
 	if (!IsValid())
@@ -184,9 +186,9 @@ size_t geng::serial::FileWriteStream::Write(const void* pBuff, size_t byteCount)
 		return 0;
 	}
 
-	if (m_computeChecksum)
+	if (m_checksumCalc.has_value())
 	{
-		if (!UpdateChecksum(pBuff, byteCount))
+		if (!m_checksumCalc->UpdateChecksum(pBuff, byteCount))
 		{
 			return 0;
 		}
@@ -227,7 +229,7 @@ bool geng::serial::FileWriteStream::WriteHeader()
 
 		// Write the version number
 		if (fwrite(&hdrSettings.versionNo, sizeof(hdrSettings.versionNo), 1, GetFile())
-			!= sizeof(hdrSettings.versionNo))
+			!= 1)
 		{
 			return false;
 		}
@@ -237,7 +239,7 @@ bool geng::serial::FileWriteStream::WriteHeader()
 
 		static ChecksumRecord blankChecksum{};
 		if (fwrite(&blankChecksum, sizeof(blankChecksum), 1, GetFile())
-			!= sizeof(blankChecksum))
+			!= 1)
 		{
 			return false;
 		}
@@ -248,82 +250,23 @@ bool geng::serial::FileWriteStream::WriteHeader()
 	return false;
 }
 
-void geng::serial::FileWriteStream::AddToChecksum(TChecksumWord qword)
-{
-	if (!m_computeChecksum)
-	{
-		return;
-	}
-
-	TChecksumWord genIndex = (*m_generator)();
-	m_runningChecksum += qword * genIndex;
-}
-
-bool geng::serial::FileWriteStream::UpdateChecksum(const void* pBuff, size_t byteCount)
-{
-	// NOTE:  If byteCount == 0, pBuff is ignored (never read)
-
-	// First "paste" the odd bytes into the right position
-	const uint8_t* pByteBuff = static_cast<const uint8_t*>(pBuff);
-	if (m_leftoverCount > 0)
-	{
-		TChecksumWord startOddBytes{ 0 };
-
-		size_t numToRead = std::min(sizeof(uint64_t) - m_checksumPos, byteCount);
-		if (numToRead > 0)
-		{
-			memcpy(&startOddBytes, pBuff, numToRead);
-			pByteBuff += numToRead;
-			byteCount -= numToRead;
-		}
-
-		TChecksumWord csEntry = m_oddData | startOddBytes;
-		AddToChecksum(csEntry);
-		m_leftoverCount = 0;
-	}
-
-	while (byteCount >= sizeof(TChecksumWord))
-	{
-		AddToChecksum(*(reinterpret_cast<const TChecksumWord*>(pByteBuff)));
-		pByteBuff += sizeof(TChecksumWord);
-		byteCount -= sizeof(TChecksumWord);
-	}
-
-	if (byteCount > 0)
-	{
-		m_oddData = 0;
-		memcpy(&m_oddData, pByteBuff, byteCount);
-	}
-
-	m_leftoverCount = byteCount;
-	return true;
-}
-
 bool geng::serial::FileWriteStream::WriteChecksum()
 {
-	if (!m_computeChecksum)
+	if (m_checksumCalc.has_value())
 	{
-		return false;
-	}
+		// Go to the beginning, where the checksum needs to be recorded
+		if (fseek(GetFile(), m_checksumPos, SEEK_SET) < 0)
+		{
+			return false;
+		}
 
-	// Complete the last part of the checksum if it's missing
-	if (m_leftoverCount > 0)
-	{
-		AddToChecksum(m_oddData);
-	}
-
-	// Go to the beginning, where the checksum needs to be recorded
-	if (fseek(GetFile(), m_checksumPos, SEEK_SET) < 0)
-	{
-		return false;
-	}
-
-	// Record the checksum
-	ChecksumRecord csRecord{ true, m_runningChecksum };
-	if (fwrite(&csRecord, sizeof(csRecord), 1, GetFile())
-		!= sizeof(csRecord))
-	{
-		return false;
+		ChecksumRecord csRecord{ true, m_checksumCalc->FinalizeChecksum() };
+		// Record the checksum
+		if (fwrite(&csRecord, sizeof(csRecord), 1, GetFile())
+			!= 1)
+		{
+			return false;
+		}
 	}
 
 	return true;
