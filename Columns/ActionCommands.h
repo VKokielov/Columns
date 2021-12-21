@@ -52,7 +52,7 @@ namespace geng
 			}
 			*/
 
-			if (frameIndex == 1 || 
+			if (frameIndex == 0 || 
 				m_prevState != curCommandState)
 			{
 				// This will also invoke relevant listeners

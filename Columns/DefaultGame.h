@@ -216,6 +216,10 @@ namespace geng
 		unsigned long m_frameCountAtSecondSwitch{ 0 };
 		unsigned long m_actualFPS{ 0 };
 		unsigned long m_msLastSecondTime{ 0 };
+
+		// This flag indicates that executive listeners are executing and that run state, focus, etc
+		// changes should be applied to *this* frame and not the next one
+		bool m_callingExecutive{ false };
 	};
 
 }

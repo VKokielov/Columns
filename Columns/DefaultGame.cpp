@@ -329,7 +329,7 @@ bool geng::DefaultGame::SetVisibility(ContextID contextId, bool value)
 
 
 	m_contexts[contextId].m_nextVisible = value;
-	if (m_simState.execFrameCount == 0)
+	if (m_callingExecutive)
 	{
 		m_contexts[contextId].contextState.visibility.curValue = value;
 	}
@@ -346,7 +346,7 @@ bool geng::DefaultGame::SetRunState(ContextID contextId, bool value)
 	}
 
 	m_contexts[contextId].m_nextRun = value;
-	if (m_simState.execFrameCount == 0)
+	if (m_callingExecutive)
 	{
 		m_contexts[contextId].contextState.runstate.curValue = value;
 	}
@@ -375,7 +375,7 @@ bool geng::DefaultGame::SetFocus(ContextID contextId)
 
 	if (contextId != EXECUTIVE_CONTEXT)
 	{
-		if (m_simState.execFrameCount == 0)
+		if (m_callingExecutive)
 		{
 			m_contexts[contextId].contextState.focus.curValue = true;
 		}
@@ -477,7 +477,9 @@ void geng::DefaultGame::RunGameLoop()
 	while (m_isActive)
 	{
 		// Executive listeners
+		m_callingExecutive = true;
 		m_executiveListeners.OnFrame(m_simState, nullptr);
+		m_callingExecutive = false;
 
 		//UpdateContextStateBefore();
 		ContextInputCallbacks();
@@ -515,7 +517,9 @@ void geng::DefaultGame::RunGameLoop()
 			while (m_simState.execSimulatedTime < m_msActualTime)
 			{
 				m_simState.catchingUp = true;
+				m_callingExecutive = true;
 				m_executiveListeners.OnFrame(m_simState, nullptr);
+				m_callingExecutive = false;
 
 				//UpdateContextStateBefore();
 				ContextInputCallbacks();
