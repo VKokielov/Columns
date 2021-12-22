@@ -17,6 +17,11 @@ namespace geng::data
 			return m_datumType;
 		}
 
+		bool IsImmutable() const override
+		{
+			return true;
+		}
+
 	protected:
 		BaseView(const std::shared_ptr<I>& pDatum,
 			BaseDatumType datumType)
@@ -140,6 +145,12 @@ namespace geng::data
 
 	inline std::shared_ptr<IDatum> MakeViewDynamic(const std::shared_ptr<IDatum>& pDatum)
 	{
+		if (pDatum->IsImmutable())
+		{
+			// Of course immutables are idempotent
+			return pDatum;
+		}
+
 		BaseDatumType datumType = pDatum->GetDatumType();
 		switch (datumType)
 		{
@@ -149,6 +160,12 @@ namespace geng::data
 			return MakeView(std::static_pointer_cast<IDictDatum>(pDatum));
 		case BaseDatumType::List:
 			return MakeView(std::static_pointer_cast<IListDatum>(pDatum));
+		case BaseDatumType::Object:
+			std::shared_ptr<IDatum> pSafeDatum{ std::static_pointer_cast<IObjectDatum>(pDatum)->MakeView() };
+			return pSafeDatum;
 		}
+
+		// The "null" case
+		return std::shared_ptr<IDatum>();
 	}
 }

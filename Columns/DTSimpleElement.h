@@ -46,6 +46,7 @@ namespace geng::data::simple
 
 	public:
 		BaseDatumType GetDatumType() const override;
+		bool IsImmutable() const override;
 		ElementType GetElementType() const override;
 
 		bool Get(bool& rDatum) const override;

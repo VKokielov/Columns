@@ -5,6 +5,12 @@ geng::data::BaseDatumType impl_ns::List::GetDatumType() const
 {
 	return BaseDatumType::List;
 }
+
+bool impl_ns::List::IsImmutable() const
+{
+	return false;
+}
+
 size_t impl_ns::List::GetLength() const
 {
 	return m_list.size();

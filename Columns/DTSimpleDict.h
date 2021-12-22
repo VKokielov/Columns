@@ -9,6 +9,8 @@ namespace geng::data::simple
 	{
 	public:
 		BaseDatumType GetDatumType() const override;
+		bool IsImmutable() const override;
+
 		bool HasEntry(const char* pKey) const override;
 		bool GetEntry(const char* pKey, std::shared_ptr<IDatum>& rChild) const override;
 		bool Iterate(IDictCallback& rCallback) const override;

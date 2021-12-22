@@ -13,7 +13,8 @@ namespace geng::data
 	{
 		Element,
 		Dictionary,
-		List
+		List,
+		Object
 	};
 
 	enum class ElementType
@@ -40,6 +41,7 @@ namespace geng::data
 	public:
 		virtual ~IDatum() = default;
 		virtual BaseDatumType GetDatumType() const = 0;
+		virtual bool IsImmutable() const = 0;
 	};
 
 	class IElementDatum : public IDatum
@@ -86,7 +88,7 @@ namespace geng::data
 	class IDictCallback
 	{
 	public:
-		virtual ~IDictCallback() = 0;
+		virtual ~IDictCallback() = default;
 		virtual bool OnEntry(const char* pKey, const std::shared_ptr<IDatum>& pChild) = 0;
 	};
 
@@ -117,6 +119,13 @@ namespace geng::data
 			size_t indexBefore = LIST_NPOS) = 0;
 		virtual bool SetEntry(const std::shared_ptr<IDatum>& pEntry,
 			size_t indexAt) = 0;
+	};
+
+	class IObjectDatum : public IDatum
+	{
+	public:
+		virtual const char* GetObjectType() const = 0;
+		virtual IObjectDatum* MakeView() const = 0;
 	};
 
 	class IDatumFactories

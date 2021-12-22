@@ -8,6 +8,8 @@ namespace geng::data::simple
 	{
 	public:
 		BaseDatumType GetDatumType() const override;
+		bool IsImmutable() const override;
+
 		size_t GetLength() const override;
 		bool GetEntry(size_t idx, std::shared_ptr<IDatum>& rChild) const override;
 		bool GetRange(std::vector<std::shared_ptr<IDatum> >& rSequence,

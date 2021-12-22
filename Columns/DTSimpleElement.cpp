@@ -7,6 +7,11 @@ geng::data::BaseDatumType impl_ns::Element::GetDatumType() const
 	return BaseDatumType::Element;
 }
 
+bool impl_ns::Element::IsImmutable() const
+{
+	return false;
+}
+
 template<typename T>
 bool impl_ns::Element::GenericGet(T& dest) const
 {

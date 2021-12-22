@@ -6,6 +6,11 @@ geng::data::BaseDatumType impl_ns::Dictionary::GetDatumType() const
 	return BaseDatumType::Dictionary;
 }
 
+bool impl_ns::Dictionary::IsImmutable() const
+{
+	return false;
+}
+
 bool impl_ns::Dictionary::HasEntry(const char* pKey) const
 {
 	std::string strKey{ pKey };
