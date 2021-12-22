@@ -64,16 +64,6 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 		return false;
 	}
 
-	m_pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), 
-		ColumnsExecutive::GetExecutiveName(), 
-		getResult);
-
-	if (!m_pExecutive)
-	{
-		pGame->LogError("ColumnsSDLRenderer: could not get ColumnsExecutive");
-		return false;
-	}
-
 	auto pRendering = GetComponentAs<sdl::SDLRendering>(pGame.get(), "SDLRendering", getResult);
 
 	if (!pRendering)
@@ -86,16 +76,6 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_pRenderer = pRendering->GetRenderer();
 	m_windowX = pRendering->GetWindowX();
 	m_windowY = pRendering->GetWindowY();
-
-	// Get board information
-	Point boardSize = m_pSim->GetBoardSize();
-	m_boardX = boardSize.x;
-	m_boardY = boardSize.y;
-
-	// Space for one column from above
-	m_boardYOffset = m_pSim->GetColumnSize();
-
-	Measure();
 
 	// Initialize the font and texts
 	// Get the resource loader
@@ -146,18 +126,19 @@ bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>&
 	m_gameOverLabel.SetText("Game over!", m_pRenderer.get(), sdl::TextQuality::Nice);
 	m_pressSpaceLabel.SetFont(pFontBanner);
 	m_pressSpaceLabel.SetText("Press SPACE to start", m_pRenderer.get(), sdl::TextQuality::Nice);
+	m_cheatAcceptedLabel.SetFont(pFontBanner);
+	m_cheatAcceptedLabel.SetText("Cheat ACCEPTED", m_pRenderer.get(), sdl::TextQuality::Nice);
 
 	m_score.SetFont(pFontValue);
 	m_level.SetFont(pFontValue);
 
 	// Compute the phase length based on the simulation properties
 	const GameArgs& gameArgs = pGame->GetGameArgs();
+	m_magicAnimation.SetArguments(AnimationArgsForTime(MAGIC_PHASE_COUNT, gameArgs.msTimePerFrame,
+		MAGIC_TOTAL_MS));
 
-	m_phaseLength = PHASE_MS / gameArgs.msTimePerFrame;
-	if ((PHASE_MS % gameArgs.msTimePerFrame) != 0)
-	{
-		++m_phaseLength;
-	}
+	m_screenFadeAnimation.SetArguments(AnimationArgsForTime(127, gameArgs.msTimePerFrame,
+		FADE_TOTAL_MS));
 
 	return true;
 }
@@ -205,7 +186,7 @@ void geng::columns::ColumnsSDLRenderer::RenderClearingAt(int x, int y)
 	static sdl::RGBA black{ 0,0,0, SDL_ALPHA_OPAQUE };
 	static sdl::RGBA gold{ 255,163,77, SDL_ALPHA_OPAQUE };
 
-	std::array colorArray{ &gold, &black, &black, &black };
+	std::array<sdl::RGBA*, MAGIC_PHASE_COUNT+1> colorArray{ &gold, &black, &black, &black };
 
 	SDL_Rect rectBody{ x, y, m_squareSize, m_squareSize };
 	size_t idx = 0;
@@ -218,12 +199,11 @@ void geng::columns::ColumnsSDLRenderer::RenderClearingAt(int x, int y)
 		squareDelta = 1;
 	}
 
-	// Offset depends on the phase
-	size_t phaseOffset = (m_phaseCount / 5) % colorArray.size();
+	unsigned long arrayPhase = m_magicAnimation.GetCurrentTick();
 
 	while (rectBody.h > 0)
 	{
-		sdl::RGBA* pColor = colorArray[(idx + phaseOffset) % colorArray.size()];
+		sdl::RGBA* pColor = colorArray[(arrayPhase + idx) % colorArray.size()];
 		sdl::SetDrawColor(m_pRenderer.get(), *pColor);
 		SDL_RenderFillRect(m_pRenderer.get(), &rectBody);
 
@@ -260,95 +240,117 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
 {
 	// Phase updates
-	m_renderFrames = pContextState->frameCount;
 
-	if (m_renderFramesAtLastSwitch == 0
-		|| m_renderFrames - m_renderFramesAtLastSwitch > m_phaseLength)
-	{
-		++m_phaseCount;
-		m_renderFramesAtLastSwitch = m_renderFrames;
-	}
-
+	// Forward; wrap around
+	m_magicAnimation.Step(true, true);
 
 	SDL_SetRenderDrawColor(m_pRenderer.get(), 17, 23, 64, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(m_pRenderer.get());
 
-	// Draw the board as a black rectangle
-	SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRect(m_pRenderer.get(), &m_boardArea);
-
-	bool isPaused = m_pExecutive->IsPaused();
-
-	// Draw the predicting gems next to the board
-	const std::vector<GridContents>& nextGems = m_pSim->GetNextColors();
-
-	int xRect = m_predictorX;
-	int yRect = m_predictorY;
-	if (!isPaused)
+	// Only draw if initialized
+	// TODO:  Make this dependent on the executive instead of the sim?
+	if (m_pSim->IsGameInitialized())
 	{
-		for (GridContents gem : nextGems)
+		// Draw the board as a black rectangle
+		SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, SDL_ALPHA_OPAQUE);
+		SDL_RenderFillRect(m_pRenderer.get(), &m_boardArea);
+
+
+		// Update the fade to dark animation
+		if (m_pausedGame)
 		{
-			RenderContentsAt(xRect, yRect, gem);
-			yRect += m_squareSize;
+			// -> dark
+			if (!m_screenFadeAnimation.IsAtEnd())
+			{
+				//		fprintf(stderr, "\nCurrent ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+				m_screenFadeAnimation.Step(true, false);
+				//		fprintf(stderr, "\nNew ticks %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			}
+		}
+		else
+		{
+			// -> light
+			if (!m_screenFadeAnimation.IsAtStart())
+			{
+				//		fprintf(stderr, "\nCurrent ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+				m_screenFadeAnimation.Step(false, false);
+				//		fprintf(stderr, "\nNew ticks rev %lu\n", m_screenFadeAnimation.GetCurrentTick());
+			}
+		}
+
+		// Draw the predicting gems next to the board
+		const std::vector<GridContents>& nextGems = m_pSim->GetNextColors();
+
+		int xRect = m_predictorX;
+		int yRect = m_predictorY;
+		if (!m_pausedGame)
+		{
+			for (GridContents gem : nextGems)
+			{
+				RenderContentsAt(xRect, yRect, gem);
+				yRect += m_squareSize;
+			}
+		}
+		else
+		{
+			yRect += m_squareSize * (int)nextGems.size();
+		}
+
+		// Set the texts
+		constexpr size_t RENDERED_NUMBER_LENGTH = 25;
+
+		char txtScore[RENDERED_NUMBER_LENGTH];
+		snprintf(txtScore, sizeof(txtScore), "%u", m_pSim->GetGems());
+		m_score.SetText(txtScore, m_pRenderer.get());
+
+		char txtLevel[RENDERED_NUMBER_LENGTH];
+		snprintf(txtLevel, sizeof(txtLevel), "%u", m_pSim->GetLevel());
+		m_level.SetText(txtLevel, m_pRenderer.get());
+
+		// Draw the score label
+		int textX = m_boardArea.x - m_squareSize;
+		int textY = yRect + m_squareSize;
+
+		constexpr int TEXT_COLUMN_GAP = 10;
+
+		m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;
+		m_score.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		textY += m_score.GetHeight() + TEXT_COLUMN_GAP;
+		m_levelLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+		textY += m_levelLabel.GetHeight() + TEXT_COLUMN_GAP;
+		m_level.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
+
+		// Draw the board
+		Point xOrigin{ 0, m_boardYOffset };
+
+		auto gridRender = [this](const Point& pt, const GridSquare& gsquare)
+		{
+			// Get the coordinates
+			int xSquare = m_boardArea.x + m_squareSize * pt.x;
+			int ySquare = m_boardArea.y + m_squareSize * (pt.y - m_boardYOffset);
+
+			GridContents toDraw = gsquare.isVisible ? gsquare.contents : EMPTY;
+			RenderContentsAt(xSquare, ySquare, toDraw);
+		};
+
+		if (!m_pausedGame && m_inGame)
+		{
+			m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
 		}
 	}
-	else
+
+	// Banner
+	if (m_pSim->CheatHappened())
 	{
-		yRect += m_squareSize * (int)nextGems.size();
+		m_timeHideCheatLabel = rSimState.execSimulatedTime
+			+ CHEAT_BANNER_MS;
 	}
 
-	// Set the texts
-	constexpr size_t RENDERED_NUMBER_LENGTH = 25;
-
-	char txtScore[RENDERED_NUMBER_LENGTH];
-	snprintf(txtScore, sizeof(txtScore), "%u", m_pSim->GetGems());
-	m_score.SetText(txtScore, m_pRenderer.get());
-
-	char txtLevel[RENDERED_NUMBER_LENGTH];
-	snprintf(txtLevel, sizeof(txtLevel), "%u", m_pSim->GetLevel());
-	m_level.SetText(txtLevel, m_pRenderer.get());
-
-	// Draw the score label
-	int textX = m_boardArea.x - m_squareSize;
-	int textY = yRect + m_squareSize;
-
-	constexpr int TEXT_COLUMN_GAP = 10;
-	
-	m_scoreLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-	textY += m_scoreLabel.GetHeight() + TEXT_COLUMN_GAP;
-	m_score.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-	textY += m_score.GetHeight() + TEXT_COLUMN_GAP;
-	m_levelLabel.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-	textY += m_levelLabel.GetHeight() + TEXT_COLUMN_GAP;
-	m_level.RenderTo(m_pRenderer.get(), textX, textY, 0, 0, sdl::TextAlignment::Right);
-
-	// Draw the board
-	Point xOrigin{ 0, m_boardYOffset };
-
-	auto gridRender = [this](const Point& pt, const GridSquare& gsquare)
-	{
-		// Get the coordinates
-		int xSquare = m_boardArea.x + m_squareSize * pt.x;
-		int ySquare = m_boardArea.y + m_squareSize * (pt.y - m_boardYOffset);
-
-		GridContents toDraw = gsquare.isVisible ? gsquare.contents : EMPTY;
-		RenderContentsAt(xSquare, ySquare, toDraw);
-	};
-
-	if (!isPaused)
-	{
-		m_pSim->IterateGrid(gridRender, m_pSim->PointToIndex(xOrigin));
-	}
-
-	// Pause??
 	unsigned int bannerX = m_windowX / 2;
 	unsigned int bannerY = 30;
 
-	if (m_pExecutive->IsPaused())
-	{
-		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
-	}
-	else if (!m_pExecutive->IsInGame())
+	if (!m_pausedGame && !m_inGame)
 	{
 		if (m_pSim->IsGameOver())
 		{
@@ -359,8 +361,55 @@ void geng::columns::ColumnsSDLRenderer::OnFrame(const SimState& rSimState,
 			m_pressSpaceLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
 		}
 	}
+	else if (m_timeHideCheatLabel != 0 &&
+		m_timeHideCheatLabel >= rSimState.execSimulatedTime)
+	{
+		m_cheatAcceptedLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
+	}
+
+	// Draw the "curtain"
+	if (!m_screenFadeAnimation.IsAtStart())
+	{
+		Uint8 uiAlpha = (Uint8)m_screenFadeAnimation.GetCurrentTick();
+		//fprintf(stderr, "Filling rect %hhu...\n", uiAlpha);
+
+		SDL_SetRenderDrawBlendMode(m_pRenderer.get(), SDL_BLENDMODE_BLEND);
+		SDL_SetRenderDrawColor(m_pRenderer.get(), 0, 0, 0, uiAlpha);
+		SDL_RenderFillRect(m_pRenderer.get(), &m_curtainArea);
+		SDL_SetRenderDrawBlendMode(m_pRenderer.get(), SDL_BLENDMODE_NONE);
+	}
+
+	if (m_pausedGame)
+	{
+		m_pauseLabel.RenderTo(m_pRenderer.get(), bannerX, bannerY, 0, 0, sdl::TextAlignment::Center);
+	}
 
 	SDL_RenderPresent(m_pRenderer.get());
+}
+
+void geng::columns::ColumnsSDLRenderer::OnStartGame()
+{
+	// Get board information
+	Point boardSize = m_pSim->GetBoardSize();
+	m_boardX = boardSize.x;
+	m_boardY = boardSize.y;
+
+	// Space for one column from above
+	m_boardYOffset = m_pSim->GetColumnSize();
+
+	Measure();
+	
+	m_inGame = true;
+}
+
+void geng::columns::ColumnsSDLRenderer::OnEndGame() 
+{ 
+	m_inGame = false;
+}
+
+void geng::columns::ColumnsSDLRenderer::OnPauseGame(bool pauseState)
+{
+	m_pausedGame = pauseState;
 }
 
 void geng::columns::ColumnsSDLRenderer::Measure()
@@ -375,6 +424,11 @@ void geng::columns::ColumnsSDLRenderer::Measure()
 	// Compute game rectangle dimensions
 	unsigned int gameRectW = m_squareSize * m_boardX;
 	unsigned int gameRectH = m_squareSize * visibleY;  // approximately window size (to within one square)
+
+	m_curtainArea.x = 0;
+	m_curtainArea.y = 0;
+	m_curtainArea.w = m_windowX;
+	m_curtainArea.h = m_windowY;
 
 	m_boardArea.x = (m_windowX - gameRectW) / 2;
 	m_boardArea.y = 0;

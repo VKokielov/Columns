@@ -329,7 +329,7 @@ bool geng::DefaultGame::SetVisibility(ContextID contextId, bool value)
 
 
 	m_contexts[contextId].m_nextVisible = value;
-	if (m_simState.execFrameCount == 0)
+	if (m_callingExecutive)
 	{
 		m_contexts[contextId].contextState.visibility.curValue = value;
 	}
@@ -346,7 +346,7 @@ bool geng::DefaultGame::SetRunState(ContextID contextId, bool value)
 	}
 
 	m_contexts[contextId].m_nextRun = value;
-	if (m_simState.execFrameCount == 0)
+	if (m_callingExecutive)
 	{
 		m_contexts[contextId].contextState.runstate.curValue = value;
 	}
@@ -375,7 +375,7 @@ bool geng::DefaultGame::SetFocus(ContextID contextId)
 
 	if (contextId != EXECUTIVE_CONTEXT)
 	{
-		if (m_simState.execFrameCount == 0)
+		if (m_callingExecutive)
 		{
 			m_contexts[contextId].contextState.focus.curValue = true;
 		}
@@ -387,16 +387,22 @@ bool geng::DefaultGame::SetFocus(ContextID contextId)
 	return true;
 }
 
+bool geng::DefaultGame::SetFrameIndex(ContextID contextId, unsigned long frameCount)
+{
+	if (contextId == EXECUTIVE_CONTEXT
+		|| contextId >= m_contexts.size())
+	{
+		return false;
+	}
+
+	m_contexts[contextId].contextState.frameCount = frameCount;
+	m_contexts[contextId].contextState.simulatedTime = frameCount * m_gameArgs.msTimePerFrame;
+	return true;
+}
+
 void geng::DefaultGame::UpdateContextStateBefore()
 {
-	for (size_t i = 1; i < m_contexts.size(); ++i)
-	{
-		if (m_contexts[i].contextState.runstate.curValue)
-		{
-			++m_contexts[i].contextState.frameCount;
-			m_contexts[i].contextState.simulatedTime += m_gameArgs.msTimePerFrame;
-		}
-	}
+
 }
 
 void geng::DefaultGame::ContextInputCallbacks()
@@ -453,6 +459,12 @@ void geng::DefaultGame::UpdateContextStateAfter()
 
 		m_contexts[i].contextState.visibility.prevValue = m_contexts[i].contextState.visibility.curValue;
 		m_contexts[i].contextState.visibility.curValue = m_contexts[i].m_nextVisible;
+
+		if (m_contexts[i].contextState.runstate.curValue)
+		{
+			++m_contexts[i].contextState.frameCount;
+			m_contexts[i].contextState.simulatedTime += m_gameArgs.msTimePerFrame;
+		}
 	}
 }
 
@@ -465,9 +477,11 @@ void geng::DefaultGame::RunGameLoop()
 	while (m_isActive)
 	{
 		// Executive listeners
+		m_callingExecutive = true;
 		m_executiveListeners.OnFrame(m_simState, nullptr);
+		m_callingExecutive = false;
 
-		UpdateContextStateBefore();
+		//UpdateContextStateBefore();
 		ContextInputCallbacks();
 		ContextSimCallbacks();
 		ContextRenderCallbacks();
@@ -503,11 +517,15 @@ void geng::DefaultGame::RunGameLoop()
 			while (m_simState.execSimulatedTime < m_msActualTime)
 			{
 				m_simState.catchingUp = true;
+				m_callingExecutive = true;
 				m_executiveListeners.OnFrame(m_simState, nullptr);
+				m_callingExecutive = false;
 
+				//UpdateContextStateBefore();
 				ContextInputCallbacks();
 				ContextSimCallbacks(); 
-				
+				UpdateContextStateAfter();
+
 				// NO rendering
 
 				if (!m_isActive)

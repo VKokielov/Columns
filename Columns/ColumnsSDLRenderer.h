@@ -8,6 +8,7 @@
 #include "SDLText.h"
 #include "ResourceLoader.h"
 #include "ColumnsExecutive.h"
+#include "Animation.h"
 #include <utility>
 
 namespace geng::columns
@@ -25,8 +26,11 @@ namespace geng::columns
 		ColumnsSDLRenderer(const ColumnsRenderArgs& args);
 		bool Initialize(const std::shared_ptr<IGame>& pGame) override;
 
+		void OnStartGame();
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
+		void OnEndGame();
+		void OnPauseGame(bool pauseState);
 
 	private:
 		template<typename T, T lower, T upper, typename U>
@@ -99,6 +103,7 @@ namespace geng::columns
 		int m_boardBottom{ 0 };
 		int m_squareSize{ 0 };
 
+		SDL_Rect m_curtainArea;
 		SDL_Rect m_boardArea;
 
 		// SDL
@@ -108,28 +113,31 @@ namespace geng::columns
 		// Sim
 		std::shared_ptr<ColumnsSim>  m_pSim;
 
-		// Executive
-		std::shared_ptr<ColumnsExecutive> m_pExecutive;
-
 		// Prerendered text
 		sdl::Text m_scoreLabel;
 		sdl::Text m_levelLabel;
 		sdl::Text m_pauseLabel;
 		sdl::Text m_gameOverLabel;
 		sdl::Text m_pressSpaceLabel;
+		sdl::Text m_cheatAcceptedLabel;
 
 		sdl::Text m_score;
 		sdl::Text m_level;
 
-		// Not counted but faithfully taken from the input
-		unsigned int m_renderFrames{ 0 };
-		unsigned int m_renderFramesAtLastSwitch{ 0 };
-		unsigned int m_phaseCount{ 0 };
+		Animation m_magicAnimation;
+		Animation m_screenFadeAnimation;
 
-		unsigned int m_phaseLength{ 0 };
+		unsigned int m_timeHideCheatLabel{ 0 };
 
-		constexpr static unsigned int PHASE_MS = 5;
+		// Game state!
+		bool m_inGame{ false };
+		bool m_pausedGame{ false };
 
+		constexpr static unsigned long MAGIC_PHASE_COUNT = 3;
+		constexpr static unsigned long MAGIC_TOTAL_MS = 600;
+		constexpr static unsigned long FADE_TOTAL_MS = 1000;
+
+		constexpr static unsigned int CHEAT_BANNER_MS = 1500;
 	};
 
 

@@ -4,26 +4,54 @@
 #include "ActionMapper.h"
 #include "SDLInput.h"
 #include "ColumnsSim.h"
+#include "ColumnsInput.h"
 #include "CheatTrie.h"
+#include "SimStateDispatcher.h"
 #include <memory>
 
 namespace geng::columns
 {
-	enum class ContextDesc
+	class ColumnsSDLRenderer;
+
+
+	enum class ContextState
 	{
+		NoGame,
 		ActiveGame,
-		PausedGame,
-		NoGame
+		PausedGame	
 	};
+
+	struct ThrottleSettings
+	{
+		unsigned int dropThrottlePeriod;
+		unsigned int nonDropThrottlePeriod;
+	};
+
+	struct ExecutiveSettings
+	{
+		PlaybackMode pbMode;
+		std::string pbFileName;
+	};
+
+
+	struct NoGameState { };
+
+	struct ActiveGameState { };
+
+	struct PausedGameState { };
 
 	class ColumnsExecutive : public BaseGameComponent,
 		public IGameListener,
+		public SimStateDispatcher<ColumnsExecutive, NoGameState, NoGameState, ActiveGameState, PausedGameState>,
 		public std::enable_shared_from_this<ColumnsExecutive>
 	{
 	public:
 		// Data
 		static constexpr unsigned int msToEnterCheat = 700;
 
+		// These functions are expected to return pointers to statically allocated
+		// constant strings, so they can be set inside structs without constructing std::strings
+		// around them
 		static const char* GetDropActionName();
 		static const char* GetShiftLeftActionName();
 		static const char* GetShiftRightActionName();
@@ -32,18 +60,53 @@ namespace geng::columns
 		static const char* GetColumnsSimContextName();
 		static const char* GetActionMapperName();
 		static const char* GetColumnsInputBridgeName();
+		static const char* GetColumnsInputComponentName();
 		static const char* GetExecutiveName();
+		static const char* GetGameName();
 
-		// Create all the other components and add them to the game
-		ColumnsExecutive();
+		// State changes
+		template<typename ... Args>
+		struct OnFrameSelector
+		{
+			static auto Select() 
+				{ return static_cast<void (ColumnsExecutive::*)(Args...)>(&ColumnsExecutive::OnFrame); }
+		};
+
+		ColumnsExecutive(const ExecutiveSettings& executiveSettings);
 		bool AddToGame(const std::shared_ptr<IGame>& pGame);
+
+		void StartGame();
+		void EndGame();
+		void PauseGame(bool pauseState);
+
+		void OnEnterState(NoGameState& ngs);
+		void OnExitState(NoGameState& ngs);
+		void OnEnterState(ActiveGameState& ags);
+		void OnExitState(ActiveGameState& ags);
+		void OnEnterState(PausedGameState& ags);
+		void OnExitState(PausedGameState& ags);
+		
+		void OnFrame(NoGameState&, const SimState& rSimState);
+		void OnFrame(ActiveGameState&, const SimState& rState);
+		void OnFrame(PausedGameState&, const SimState& rState);
 
 		void OnFrame(const SimState& rSimState,
 			const SimContextState* pContextState) override;
 
 		bool IsInitialized() const { return m_initialized; }
-		bool IsPaused() const { return m_contextDesc == ContextDesc::PausedGame; }
-		bool IsInGame() const { return m_contextDesc != ContextDesc::NoGame; }
+		static bool IsPausedState(ContextState state) 
+		{ 
+			return state == ContextState::PausedGame; 
+		}
+
+		bool IsPaused() const { return IsPausedState(m_contextState); }
+
+		static bool IsInGameState(ContextState state)
+		{ 
+			return state != ContextState::NoGame; 
+		}
+
+		bool IsInGame() const { return IsInGameState(m_contextState); }
 
 		// Only valid when the game is active
 
@@ -62,8 +125,12 @@ namespace geng::columns
 			m_cheatKey.reset();
 			m_cheatState = CHEAT_TRIE_ROOT;
 		}
+
+		void StartGameError(const char* pError);
 	private:
-		static void MapActions(ActionMapper& rMapper);
+		static void MapActions(ActionMapper& rMapper,
+							std::vector<ActionDesc>& columnsActions,
+							const ThrottleSettings& throttleSettings);
 
 		static bool IsKeyPressedOnce(const KeyState& keyState)
 		{
@@ -71,24 +138,50 @@ namespace geng::columns
 				|| (keyState.finalState == KeySignal::KeyUp && keyState.numChanges > 1);
 		}
 
+		// Add a key state for a per-frame subscription
+		void AddKeySub(KeyState* pkeyState);
+		void ResetKey(KeyState* pKeyState);
+
 		void SetupCheats(IInput* pInput);
 
-		bool m_initialized;
+		bool m_initialized{ false };
+		bool m_startGameError{ false };
 
-		std::shared_ptr<IGame> m_pGame;
+		std::weak_ptr<IGame> m_pGame;
 		std::shared_ptr<sdl::Input>  m_pInput;
+		std::shared_ptr<ColumnsInput>  m_pColumnsInput;
 		std::shared_ptr<ColumnsSim> m_pSim;
-		ContextID m_simContextId;
-		ContextDesc m_contextDesc{ ContextDesc::NoGame };
+		// TODO:  Generalize the game start/end interfaces!
+		std::shared_ptr<ColumnsSDLRenderer> m_pSDLRenderer;
 		
+		/*
+		geng::columns::InputArgs m_inputArgs;
+		geng::columns::SimArgs m_simArgs;
+		*/
+		geng::columns::ColumnsArgs m_columnsArgs;
+
+		ContextID m_simContextId;
+		ContextState m_contextState{ ContextState::NoGame };
+		ContextState m_prevContextState{ ContextState::NoGame };
+
+		// Keyboard states
+		std::vector<KeyState*> m_keySubs;
+
 		bool m_cheatsEnabled{ true };
 		std::vector<KeyState> m_alphaKeyStates;
 		std::vector<KeyState*> m_alphaKeyRefs;
  
+		// Cheat state
 		CheatTrie m_cheatTrie;
 		TrieIndex m_cheatState{ CHEAT_TRIE_ROOT };
 		unsigned long m_lastCheatInputTime;
 		std::optional<CheatKey> m_cheatKey;
+
+		// Keys: start, pause, escape
+		// NOTE:  The "escape" key will someday designate "open the menu"
+		KeyState m_spaceKey;
+		KeyState m_pauseKey;
+		KeyState m_escKey;
 	};
 
 	// Helper function for getting cheats

@@ -24,6 +24,12 @@ namespace geng
 		unsigned long msTimePerFrame;
 	};
 
+	// Base class
+	struct GameSessionArgs
+	{
+
+	};
+
 	struct SimState
 	{
 		// Number of miliseconds per frame (1/ideal framerate)
@@ -120,6 +126,8 @@ namespace geng
 		virtual bool SetVisibility(ContextID contextId, bool value) = 0;
 		virtual bool SetRunState(ContextID contextId, bool value) = 0;
 		virtual bool SetFocus(ContextID contextId) = 0;
+		// Rewind the frame index and sim time for the context
+		virtual bool SetFrameIndex(ContextID contextId, unsigned long frameCount = 0) = 0;
 
 		virtual const GameArgs& GetGameArgs() const = 0;
 	};

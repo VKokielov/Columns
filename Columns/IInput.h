@@ -19,6 +19,11 @@ namespace geng
 		KeyCode keyCode;  // [in]
 		unsigned int numChanges;  // [out]
 		KeySignal finalState;  // [out]
+
+		KeyState() = default;
+		KeyState(KeyCode keyCode_)
+			:keyCode(keyCode_)
+		{ }
 	};
 
 	struct KeyboardState

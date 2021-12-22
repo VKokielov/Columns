@@ -1,6 +1,7 @@
 #include "ColumnsSim.h"
 #include "ColumnsExecutive.h"
 #include "EngAlgorithms.h"
+#include "ActionCommands.h"
 #include <iterator>
 
 unsigned int geng::columns::ColumnsSim::PointToIndex(const Point& at) const
@@ -346,7 +347,7 @@ void geng::columns::ColumnsSim::GenerateNextColors()
 
 	for (size_t i = 0; i < m_columnSize; ++i)
 	{
-		GridContents nextColor = genClearing ? CLEARING : GetRandomNumber(1, GRID_LIMIT-1);
+		GridContents nextColor = genClearing ? CLEARING : m_pColumnsInput->GetRandomNumber(1, GRID_LIMIT-1);
 		m_nextColors.emplace_back(nextColor);
 	}
 }
@@ -576,9 +577,13 @@ void geng::columns::ColumnsSim::ComputeNextMagicLevel()
 {
 	if (m_nextMagicLevel == 0 || m_level == m_nextMagicLevel)
 	{
-		if (m_level < 9)
+		if (m_level == 1 || m_level >= 6 && m_level < 9)
 		{
 			m_nextMagicLevel = m_level + 2;
+		}
+		else if (m_level < 5)
+		{
+			m_nextMagicLevel = m_level + 3;
 		}
 		else
 		{
@@ -687,64 +692,53 @@ bool geng::columns::ColumnsSim::CompactColumns()
 	return compactedCol;
 }
 
-geng::columns::ColumnsSim::SimActionWrappers::SimActionWrappers(unsigned int throttlePeriod, 
-							unsigned int dropThrottlePeriod,
-							ActionMapper& mapper,
-							ActionTranslator& translator)
-	:dropAction(ColumnsExecutive::GetDropActionName(), dropThrottlePeriod, mapper)
-	,shiftLeftAction(ColumnsExecutive::GetShiftLeftActionName(), throttlePeriod, mapper)
-	,shiftRightAction(ColumnsExecutive::GetShiftRightActionName(), throttlePeriod, mapper)
-	,rotateAction(ColumnsExecutive::GetRotateActionName(), throttlePeriod, mapper)
-	,permuteAction(ColumnsExecutive::GetPermuteActionName(), throttlePeriod, mapper)
-{
-	AddActions(mapper, translator);
-}
-
-void geng::columns::ColumnsSim::SimActionWrappers::UpdateState(ActionTranslator& translator, unsigned long simTime)
-{
-	dropAction.UpdateState(translator, simTime);
-	shiftLeftAction.UpdateState(translator, simTime);
-	shiftRightAction.UpdateState(translator, simTime);
-	rotateAction.UpdateState(translator, simTime);
-	permuteAction.UpdateState(translator, simTime);
-}
-
-void geng::columns::ColumnsSim::SimActionWrappers::AddActions(ActionMapper& mapper,
-							ActionTranslator& translator)
-{
-	std::vector<std::string> actionNames
-	{ dropAction.GetName(),
-	 shiftLeftAction.GetName(),
-	 shiftRightAction.GetName(),
-	 rotateAction.GetName(),
-	 permuteAction.GetName()};
-
-	translator.InitActions(&mapper, actionNames.begin(), actionNames.end());
-}
-
-geng::columns::ColumnsSim::ColumnsSim(const ColumnsSimArgs& args)
+geng::columns::ColumnsSim::ColumnsSim()
 	:BaseGameComponent("ColumnsSim"),
-	m_actionTranslator(new ActionTranslator()),
-	m_size(args.boardSize),
-	m_columnSize(args.columnSize),
-	m_dropMiliseconds(args.dropMilliseconds),
-	m_flashMiliseconds(args.flashMilliseconds),
-	m_flashCount(args.flashCount),
-	m_gameGrid(new GridSquare[args.boardSize.x * args.boardSize.y]),
-	m_gameState(*this),
-	m_gameGridSize(args.boardSize.x * args.boardSize.y),
-	m_throttlePeriod(args.actionThrottlePeriod),
-	m_dropThrottlePeriod(args.dropThrottlePeriod)
+	m_gameState(*this)
 {
-
-
 }
 
-void geng::columns::ColumnsSim::ResetGame()
+bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
 {
-	// Seed the generator
-	std::random_device device;
-	m_generator.seed(device());
+	m_pColumnsInput = GetComponentAs<ColumnsInput>(pGame.get(), ColumnsExecutive::GetColumnsInputComponentName());
+
+	// Get the actions (for player 0)
+	m_dropId = m_pColumnsInput->GetIDFor(ColumnsExecutive::GetDropActionName(), 0);
+	m_shiftLeftId = m_pColumnsInput->GetIDFor(ColumnsExecutive::GetShiftLeftActionName(), 0);
+	m_shiftRightId = m_pColumnsInput->GetIDFor(ColumnsExecutive::GetShiftRightActionName(), 0);
+	m_rotateId = m_pColumnsInput->GetIDFor(ColumnsExecutive::GetRotateActionName(), 0);
+	m_permuteId = m_pColumnsInput->GetIDFor(ColumnsExecutive::GetPermuteActionName(), 0);
+
+	auto pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), ColumnsExecutive::GetExecutiveName());
+	pExecutive->AddCheat("saxo", CHEAT_MAGIC_COLUMN);
+
+	m_pExecutive = pExecutive;
+	return true;
+}
+
+void geng::columns::ColumnsSim::LoadArgs(const SimArgs& args)
+{
+	m_size = args.boardSize;
+	m_columnSize = args.columnSize;
+	m_dropMiliseconds = args.dropMilliseconds; 
+	m_flashMiliseconds = args.flashMilliseconds;
+	m_flashCount = args.flashCount;
+	m_gameGrid.reset(new GridSquare[args.boardSize.x * args.boardSize.y]);
+	m_gameGridSize = args.boardSize.x * args.boardSize.y;
+
+	m_paramsInit = true;
+}
+
+void geng::columns::ColumnsSim::OnStartGame()
+{
+	const SimArgs* pArgs = m_pColumnsInput->GetSimArgs();
+	if (!pArgs)
+	{
+		// This is a bug.  Input should have OnStartGame() called before sim
+		return;
+	}
+
+	LoadArgs(*pArgs);
 
 	// Clear the grid
 	GridSquare defaultSquare{ EMPTY, true };
@@ -764,53 +758,19 @@ void geng::columns::ColumnsSim::ResetGame()
 	// 10 times faster is good enough
 	m_minDropMiliseconds = m_dropMiliseconds / 10;
 
+	m_nextColors.clear();
 	m_needNewColumn = true;
 	m_colorsToClear.clear();
 
 	StateArgs stateArgs;
 	stateArgs.simTime = 0;
+
+	// This will transition out of game over state
 	m_gameState.Transition<DropColumnState>(m_gameState, stateArgs);
-
 }
 
-bool geng::columns::ColumnsSim::Initialize(const std::shared_ptr<IGame>& pGame)
-{
-	GetComponentResult getResult;
-	m_pInput = GetComponentAs<IInput>(pGame.get(), ColumnsExecutive::GetColumnsInputBridgeName(), getResult);
-
-	if (!m_pInput)
-	{
-		pGame->LogError("ColumnsSim: could not get input component");
-		return false;
-	}
-
-	m_actionMapper = GetComponentAs<ActionMapper>(pGame.get(), ColumnsExecutive::GetActionMapperName(), getResult);
-	
-	if (!m_actionMapper)
-	{
-		pGame->LogError("ColumnsSim: could not get action mapper");
-		return false;
-	}
-
-	m_actionWrappers = std::make_shared<SimActionWrappers>(m_throttlePeriod,
-														m_dropThrottlePeriod,
-														*m_actionMapper.get(),
-													     *m_actionTranslator);
-
-	// Subscribe the translator to the mappings 
-	m_actionTranslator->SetInput(m_pInput);
-	m_actionMapper->GetAllMappings(m_actionTranslator);
-	m_actionMapper->AddMappingListener(m_actionTranslator);
-
-	ResetGame();
-
-	auto pExecutive = GetComponentAs<ColumnsExecutive>(pGame.get(), ColumnsExecutive::GetExecutiveName());
-	pExecutive->AddCheat("saxo", CHEAT_MAGIC_COLUMN);
-
-	m_pExecutive = pExecutive;
-
-	return true;
-}
+void geng::columns::ColumnsSim::OnPauseGame(bool pauseState) { }
+void geng::columns::ColumnsSim::OnEndGame() { }
 
 void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 	const SimContextState* pContextState)
@@ -831,6 +791,7 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 			cheatMagicColumn = FetchCheat(CHEAT_MAGIC_COLUMN, *pExecutive.get());
 		}
 	}
+
 	if (cheatMagicColumn)
 	{
 //		fprintf(stderr, "cheat -- magic column!\n");
@@ -838,10 +799,6 @@ void geng::columns::ColumnsSim::OnFrame(const SimState& rSimState,
 		m_cheatHappened = true;
 	}
 
-	// This will update the translator with the state of the input
-	m_actionTranslator->UpdateOnFrame(pContextState->frameCount);
-	// This will update the referenced commands with the state of the translator
-	m_actionWrappers->UpdateState(*m_actionTranslator, pContextState->simulatedTime);
 	m_gameState.StartFrame();
 
 	bool shouldContinue = true;
@@ -873,12 +830,13 @@ void geng::columns::ColumnsSim::GameState
 
 	if (m_owner.m_needNewColumn)
 	{
+		//fprintf(stderr, "Generating new column\n");
 		m_owner.GenerateNewPlayerColumn();
 		m_owner.m_needNewColumn = false;
 	}
 
 	// Drop?
-	if (m_owner.m_actionWrappers->dropAction.Triggered()
+	if (m_owner.m_pColumnsInput->GetActionState(m_owner.m_dropId)
 		|| dropState.nextDropTime <= stateArgs.simTime)
 	{
 		// Execute drop.  If a drop can't be executed, lock the player's gems and switch to Compact mode
@@ -905,36 +863,33 @@ void geng::columns::ColumnsSim::GameState
 	}
 
 	// The other actions.
-	if (m_owner.m_actionWrappers->shiftLeftAction.Triggered())
+	if (m_owner.m_pColumnsInput->GetActionState (m_owner.m_shiftLeftId))
 	{
 		if (!m_owner.ShiftPlayerColumn(true))
 		{
-			m_owner.m_errorText = "CAN'T MOVE";
 			return;
 		}
 	//	fprintf(stderr, "Shifting column left\n");
 	}
 
-	if (m_owner.m_actionWrappers->shiftRightAction.Triggered())
+	if (m_owner.m_pColumnsInput->GetActionState(m_owner.m_shiftRightId))
 	{
 		if (!m_owner.ShiftPlayerColumn(false))
 		{
-			m_owner.m_errorText = "CAN'T MOVE";
 			return;
 		}
 	//	fprintf(stderr, "Shifting column right\n");
 	}
 
-	if (m_owner.m_actionWrappers->rotateAction.Triggered())
+	if (m_owner.m_pColumnsInput->GetActionState(m_owner.m_rotateId) )
 	{
 		if (!m_owner.RotatePlayerColumn(true))
 		{
-			m_owner.m_errorText  = "CAN'T ROTATE";
 			return;
 		}
 	}
 
-	if (m_owner.m_actionWrappers->permuteAction.Triggered())
+	if (m_owner.m_pColumnsInput->GetActionState(m_owner.m_permuteId))
 	{
 		m_owner.PermutePlayerColumn();
 		return;
@@ -1025,14 +980,17 @@ OnState(ClearState& clearState, const StateArgs& stateArgs)
 void geng::columns::ColumnsSim::GameState::OnEnterState(GameOverState& state, const StateArgs& args)
 {
 	m_owner.m_gameOver = true;
+	// Tell the executive to end the game
+	auto pExecutive = m_owner.m_pExecutive.lock();
+
+	if (pExecutive)
+	{
+		pExecutive->EndGame();
+	}
+
 }
 
 void geng::columns::ColumnsSim::GameState::OnExitState(GameOverState& state, const StateArgs& args)
 {
 	m_owner.m_gameOver = false;
-}
-
-unsigned long geng::columns::ColumnsSim::GetRandomNumber(unsigned long lowerBound, unsigned long upperBound)
-{
-	return m_generator() % (upperBound + 1 - lowerBound) + lowerBound;
 }
