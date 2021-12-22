@@ -104,13 +104,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="IFrameManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ColumnsSim.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DefaultFrameManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IInput.h">

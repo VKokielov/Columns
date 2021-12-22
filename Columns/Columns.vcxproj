@@ -219,7 +219,6 @@
     <ClInclude Include="CommandManager.h" />
     <ClInclude Include="CommonSetup.h" />
     <ClInclude Include="DataPacket.h" />
-    <ClInclude Include="DefaultFrameManager.h" />
     <ClInclude Include="DefaultGame.h" />
     <ClInclude Include="EngAlgorithms.h" />
     <ClInclude Include="FactoryImpl.h" />
@@ -228,7 +227,6 @@
     <ClInclude Include="Filestream.h" />
     <ClInclude Include="FileUtils.h" />
     <ClInclude Include="IFactory.h" />
-    <ClInclude Include="IFrameManager.h" />
     <ClInclude Include="IGame.h" />
     <ClInclude Include="IInput.h" />
     <ClInclude Include="ActionMapper.h" />
