@@ -102,6 +102,18 @@
     <ClCompile Include="ChecksumCalc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DataTreeViews.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DTSimpleElement.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DTSimpleDict.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DTSimpleList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ColumnsSim.h">
@@ -243,6 +255,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ChecksumCalc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FontManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IFont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDataTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataTreeViews.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DTSimpleElement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DTSimpleDict.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DTSimpleList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

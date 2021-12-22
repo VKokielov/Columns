@@ -5,7 +5,7 @@
 
 namespace geng
 {
-	class RawMemoryResource : public BaseResource
+	class RawMemoryResource : public BaseResource<IResource>
 	{
 	public:
 		static const char* GetTypeName()

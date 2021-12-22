@@ -4,6 +4,7 @@
 #include "ResourceLoader.h" // to specialize the template traits
 #include "RawMemoryResource.h"
 #include "SDLHelpers.h"
+#include "IFont.h"
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -16,7 +17,7 @@ namespace geng::sdl
 		int pointSize;
 	};
 
-	class TTFResource : public BaseResource
+	class TTFResource : public BaseResource< render::IFont>
 	{
 	public:
 		TTFResource(TTF_Font* pFont);
@@ -25,6 +26,7 @@ namespace geng::sdl
 
 		~TTFResource();
 
+		// Note: this function is STATIC; it is used as a constant
 		static const char* GetTypeName()
 		{
 			return "TrueTypeFont";

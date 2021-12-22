@@ -2,14 +2,22 @@
 
 #include "Resource.h"
 #include <string>
+#include <type_traits>
 
 namespace geng
 {
 
-	class BaseResource : public IResource
+	template<typename I>
+	class BaseResource : public I
 	{
 	public:
-		const char*  GetType() const override;
+		static_assert(std::is_base_of_v<IResource, I>, "BaseResource: I must derive from IResource");
+
+		const char*  GetType() const override
+		{
+			return m_resType.c_str();
+		}
+
 	protected:
 		const std::string& GetTypeAsString() const { return m_resType; }
 

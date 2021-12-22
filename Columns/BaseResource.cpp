@@ -1,9 +1,5 @@
 #include "BaseResource.h"
 
-const char* geng::BaseResource::GetType() const
-{
-	return m_resType.c_str();
-}
 
 const char* geng::BaseResourceFactory::GetType() const
 {
