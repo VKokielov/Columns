@@ -1,4 +1,5 @@
 #include "DataTreeViews.h"
+#include <algorithm>
 
 // ElementView
 geng::data::ElementType geng::data::ElementView::GetElementType() const
@@ -132,14 +133,35 @@ bool geng::data::DictionaryView::GetEntry(const char* pKey, std::shared_ptr<IDat
 {
 	return IfValid([pKey, &rChild](const IDictDatum* pDatum)
 	{
-		return pDatum->GetEntry(pKey, rChild);
+		std::shared_ptr<IDatum> pUnsafe;
+		if (pDatum->GetEntry(pKey, pUnsafe))
+		{
+			rChild = MakeViewDynamic(pUnsafe);
+			return true;
+		}
+		return false;
 	});
 }
 bool geng::data::DictionaryView::Iterate(IDictCallback& rCallback) const
 {
 	return IfValid([&rCallback](const IDictDatum* pDatum)
 	{
-		return pDatum->Iterate(rCallback);
+		struct SafeServer : public IDictCallback
+		{
+			SafeServer(IDictCallback& rCallback_)
+				:m_rCallback(rCallback_)
+			{ }
+
+			bool OnEntry(const char* pKey, const std::shared_ptr<IDatum>& pChild) override
+			{
+				return m_rCallback.OnEntry(pKey, MakeViewDynamic(pChild));
+			}
+
+			IDictCallback& m_rCallback;
+		};
+
+		SafeServer safeServer(rCallback);
+		return pDatum->Iterate(safeServer);
 	}
 	);
 }
@@ -148,7 +170,6 @@ bool geng::data::DictionaryView::SetEntry(const char* pKey, const std::shared_pt
 {
 	throw DataStateException();
 }
-
 
 size_t geng::data::ListView::GetLength() const
 {
@@ -160,7 +181,13 @@ size_t geng::data::ListView::GetLength() const
 bool geng::data::ListView::GetEntry(size_t idx, std::shared_ptr<IDatum>& rChild) const
 {
 	return IfValid([idx,&rChild](const IListDatum* pDatum) {
-		return pDatum->GetEntry(idx, rChild);
+		std::shared_ptr<IDatum> pUnsafe;
+		if (pDatum->GetEntry(idx, pUnsafe))
+		{
+			rChild = MakeViewDynamic(pUnsafe);
+			return true;
+		}
+		return false;
 	}
 	);
 }
@@ -169,7 +196,16 @@ bool geng::data::ListView::GetRange(std::vector<std::shared_ptr<IDatum> >& rSequ
 	size_t endIdx) const
 {
 	return IfValid([&rSequence,startIdx,endIdx](const IListDatum* pDatum) {
-		return pDatum->GetRange(rSequence, startIdx, endIdx);
+		std::vector<std::shared_ptr<IDatum> > unsafeData;
+		if (!pDatum->GetRange(unsafeData, startIdx, endIdx))
+		{
+			return false;
+		}
+		for (const std::shared_ptr<IDatum>& pUnsafe : unsafeData)
+		{
+			rSequence.emplace_back(MakeViewDynamic(pUnsafe));
+		}
+		return true;
 	}
 	);
 }

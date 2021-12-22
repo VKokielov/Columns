@@ -132,4 +132,23 @@ namespace geng::data
 	{
 		return std::make_shared<DictionaryView>(pDatum);
 	}
+
+	inline std::shared_ptr<IListDatum> MakeView(const std::shared_ptr<IListDatum>& pDatum)
+	{
+		return std::make_shared<ListView>(pDatum);
+	}
+
+	inline std::shared_ptr<IDatum> MakeViewDynamic(const std::shared_ptr<IDatum>& pDatum)
+	{
+		BaseDatumType datumType = pDatum->GetDatumType();
+		switch (datumType)
+		{
+		case BaseDatumType::Element:
+			return MakeView(std::static_pointer_cast<IElementDatum>(pDatum));
+		case BaseDatumType::Dictionary:
+			return MakeView(std::static_pointer_cast<IDictDatum>(pDatum));
+		case BaseDatumType::List:
+			return MakeView(std::static_pointer_cast<IListDatum>(pDatum));
+		}
+	}
 }
