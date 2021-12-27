@@ -186,9 +186,11 @@
     <ClCompile Include="CommonSetup.cpp" />
     <ClCompile Include="DataTreeViews.cpp" />
     <ClCompile Include="DefaultGame.cpp" />
+    <ClCompile Include="DTJsonSerializer.cpp" />
     <ClCompile Include="DTSimpleDict.cpp" />
     <ClCompile Include="DTSimpleElement.cpp" />
     <ClCompile Include="DTSimpleList.cpp" />
+    <ClCompile Include="DTUtils.cpp" />
     <ClCompile Include="FileCommandReader.cpp" />
     <ClCompile Include="FileCommandWriter.cpp" />
     <ClCompile Include="Filestream.cpp" />
@@ -224,10 +226,14 @@
     <ClInclude Include="CommonSetup.h" />
     <ClInclude Include="DataPacket.h" />
     <ClInclude Include="DataTreeViews.h" />
+    <ClInclude Include="DTConstruct.h" />
+    <ClInclude Include="DTJsonSerializer.h" />
+    <ClInclude Include="DTSimple.h" />
     <ClInclude Include="DTSimpleDict.h" />
     <ClInclude Include="DTSimpleElement.h" />
     <ClInclude Include="DefaultGame.h" />
     <ClInclude Include="DTSimpleList.h" />
+    <ClInclude Include="DTUtils.h" />
     <ClInclude Include="EngAlgorithms.h" />
     <ClInclude Include="FactoryImpl.h" />
     <ClInclude Include="FileCommandReader.h" />

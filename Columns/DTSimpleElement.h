@@ -70,6 +70,9 @@ namespace geng::data::simple
 		bool Get(uint32_t& rDatum) const override;
 		void Set(uint32_t datum) override;
 
+		bool Get(int64_t& rDatum) const override;
+		void Set(int64_t datum) override;
+
 		bool Get(uint64_t& rDatum) const override;
 		void Set(uint64_t datum) override;
 

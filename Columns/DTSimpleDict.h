@@ -8,6 +8,7 @@ namespace geng::data::simple
 	class Dictionary : public IDictDatum
 	{
 	public:
+		bool IsEmpty() const override;
 		BaseDatumType GetDatumType() const override;
 		bool IsImmutable() const override;
 

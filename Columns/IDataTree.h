@@ -70,6 +70,9 @@ namespace geng::data
 		virtual bool Get(uint32_t& rDatum) const = 0;
 		virtual void Set(uint32_t datum) = 0;
 
+		virtual bool Get(int64_t& rDatum) const = 0;
+		virtual void Set(int64_t datum) = 0;
+
 		virtual bool Get(uint64_t& rDatum) const = 0;
 		virtual void Set(uint64_t datum) = 0;
 
@@ -95,6 +98,7 @@ namespace geng::data
 	class IDictDatum : public IDatum
 	{
 	public:
+		virtual bool IsEmpty() const = 0;
 		virtual bool HasEntry(const char* pKey) const = 0;
 		virtual bool GetEntry(const char* pKey, std::shared_ptr<IDatum>& rChild) const = 0;
 		virtual bool Iterate(IDictCallback& rCallback) const = 0;
@@ -107,6 +111,7 @@ namespace geng::data
 	class IListDatum : public IDatum
 	{
 	public:
+		virtual bool IsEmpty() const = 0;
 		virtual size_t GetLength() const = 0;
 		virtual bool GetEntry(size_t idx, std::shared_ptr<IDatum>& rChild) const = 0;
 		// Iteration would not be faster than calling GetEntry() a number of times, but 
@@ -126,6 +131,7 @@ namespace geng::data
 	public:
 		virtual const char* GetObjectType() const = 0;
 		virtual IObjectDatum* MakeView() const = 0;
+		virtual bool GetRepresentation(std::string& rRepr) const = 0;
 	};
 
 	class IDatumFactories
@@ -134,6 +140,33 @@ namespace geng::data
 		virtual IDatum* CreateElement() = 0;
 		virtual IDatum* CreateDictionary() = 0;
 		virtual IDatum* CreateList() = 0;
+	};
+
+	enum class IterInstruction
+	{
+		// Enter a compound datum
+		// For simple data == skip
+		Enter,
+		// Skip a compound datum
+		Skip,
+		// Stop iterating
+		Break
+	};
+
+	class ITreeSerializer
+	{
+	public:
+		virtual ~ITreeSerializer() = default;
+
+		virtual IterInstruction OnList(const std::shared_ptr<IListDatum>& pList,
+			bool hasElements) = 0;
+		virtual IterInstruction OnDict(const std::shared_ptr<IDictDatum>& pDict,
+			bool hasElements) = 0;
+		virtual IterInstruction OnDictKey(const char* pKey) = 0;
+		virtual void EndCompound() = 0;
+
+		virtual IterInstruction OnElement(const std::shared_ptr<IElementDatum>& pElement) = 0;
+		virtual IterInstruction OnObject(const std::shared_ptr<IObjectDatum>& pObject) = 0;
 	};
 
 }

@@ -78,6 +78,9 @@ namespace geng::data
 		bool Get(uint32_t& rDatum) const override;
 		void Set(uint32_t datum) override;
 
+		bool Get(int64_t& rDatum) const override;
+		void Set(int64_t datum) override;
+
 		bool Get(uint64_t& rDatum) const override;
 		void Set(uint64_t datum) override;
 
@@ -103,6 +106,7 @@ namespace geng::data
 			:BaseView<IDictDatum>(pDatum, BaseDatumType::Dictionary)
 		{ }
 
+		bool IsEmpty() const;
 		bool HasEntry(const char* pKey) const override;
 		bool GetEntry(const char* pKey, std::shared_ptr<IDatum>& rChild) const override;
 		bool Iterate(IDictCallback& rCallback) const override;
@@ -117,6 +121,7 @@ namespace geng::data
 			:BaseView<IListDatum>(pDatum, BaseDatumType::List)
 		{ }
 
+		bool IsEmpty() const;
 		size_t GetLength() const override;
 		bool GetEntry(size_t idx, std::shared_ptr<IDatum>& rChild) const override;
 		bool GetRange(std::vector<std::shared_ptr<IDatum> >& rSequence,

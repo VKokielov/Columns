@@ -1,6 +1,11 @@
 #include "DTSimpleList.h"
 namespace impl_ns = geng::data::simple;
 
+bool impl_ns::List::IsEmpty() const
+{
+	return m_list.empty();
+}
+
 geng::data::BaseDatumType impl_ns::List::GetDatumType() const 
 {
 	return BaseDatumType::List;

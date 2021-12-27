@@ -82,6 +82,14 @@ void geng::data::ElementView::Set(uint32_t datum)
 	throw DataStateException();
 }
 
+bool geng::data::ElementView::Get(int64_t& rDatum) const
+{
+	return GenericGet(rDatum);
+}
+void geng::data::ElementView::Set(int64_t datum)
+{
+	throw DataStateException();
+}
 bool geng::data::ElementView::Get(uint64_t& rDatum) const 
 {
 	return GenericGet(rDatum);
@@ -121,6 +129,15 @@ void geng::data::ElementView::Clear()
 }
 
 // DictionaryView
+bool geng::data::DictionaryView::IsEmpty() const
+{
+	return IfValid([](const IDictDatum* pDatum)
+	{
+		return pDatum->IsEmpty();
+	}
+	);
+}
+
 bool geng::data::DictionaryView::HasEntry(const char* pKey) const
 {
 	return IfValid([pKey](const IDictDatum* pDatum)
@@ -171,6 +188,14 @@ bool geng::data::DictionaryView::SetEntry(const char* pKey, const std::shared_pt
 	throw DataStateException();
 }
 
+bool geng::data::ListView::IsEmpty() const
+{
+	return IfValid([](const IListDatum* pDatum)
+	{
+		return pDatum->IsEmpty();
+	}
+	);
+}
 size_t geng::data::ListView::GetLength() const
 {
 	return IfValid([](const IListDatum* pDatum) {

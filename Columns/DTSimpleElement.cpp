@@ -108,7 +108,14 @@ void impl_ns::Element::Set(uint32_t datum)
 {
 	GenericSet(datum);
 }
-
+bool impl_ns::Element::Get(int64_t& rDatum) const
+{
+	return GenericGet(rDatum);
+}
+void impl_ns::Element::Set(int64_t datum)
+{
+	GenericSet(datum);
+}
 bool impl_ns::Element::Get(uint64_t& rDatum) const 
 {
 	return GenericGet(rDatum);
@@ -143,17 +150,14 @@ bool impl_ns::Element::Get(std::string& rDatum) const
 }
 void impl_ns::Element::Set(const char* datum) 
 {
-	if (m_data.index() == StringIndex)
+	auto pstring = std::get_if<StringIndex>(&m_data);
+	if (pstring)
 	{
-		auto pstring = std::get_if<StringIndex>(&m_data);
-		if (pstring)
-		{
-			pstring->assign(datum);
-		}
-		else
-		{
-			m_data.emplace<std::string>(datum);
-		}
+		pstring->assign(datum);
+	}
+	else
+	{
+		m_data.emplace<std::string>(datum);
 	}
 }
 

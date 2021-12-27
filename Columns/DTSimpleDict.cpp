@@ -1,6 +1,11 @@
 #include "DTSimpleDict.h"
 namespace impl_ns = geng::data::simple;
 
+bool impl_ns::Dictionary::IsEmpty() const
+{
+	return m_dictionary.empty();
+}
+
 geng::data::BaseDatumType impl_ns::Dictionary::GetDatumType() const
 {
 	return BaseDatumType::Dictionary;

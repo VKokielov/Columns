@@ -7,6 +7,7 @@ namespace geng::data::simple
 	class List : public IListDatum
 	{
 	public:
+		bool IsEmpty() const override;
 		BaseDatumType GetDatumType() const override;
 		bool IsImmutable() const override;
 
