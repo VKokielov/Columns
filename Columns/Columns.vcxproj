@@ -196,6 +196,7 @@
     <ClCompile Include="Filestream.cpp" />
     <ClCompile Include="InputBridge.cpp" />
     <ClCompile Include="KeyDebug.cpp" />
+    <ClCompile Include="PathUtils.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="SDLEventPoller.cpp" />
     <ClCompile Include="SDLInput.cpp" />
@@ -251,6 +252,8 @@
     <ClInclude Include="KeyDebug.h" />
     <ClInclude Include="MessageStream.h" />
     <ClInclude Include="Packet.h" />
+    <ClInclude Include="PathUtils.h" />
+    <ClInclude Include="ResDescriptor.h" />
     <ClInclude Include="SharedValueCommand.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceLoader.h" />

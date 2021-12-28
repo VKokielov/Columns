@@ -76,6 +76,9 @@ bool impl_ns::SerializeDataTree(const std::shared_ptr<IDatum>& pRoot,
 
 		void LoadChildren()
 		{
+			// If this function is NOT called then the children vector will be empty
+			// and HasNextChild() will return false
+			// This is used to implement IterInstruction::Skip in an intuitive way
 			if (childrenLoaded)
 			{
 				return;
@@ -122,35 +125,37 @@ bool impl_ns::SerializeDataTree(const std::shared_ptr<IDatum>& pRoot,
 		IterInstruction iterIns{ IterInstruction::Enter };
 		DFSLevel& curLevel = dfsStack.back();
 
-		if (curLevel.type == BaseDatumType::Element)
+		if (curLevel.curIdx == 0)
 		{
-			iterIns = serializer.OnElement(std::static_pointer_cast<IElementDatum>(curLevel.level));
-		}
-		else if (curLevel.type == BaseDatumType::Object)
-		{
-			iterIns = serializer.OnObject(std::static_pointer_cast<IObjectDatum>(curLevel.level));
-		}
-		else if (curLevel.type == BaseDatumType::Dictionary 
-			&& curLevel.curIdx == 0)
-		{
-			auto pDict = std::static_pointer_cast<IDictDatum>(curLevel.level);
-			bool isEmpty = pDict->IsEmpty();
-
-			iterIns = serializer.OnDict(pDict, !isEmpty);
-			if (iterIns == IterInstruction::Enter)
+			// Initialize a new level
+			if (curLevel.type == BaseDatumType::Element)
 			{
-				curLevel.LoadChildren();
+				iterIns = serializer.OnElement(std::static_pointer_cast<IElementDatum>(curLevel.level));
 			}
-		}
-		else if (curLevel.type == BaseDatumType::List
-			&& curLevel.curIdx == 0)
-		{
-			auto pList = std::static_pointer_cast<IListDatum>(curLevel.level);
-			bool isEmpty = pList->IsEmpty();
-			iterIns = serializer.OnList(pList, !isEmpty);
-			if (iterIns == IterInstruction::Enter)
+			else if (curLevel.type == BaseDatumType::Object)
 			{
-				curLevel.LoadChildren();
+				iterIns = serializer.OnObject(std::static_pointer_cast<IObjectDatum>(curLevel.level));
+			}
+			else if (curLevel.type == BaseDatumType::Dictionary)
+			{
+				auto pDict = std::static_pointer_cast<IDictDatum>(curLevel.level);
+				bool isEmpty = pDict->IsEmpty();
+
+				iterIns = serializer.OnDict(pDict, !isEmpty);
+				if (iterIns == IterInstruction::Enter)
+				{
+					curLevel.LoadChildren();
+				}
+			}
+			else if (curLevel.type == BaseDatumType::List)
+			{
+				auto pList = std::static_pointer_cast<IListDatum>(curLevel.level);
+				bool isEmpty = pList->IsEmpty();
+				iterIns = serializer.OnList(pList, !isEmpty);
+				if (iterIns == IterInstruction::Enter)
+				{
+					curLevel.LoadChildren();
+				}
 			}
 		}
 

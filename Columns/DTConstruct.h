@@ -7,7 +7,7 @@ namespace geng::data
 {
 
 	template<typename Suite, typename B>
-	std::shared_ptr<IDatum> DTElem(B&& val)
+	std::shared_ptr<IElementDatum> DTElem(B&& val)
 	{
 		using T = typename Suite::Element;
 
@@ -32,7 +32,7 @@ namespace geng::data
 	};
 
 	template<typename Suite>
-	std::shared_ptr<IDatum> DTDict(std::initializer_list<DictPair> dictPairs)
+	std::shared_ptr<IDictDatum> DTDict(std::initializer_list<DictPair> dictPairs)
 	{
 		using T = typename Suite::Dict;
 
@@ -48,7 +48,7 @@ namespace geng::data
 	}
 
 	template<typename Suite>
-	std::shared_ptr<IDatum> DTList(std::initializer_list<std::shared_ptr<IDatum> > listEntries)
+	std::shared_ptr<IListDatum> DTList(std::initializer_list<std::shared_ptr<IDatum> > listEntries)
 	{
 		using T = typename Suite::List;
 

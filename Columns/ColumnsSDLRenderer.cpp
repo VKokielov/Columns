@@ -4,6 +4,8 @@
 #include "ResourceLoader.h"
 #include "RawMemoryResource.h"
 #include "SDLRendering.h"
+#include "DTSimple.h"
+#include "ResDescriptor.h"
 
 #include <sstream>
 
@@ -20,37 +22,50 @@ geng::columns::ColumnsSDLRenderer::ColumnsSDLRenderer(const ColumnsRenderArgs& a
 std::shared_ptr<geng::sdl::TTFResource> geng::columns::ColumnsSDLRenderer::InitializeFont(geng::IGame* pGame, ResourceLoader* pLoader,
 	int pointSize)
 {
-	std::shared_ptr<sdl::TTFResource> pFont;
+	using namespace data;
 
-	const char* pLoadedFilepath = "c:\\windows\\fonts\\calibri.ttf";
-	auto pResourceFile = LoadResource<RawMemoryResource>(pLoader, pLoadedFilepath);
+	// Keep a reference to the font typeface name in order to be able to change it if loading
+	// fails
+	auto pFontName
+		= DTElem<simple::Suite>("calibri");
 
-	if (!pResourceFile)
+	auto pFontDescriptor =
+		DTDict<simple::Suite>
+		({
+		   {res_desc::RES_TYPE,
+				DTElem<simple::Suite>(sdl::TTFResource::GetTypeName())
+		   },
+		   {"size",
+				DTElem<simple::Suite>((int32_t)pointSize)
+	       },
+		   {"typeface",
+				pFontName
+		   }
+			});
+
+	std::shared_ptr<IResource> pFont =
+		pLoader->LoadResource(*pFontDescriptor);
+
+	if (!pFont)
 	{
-		pGame->LogError("Could not find Calibri font in Windows directory -- trying free variant!");
-		pLoadedFilepath = "SourceSansPro-Regular.ttf";
-		pResourceFile = LoadResource<RawMemoryResource>(pLoader, pLoadedFilepath);
+		pGame->LogError("Could not load Calibri font -- trying free variant!");
 
-		if (!pResourceFile)
+		std::string errNormalFont = pLoader->GetResourceLoadError();
+
+		// Change the typeface name directly in the descriptor
+		pFontName->Set("SourceSansPro-Regular");
+		pFont = pLoader->LoadResource(*pFontDescriptor);
+
+		if (!pFont)
 		{
-			pGame->LogError("ColumnsSDLRenderer: Missing Calibri font on Windows and free font file in game directory.");
+			pGame->LogError("ColumnsSDLRenderer: Missing Calibri font and free font file in game directory. Errors:");
+			pGame->LogError(errNormalFont.c_str());
+			pGame->LogError(pLoader->GetResourceLoadError());
 			return false;
 		}
 	}
 
-	sdl::FontArgs fontArgs;
-	fontArgs.pointSize = pointSize;
-	pFont = LoadResource<sdl::TTFResource>(pLoader, pResourceFile, fontArgs);
-	if (!pFont)
-	{
-		std::stringstream ssm;
-		ssm << "ColumnsSDLRenderer: could not process TTF file " 
-			<< pLoadedFilepath << ", error: " << pLoader->GetResourceLoadError();
-		std::string sErr = ssm.str();
-		pGame->LogError(sErr.c_str());
-	}
-
-	return pFont;
+	return std::static_pointer_cast<sdl::TTFResource>(pFont);
 }
 
 bool geng::columns::ColumnsSDLRenderer::Initialize(const std::shared_ptr<IGame>& pGame)

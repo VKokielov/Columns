@@ -9,7 +9,7 @@ namespace
 {
 	constexpr std::string_view LIST_OPENER_TOKEN( "[" );
 	constexpr std::string_view LIST_CLOSER_TOKEN( "]" );
-	constexpr std::string_view DICT_OPENER_TOKEN("}");
+	constexpr std::string_view DICT_OPENER_TOKEN("{");
 	constexpr std::string_view DICT_CLOSER_TOKEN("}");
 	constexpr std::string_view ELEMENT_SEPARATOR(",");
 	constexpr std::string_view DICT_SEPARATOR(":");
@@ -152,6 +152,10 @@ impl_ns::IterInstruction impl_ns::DTJsonTokenGenerator::OnDictKey(const char* pK
 	m_tokenList.emplace_back(std::move(keyToken));
 	JsonToken sepToken{ TokenType::DictSeparator, std::string(DICT_SEPARATOR), false, 0 };
 	m_tokenList.emplace_back(std::move(sepToken));
+
+	// Special case -- no comma expected before the representation of the 
+	// next element
+	m_firstElement = true;
 
 	return IterInstruction::Enter;
 }
@@ -323,24 +327,35 @@ std::string impl_ns::PrintJsonIndented(const std::vector<JsonToken>& tokens,
 		}
 		else if (curToken.tokenType == TokenType::Closer)
 		{
-			if (compoundStack.empty())
+			if ((i < tokens.size() - 1)
+			&& (tokens[i + 1].tokenType == TokenType::Closer))
 			{
-				throw DataStateException();
-			}
+				if (compoundStack.size() < 2)
+				{
+					throw DataStateException();
+				}
 
-			addNewline = !sameLineElements || tokens[compoundStack.back()].hasCompounds;
+				// This should mean there are at least two elements in the token stack
+				// We need to get the outer closer's behavior
+				addNewline =
+					  !sameLineElements
+					|| (tokens[compoundStack[compoundStack.size() - 2]].hasCompounds);
+
+				if (addNewline)
+				{
+					indentDelta = -1;
+				}
+			}
 		}
 		else if (!compoundStack.empty())
 		{
 			if (i == tokens.size() - 1)
 			{
-				// If the compound stack is not empty then we need a closing token somewhere
-				// this is not it -- where is it?
 				throw DataStateException();
 			}
 
 			// Special case - add a newline for the last element of a list or dictionary
-			addNewline = tokens[i+1].tokenType == TokenType::Closer
+			addNewline = (tokens[i+1].tokenType == TokenType::Closer)
 				&& (!sameLineElements || tokens[compoundStack.back()].hasCompounds);
 
 			if (addNewline)

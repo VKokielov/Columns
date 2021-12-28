@@ -15,13 +15,8 @@ std::shared_ptr<geng::IGameComponent> geng::setup::InitializeResourceLoader(geng
 
 	auto pResLoader = std::make_shared<geng::ResourceLoader>();
 
-	pResLoader->CreateType(geng::RawMemoryResource::GetTypeName());
 	auto pRawFactory = std::make_shared<geng::RawMemoryFactory>(RAW_MEM_BUFFER_SIZE);
 	pResLoader->AddFactory(pRawFactory);
-
-	pResLoader->CreateType(geng::sdl::TTFResource::GetTypeName());
-	auto pTTFFactory = std::make_shared<geng::sdl::TTFFactory>();
-	pResLoader->AddFactory(pTTFFactory);
 
 	pGame->AddComponent(pResLoader);
 	return pResLoader;

@@ -131,6 +131,7 @@ namespace geng::data
 	public:
 		virtual const char* GetObjectType() const = 0;
 		virtual IObjectDatum* MakeView() const = 0;
+		virtual IObjectDatum* Clone() const = 0;
 		virtual bool GetRepresentation(std::string& rRepr) const = 0;
 	};
 

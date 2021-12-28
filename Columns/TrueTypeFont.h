@@ -17,11 +17,16 @@ namespace geng::sdl
 		int pointSize;
 	};
 
-	class TTFResource : public BaseResource< render::IFont>
+	class TTFResource : public BaseResource<TTFResource, render::IFont>
 	{
 	public:
-		TTFResource(TTF_Font* pFont);
-		TTFResource(TTF_Font* pFont, 
+		// There is no reason to copy fonts
+		TTFResource(const TTFResource&) = delete;
+
+		TTFResource(const char* pDesc, 
+			TTF_Font* pFont);
+		TTFResource(const char* pDesc,
+			TTF_Font* pFont, 
 			const std::shared_ptr<RawMemoryResource>& pResource);
 
 		~TTFResource();
@@ -30,6 +35,10 @@ namespace geng::sdl
 		static const char* GetTypeName()
 		{
 			return "TrueTypeFont";
+		}
+		static const char* GetObjectTypeName()
+		{
+			return "Resource_TrueTypeFont";
 		}
 
 		TTF_Font* GetFont() { return m_pFont; }
@@ -43,23 +52,15 @@ namespace geng::sdl
 	class TTFFactory : public BaseResourceFactory
 	{
 	public:
-		TTFFactory();
+		TTFFactory(const std::vector<std::string>& searchPaths);
 
-		bool IsMyResource(const ResourceSource& source) const override;
-		std::shared_ptr<IResource> LoadResource(const ResourceSource& source,
-			const ResourceArgs& args, std::string& rErr) override;
+		bool IsMyResource(const data::IDatum& resourceDesc) const override;
+		std::shared_ptr<IResource> LoadResource(const data::IDatum& resourceDesc,
+			IResourceLoader& loader,
+			std::string& rErr) override;
 
 	private:
+		std::vector<std::string> m_searchPaths;
 		size_t m_bufferSize;
-	};
-}
-
-// Define the value of the ResourceTraits for TTFResource (for the resource loader's helper function, see ResourceLoader.h)
-namespace geng
-{
-	template<>
-	struct ResourceTraits<sdl::TTFResource>
-	{
-		using TArgs = sdl::FontArgs;
 	};
 }

@@ -28,7 +28,13 @@ bool geng::columns::ColumnsExecutive::AddToGame(const std::shared_ptr<IGame>& pG
 {
 	// Precreate certain components
 	setup::InitializeSDLRendering(pGame.get(), "Columns", 640 + 320, 480 + 240);
-	setup::InitializeResourceLoader(pGame.get());
+	auto pResLoader =  std::static_pointer_cast<geng::ResourceLoader>
+		(setup::InitializeResourceLoader(pGame.get()));
+
+	std::vector<std::string> fontSearchPaths{"c:\\windows\\fonts", "."};
+	auto pTTFFactory = std::make_shared<geng::sdl::TTFFactory>(fontSearchPaths);
+	pResLoader->AddFactory(pTTFFactory);
+
 	auto pPoller = std::static_pointer_cast<sdl::EventPoller>
 		(setup::InitializeSDLPoller(pGame.get()));
 

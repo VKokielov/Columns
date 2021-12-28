@@ -92,44 +92,6 @@ bool InitializeGameComponents(const std::shared_ptr<geng::IGame>& pGame,
 	return true;
 }
 
-void TestDT()
-{
-	using namespace geng::data;
-	using Suite = simple::Suite;
-	
-	auto pMyDict = DTDict<Suite>(
-		{
-			{"name", DTElem<Suite>("BobSmith")},
-			{"ismarried", DTElem<Suite>(false)},
-			{"friends",
-				DTList<Suite>(
-					{
-						DTElem<Suite>("John"),
-						DTElem<Suite>("Paul"),
-						DTElem<Suite>("Ringo"),
-						DTElem<Suite>("George")
-					}
-				)
-			},
-			{"ages",
-				DTList<Suite>(
-					{
-						DTElem<Suite>(10),
-						DTElem<Suite>(16),
-						DTElem<Suite>(45),
-						DTElem<Suite>((double)2.5)
-					}
-				)
-			}		
-		}
-	);
-
-	std::cerr << "Built\n";
-
-	DTJsonTokenGenerator jsonTokens;
-	SerializeDataTree(pMyDict, jsonTokens);
-
-}
 
 int main(int argc, char** argv)
 {
@@ -137,8 +99,6 @@ int main(int argc, char** argv)
 	{
 		return -1;
 	}
-
-	TestDT();
 
 	geng::DefaultGameArgs gameArgs;
 	gameArgs.msBreather = 1;
@@ -186,3 +146,48 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+/*
+void TestDT()
+{
+	using namespace geng::data;
+	using Suite = simple::Suite;
+
+	auto pMyDict = DTDict<Suite>(
+		{
+			{"name", DTElem<Suite>("BobSmith")},
+			{"ismarried", DTElem<Suite>(false)},
+			{"friends",
+				DTList<Suite>(
+					{
+						DTElem<Suite>("John"),
+						DTElem<Suite>("Paul"),
+						DTElem<Suite>("Ringo"),
+						DTElem<Suite>("George")
+					}
+				)
+			},
+			{"ages",
+				DTList<Suite>(
+					{
+						DTElem<Suite>(10),
+						DTElem<Suite>(16),
+						DTElem<Suite>(45),
+						DTElem<Suite>((double)2.5)
+					}
+				)
+			}
+		}
+	);
+
+	std::cerr << "Built\n";
+
+	DTJsonTokenGenerator jsonTokens;
+	SerializeDataTree(pMyDict, jsonTokens);
+
+	std::string formattedJson
+		= PrintJsonIndented(jsonTokens.GetTokenVector(), 3, 2, false);
+
+	std::cerr << "Formatted:\n" << formattedJson << '\n';
+}
+*/
