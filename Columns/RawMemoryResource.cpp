@@ -52,13 +52,14 @@ std::shared_ptr<geng::IResource> geng::RawMemoryFactory
 	// Get the "source" node
 	// It is either an object datum of resource type, or a path specifier
 	std::shared_ptr<data::IDatum> pSourceNode;
-	if (!data::GetDictChild(resourceDesc, res_desc::SOURCE, pSourceNode))
+	if (data::GetDictChild(resourceDesc, res_desc::SOURCE, pSourceNode) != data::AccessResult::OK)
 	{
 		rErr = "Descriptor missing source";
 		return pRet;
 	}
 
-	if (pSourceNode->GetDatumType() == data::BaseDatumType::Object)
+	auto sourceType = pSourceNode->GetDatumType();
+	if (sourceType == data::BaseDatumType::Object)
 	{
 		std::shared_ptr<data::IObjectDatum> pObjSource 
 			{ std::static_pointer_cast<data::IObjectDatum>(pSourceNode) };
@@ -76,10 +77,10 @@ std::shared_ptr<geng::IResource> geng::RawMemoryFactory
 
 		pRet = std::make_shared<RawMemoryResource>(*pOther);
 	}
-	else if (pSourceNode->GetDatumType() == data::BaseDatumType::Dictionary)
+	else if (sourceType == data::BaseDatumType::Element)
 	{
 		std::string filePathProperty;
-		if (data::GetDictValue(*pSourceNode, "filepath", filePathProperty) != data::AccessResult::OK)
+		if (data::GetValue(*static_cast<const data::IElementDatum*>(pSourceNode.get()), filePathProperty) != data::AccessResult::OK)
 		{
 			rErr = "Load RawMem resource: filepath in descriptor missing or not a string";
 			return pRet;

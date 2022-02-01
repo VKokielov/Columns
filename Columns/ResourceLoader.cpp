@@ -87,7 +87,7 @@ std::shared_ptr<geng::IResource> geng::ResourceLoader::LoadResource(const geng::
 
 	// Get resource type
 	std::string resType;
-	if (!data::GetDictValue(resDescriptor, res_desc::RES_TYPE, resType))
+	if (data::GetDictValue(resDescriptor, res_desc::RES_TYPE, resType) != data::AccessResult::OK)
 	{
 		m_error = "Could not get resource type from descriptor";
 		return pRet;

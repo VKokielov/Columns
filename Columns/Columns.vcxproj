@@ -267,6 +267,13 @@
     <ClInclude Include="SimStateDispatcher.h" />
     <ClInclude Include="SDLTextKeycodes.h" />
     <ClInclude Include="TrueTypeFont.h" />
+    <ClInclude Include="UICommand.h" />
+    <ClInclude Include="UIData.h" />
+    <ClInclude Include="UIDatatree.h" />
+    <ClInclude Include="UIElementChangeEvent.h" />
+    <ClInclude Include="UIElements.h" />
+    <ClInclude Include="UIEvent.h" />
+    <ClInclude Include="UISubscription.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -10,7 +10,7 @@ namespace geng::data
 	bool SerializeDataTree(const std::shared_ptr<IDatum>& pRoot,
 		ITreeSerializer& serializer);
 
-	enum AccessResult
+	enum class AccessResult
 	{
 		OK,
 		Narrowed, // was able to get the value, but narrowed
