@@ -123,6 +123,9 @@
     <ClCompile Include="PathUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UIImplDataumRecord.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ColumnsSim.h">
@@ -314,16 +317,28 @@
     <ClInclude Include="UISubscription.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UIElements.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UIDatatree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="UIElementChangeEvent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UIData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIImplElementBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIImplDatumBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIImplDatumValue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIImplDatumRecord.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -22,6 +22,7 @@ namespace geng::ui
 		SubelementID subelementId;
 		EventID eventId;
 		SubUserID subUserId;
+		AgentID agentId;
 		bool requestGeneric;  // Request an event in the general form
 		// [out]
 		SubscriptionStatus out_status;

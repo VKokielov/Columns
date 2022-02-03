@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UIElements.h"
+#include "UIBase.h"
 
 namespace geng::ui
 {

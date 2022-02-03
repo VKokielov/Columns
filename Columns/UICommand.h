@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UIElements.h"
+#include "UIBase.h"
 #include "UIDatatree.h"
 
 #include <string>
@@ -19,10 +19,9 @@ namespace geng::ui
 
 	struct ElementClassInfo
 	{
-		const char* pClassName;
+		UIClassDef classDef;
 		ElementClassID classId;
 	};
-
 
 	struct ElementCreateRequest
 	{
@@ -48,6 +47,7 @@ namespace geng::ui
 	{
 		// [in]
 		ElementID elementId;
+		AgentID agentId;
 		const data::IDatum* command{ nullptr };
 		// [out]
 		ElementResult out_commandResult;

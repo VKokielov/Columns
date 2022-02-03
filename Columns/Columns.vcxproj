@@ -205,6 +205,7 @@
     <ClCompile Include="SDLText.cpp" />
     <ClCompile Include="SDLTextKeycodes.cpp" />
     <ClCompile Include="TrueTypeFont.cpp" />
+    <ClCompile Include="UIImplDataumRecord.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActionCommands.h" />
@@ -269,10 +270,14 @@
     <ClInclude Include="TrueTypeFont.h" />
     <ClInclude Include="UICommand.h" />
     <ClInclude Include="UIData.h" />
-    <ClInclude Include="UIDatatree.h" />
+    <ClInclude Include="UIImplDatumRecord.h" />
     <ClInclude Include="UIElementChangeEvent.h" />
-    <ClInclude Include="UIElements.h" />
+    <ClInclude Include="UIBase.h" />
+    <ClInclude Include="UIEngine.h" />
     <ClInclude Include="UIEvent.h" />
+    <ClInclude Include="UIImplDatumBase.h" />
+    <ClInclude Include="UIImplDatumValue.h" />
+    <ClInclude Include="UIImplElementBase.h" />
     <ClInclude Include="UISubscription.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

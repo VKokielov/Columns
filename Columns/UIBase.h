@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <string>
 
 namespace geng::ui
 {
@@ -12,14 +13,20 @@ namespace geng::ui
 	using EventID = uint32_t;
 
 	using ElementClassID = uint64_t;
-	using TabID = uint32_t;
+	using AgentID = uint32_t;
 
 	constexpr ElementID ROOT_ELEMENT_ID = 0;
+	constexpr SubelementID SUBELEMENT_NONE = ~(0x0LL);
 
 	struct UIAddress
 	{
 		ElementID  elementId;
 		SubelementID subElementId;
+	};
+
+	struct UIClassDef
+	{
+		std::string className;
 	};
 
 	class IUIManager
