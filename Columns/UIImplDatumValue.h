@@ -11,9 +11,13 @@ namespace geng::ui::impl
 		UIDatumBase<
 					std::conditional_t<std::is_same_v<T,std::string>,
 							IUIStringDatum,
-							IUITypedPrimitiveDatum<T> >
+							IUITypedPrimitiveDatum<T> > >
 	{
 	public:
+		using EntryType = std::conditional_t < std::is_same_v<T, std::string>,
+			IUIStringDatum,
+			IUITypedPrimitiveDatum<T>>;
+
 		data::ElementType GetPrimitiveType() const override
 		{
 			if constexpr (std::is_same_v<bool, T>)
@@ -70,14 +74,16 @@ namespace geng::ui::impl
 			}
 		}
 
-		auto
+		std::conditional_t<std::is_same_v<T, std::string>,
+			const char*,
+			T >
 			GetData() const override
 		{
 			return GetValue();
 		}
 
 	protected:
-		using UIDatumBase<IUIElementDatum>::UIDatumBase<IUIElementDatum>;
+		using UIDatumBase<EntryType>::UIDatumBase;
 
 		// "Known" interface, normally to be used by the derived class
 		// but can also be "promoted" directly
@@ -117,14 +123,17 @@ namespace geng::ui::impl
 	class UIDatumValue : public UIBaseClassDatumValue<T>
 	{
 	public:
-		using UIBaseClassDatumValue<T>::UIBaseClassDatumValue<T>;
+		UIDatumValue(UIElementBase* pOwner, ElementID elementId)
+			:UIBaseClassDatumValue<T>(pOwner, elementId)
+		{ }
+
 		using UIBaseClassDatumValue<T>::GetValue;
 		using UIBaseClassDatumValue<T>::SetValue;
 
 		template<typename F>
 		void SetValueWithCallback(F&& fSetter)
 		{
-			UIBaseClassDatumValue<T>::SetValueWithCallback(m_value);
+			UIBaseClassDatumValue<T>::SetValueWithCallback(fSetter);
 		}
 
 	};

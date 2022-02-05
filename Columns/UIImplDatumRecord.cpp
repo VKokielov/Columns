@@ -3,7 +3,7 @@
 namespace impl_ns = geng::ui::impl;
 
 impl_ns::UIBaseClassDatumRecord::UIBaseClassDatumRecord(UIElementBase* pOwner,
-	ElementID elementId,
+	geng::ui::ElementID elementId,
 	const UIBaseClassRecordRuntimeDef* pRuntimeDef)
 	:UIDatumBase<IUIDictionaryDatum>(pOwner, elementId),
 	m_pRuntimeDef(pRuntimeDef)
@@ -22,7 +22,7 @@ const geng::ui::IUIDatum* impl_ns::UIBaseClassDatumRecord::GetEntry(const char* 
 	return nullptr;
 }
 
-bool impl_ns::UIBaseClassDatumRecord::Iterate(IUIDictCallback& rCallback) const
+bool impl_ns::UIBaseClassDatumRecord::Iterate(geng::ui::IUIDictCallback& rCallback) const
 {
 	// The definition gives the field names; the values are stored on the object
 	size_t fieldIdx{ 0 };

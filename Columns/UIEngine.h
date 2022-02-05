@@ -1,6 +1,7 @@
 #pragma once
 
 #include "UIBase.h"
+#include "UIEvent.h"
 #include "IDataTree.h"
 #include <memory>
 
@@ -57,8 +58,10 @@ namespace geng::ui
 	{
 		virtual bool IsEmpty() const = 0;
 		virtual size_t GetLength() const = 0;
-		virtual bool GetEntries(size_t idx, const IUIDatum** ppChildArray,
-			size_t startIdx = 0, size_t count = 0) const = 0;
+		virtual bool GetEntries(const IUIDatum** ppChildArray, 
+			size_t idxOut = 0,
+			size_t startIdx = 0, 
+			size_t endIdx = data::LIST_NPOS) const = 0;
 	};
 
 	class IUIElement
@@ -89,8 +92,13 @@ namespace geng::ui
 	class IUIEngine
 	{
 	public:
+		virtual StringID RegisterString(const char* pString) = 0;
+		virtual StringID GetStringID(const char* pString) const = 0;
+		virtual const char* GetString(StringID stringId) = 0;
+
 		virtual bool AddClass(AddClassRequest* pRequests,
 			size_t nCount) = 0;
+
 	};
 
 }

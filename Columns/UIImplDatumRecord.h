@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <string_view>
 #include <stdexcept>
+#include <array>
 
 namespace geng::ui::impl
 {
@@ -19,7 +20,7 @@ namespace geng::ui::impl
 	class UIBaseClassRecordDef
 	{
 	public:
-		constexpr UIBaseClassRecordDef(std::string_view (&fieldNames)[N])
+		constexpr UIBaseClassRecordDef(const std::string_view (&fieldNames)[N])
 		{
 			for (std::size_t i = 0; i < N; ++i)
 			{
@@ -54,11 +55,11 @@ namespace geng::ui::impl
 				throw std::runtime_error("Invalid field index");
 			}
 
-			return m_def[i].c_str();
+			return m_def[idx].c_str();
 		}
 
 	private:
-		std::array<std::string_view,N>  m_def;
+		std::string_view m_def[N]{};
 	};
 
 	class UIBaseClassRecordRuntimeDef

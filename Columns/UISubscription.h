@@ -20,7 +20,7 @@ namespace geng::ui
 		// [in]
 		ElementID elementId;
 		SubelementID subelementId;
-		EventID eventId;
+		StringID eventStringId;
 		SubUserID subUserId;
 		AgentID agentId;
 		bool requestGeneric;  // Request an event in the general form
