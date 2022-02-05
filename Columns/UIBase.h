@@ -8,8 +8,8 @@ namespace geng::ui
 
 	using SubUserID = uint32_t;
 	using SubscriptionID = uint64_t;
-	using ElementID = uint64_t;
-	using SubelementID = uint64_t;
+	using ElementID = uint32_t;
+	using SubelementID = uint32_t;
 	using StringID = uint32_t;
 
 	using ElementClassID = uint64_t;

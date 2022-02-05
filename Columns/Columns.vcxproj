@@ -253,6 +253,7 @@
     <ClInclude Include="ActionMapper.h" />
     <ClInclude Include="InputBridge.h" />
     <ClInclude Include="KeyDebug.h" />
+    <ClInclude Include="LeveledHashmap.h" />
     <ClInclude Include="MessageStream.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="PathUtils.h" />
@@ -284,6 +285,7 @@
     <ClInclude Include="UIImplElementBase.h" />
     <ClInclude Include="UIImplDatumValueSet.h" />
     <ClInclude Include="UIImplStandardElement.h" />
+    <ClInclude Include="UIImplSubscriptionHelper.h" />
     <ClInclude Include="UISubscription.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

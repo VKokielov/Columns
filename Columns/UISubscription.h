@@ -1,7 +1,7 @@
 #pragma once
 
 #include "UIEvent.h"
-#include "UIDatatree.h"
+#include "IDataTree.h"
 #include <memory>
 
 namespace geng::ui
@@ -18,9 +18,8 @@ namespace geng::ui
 	struct SubscribeRequest
 	{
 		// [in]
-		ElementID elementId;
-		SubelementID subelementId;
 		StringID eventStringId;
+		UIAddress uiAddress;
 		SubUserID subUserId;
 		AgentID agentId;
 		bool requestGeneric;  // Request an event in the general form
@@ -41,7 +40,9 @@ namespace geng::ui
 	{
 	public:
 		virtual ~IUISubscriber() = default;
+		virtual bool OnFrameStart() = 0;
 		virtual bool OnEvent(const UIEventEnvelope& rEvent) = 0;
+		virtual bool OnFrameEnd() = 0;
 	};
 
 	class IUISubscriptionManager : public IUIManager

@@ -5,37 +5,66 @@
 
 namespace geng::ui
 {
-	enum class EventType
-	{
-		ActionEvent,
-		ValueChangeEvent,
-		ListChangeEvent,
-		DictChangeEvent,
-		UserEvent
-	};
+	class UIEvent { };
 
-	class UIEvent
+	class UIEventEnvelope
 	{
 	public:
-		EventType GetEventType() const;
 
 		// Ideally this value defines the other coordinates too
-		SubUserID GetUserSubID() const;
+		SubUserID GetUserSubID() const { return m_userSubId; }
 
-		StringID GetEventStringID() const;
-		const UIAddress& GetAddress() const;
-		SubscriptionID GetSubscriptionID() const;
+		StringID GetEventStringID() const { return m_eventId; }
+		const UIAddress& GetAddress() const { return m_uiAddress; }
+		SubscriptionID GetSubscriptionID() const { return m_subId; }
 
 		// If the generic form is requested and available, it will be supplied here
-		const data::IDatum* GetGeneric() const;
-	};
+		const UIEvent* GetEvent() const { return m_event; }
+		std::shared_ptr<data::IDatum> GetGenericEvent() const { return m_genericEvent; }
 
-	class UIEventEnvelope;
+	protected:
+		void SetSubUserID(SubUserID subUserId)
+		{
+			m_userSubId = subUserId;
+		}
+		
+		void SetEventStringID(StringID eventId)
+		{
+			m_eventId = eventId;
+		}
+
+		void SetElementID(ElementID elementId)
+		{
+			m_uiAddress.elementId = elementId;
+		}
+
+		void SetSubelementID(SubelementID subElementId)
+		{
+			m_uiAddress.subElementId = subElementId;
+		}
+
+		void SetEventObj(const UIEvent* pEvent)
+		{
+			m_event = pEvent;
+		}
+
+		void SetGenericEventObj(const std::shared_ptr<data::IDatum>& genericEvent)
+		{
+			m_genericEvent = genericEvent;
+		}
+
+	private:
+		SubUserID m_userSubId;
+		StringID  m_eventId;
+		UIAddress  m_uiAddress;
+		SubscriptionID m_subId;
+		const UIEvent* m_event{ nullptr };
+		std::shared_ptr<data::IDatum> m_genericEvent;
+	};
 
 	struct EventInfo
 	{
 		StringID eventStringID;
-		EventType eventType;
 	};
 
 

@@ -359,5 +359,11 @@
     <ClInclude Include="UIImplData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UIImplSubscriptionHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LeveledHashmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
