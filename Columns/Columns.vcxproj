@@ -207,6 +207,7 @@
     <ClCompile Include="TrueTypeFont.cpp" />
     <ClCompile Include="UIImplDatumRecord.cpp" />
     <ClCompile Include="UIImplDatumRefList.cpp" />
+    <ClCompile Include="UIImplSubscriptionHelper.cpp" />
     <ClCompile Include="UITest.cpp" />
   </ItemGroup>
   <ItemGroup>

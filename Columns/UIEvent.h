@@ -22,12 +22,7 @@ namespace geng::ui
 		const UIEvent* GetEvent() const { return m_event; }
 		std::shared_ptr<data::IDatum> GetGenericEvent() const { return m_genericEvent; }
 
-	protected:
-		void SetSubUserID(SubUserID subUserId)
-		{
-			m_userSubId = subUserId;
-		}
-		
+	protected:		
 		void SetEventStringID(StringID eventId)
 		{
 			m_eventId = eventId;
@@ -51,6 +46,16 @@ namespace geng::ui
 		void SetGenericEventObj(const std::shared_ptr<data::IDatum>& genericEvent)
 		{
 			m_genericEvent = genericEvent;
+		}
+
+		void SetSubscriptionID(SubscriptionID subId)
+		{
+			m_subId = subId;
+		}
+
+		void SetSubUserID(SubUserID subUserId)
+		{
+			m_userSubId = subUserId;
 		}
 
 	private:

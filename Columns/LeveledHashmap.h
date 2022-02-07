@@ -218,7 +218,7 @@ namespace geng::lib
 				}
 			}
 
-			return 0;
+			return size_t{ 0 };
 		}
 
 

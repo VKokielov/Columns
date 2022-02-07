@@ -132,6 +132,9 @@
     <ClCompile Include="UIImplDatumRefList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UIImplSubscriptionHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ColumnsSim.h">

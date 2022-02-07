@@ -72,4 +72,6 @@ void TestLeveledHashmap()
 	};
 
 	IterateChildren(lmap, iterMap);
+
+	Erase(lmap, kTest, true);
 }
