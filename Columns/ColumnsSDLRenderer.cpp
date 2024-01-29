@@ -61,7 +61,7 @@ std::shared_ptr<geng::sdl::TTFResource> geng::columns::ColumnsSDLRenderer::Initi
 			pGame->LogError("ColumnsSDLRenderer: Missing Calibri font and free font file in game directory. Errors:");
 			pGame->LogError(errNormalFont.c_str());
 			pGame->LogError(pLoader->GetResourceLoadError());
-			return false;
+			return std::shared_ptr<geng::sdl::TTFResource>();
 		}
 	}
 

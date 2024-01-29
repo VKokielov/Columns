@@ -80,7 +80,7 @@ std::shared_ptr<geng::IResource> geng::sdl::TTFFactory
 	{
 		// Should be a string
 		std::string fontTypeface;
-		if (!GetValue(*static_cast<IElementDatum*>(pTypeface.get()), 
+		if (GetValue(*static_cast<IElementDatum*>(pTypeface.get()), 
 			fontTypeface) != data::AccessResult::OK)
 		{
 			rErr = "typeface -- must be a string (or a raw memory resource)";
@@ -110,7 +110,12 @@ std::shared_ptr<geng::IResource> geng::sdl::TTFFactory
 					DTElem<simple::Suite>(RawMemoryResource::GetTypeName())
 			   },
 			   {res_desc::SOURCE,
-					DTElem<simple::Suite>(fontPath.string().c_str())
+				 DTDict<simple::Suite>
+					({{
+						res_desc::FILE_PATH,
+						DTElem<simple::Suite>(fontPath.string().c_str())
+					 }}
+				    )
 			   }
 			});
 
